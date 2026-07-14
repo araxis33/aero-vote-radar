@@ -1,0 +1,98 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { recommendAllocation } from "../src/allocator.js";
+import type { PoolEfficiency } from "../src/efficiency.js";
+
+function fixture(overrides: Partial<PoolEfficiency> & { address: string; symbol: string }): PoolEfficiency {
+  return {
+    pool: {
+      address: overrides.address,
+      symbol: overrides.symbol,
+      token0: "0xtoken0",
+      token1: "0xtoken1",
+      gauge: "0xgauge",
+      gaugeAlive: true,
+    },
+    latestEpochTs: 0,
+    currentVotesVeAero: 0,
+    latestEpochUsd: 0,
+    trailingAvgUsd: 0,
+    epochsObserved: 6,
+    currentValuePerVote: 0,
+    predictedValuePerVote: 0,
+    predictiveEdge: 0,
+    ...overrides,
+  };
+}
+
+test("zero budget returns no allocation", () => {
+  const ranked = [fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 100 })];
+  assert.deepEqual(recommendAllocation(ranked, 0), []);
+});
+
+test("a single candidate receives the entire budget", () => {
+  const ranked = [fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 100 })];
+  const result = recommendAllocation(ranked, 5000);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pool, "0xA");
+  assert.ok(Math.abs(result[0].weight - 1) < 1e-6, `weight should be ~1, got ${result[0].weight}`);
+  assert.ok(Math.abs(result[0].veAeroAllocated - 5000) < 1, "should allocate ~the full budget");
+});
+
+test("allocated veAERO and weights sum back to the requested budget", () => {
+  const ranked = [
+    fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 500 }),
+    fixture({ address: "0xB", symbol: "B", currentVotesVeAero: 4000, trailingAvgUsd: 300 }),
+    fixture({ address: "0xC", symbol: "C", currentVotesVeAero: 200, trailingAvgUsd: 50 }),
+  ];
+  const budget = 25_000;
+  const result = recommendAllocation(ranked, budget);
+
+  const totalAllocated = result.reduce((sum, r) => sum + r.veAeroAllocated, 0);
+  const totalWeight = result.reduce((sum, r) => sum + r.weight, 0);
+
+  assert.ok(Math.abs(totalAllocated - budget) < budget * 0.01, `total allocated (${totalAllocated}) should be ~= budget`);
+  assert.ok(Math.abs(totalWeight - 1) < 0.01, `weights (${totalWeight}) should sum to ~1`);
+});
+
+test("self-dilution: two pools with identical incentives but a large enough budget get diversified, not dumped into one", () => {
+  // Same trailing USD value, same existing votes -> perfectly symmetric, so a
+  // budget much larger than either pool's own votes should split roughly evenly
+  // instead of an APR-only optimizer's "put it all in pool A" answer.
+  const ranked = [
+    fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 100 }),
+    fixture({ address: "0xB", symbol: "B", currentVotesVeAero: 1000, trailingAvgUsd: 100 }),
+  ];
+  const result = recommendAllocation(ranked, 50_000);
+
+  assert.equal(result.length, 2, "budget large relative to existing votes should spread across both pools");
+  const [first, second] = result;
+  assert.ok(Math.abs(first.veAeroAllocated - second.veAeroAllocated) < 50_000 * 0.05, "symmetric pools should get near-equal allocation");
+});
+
+test("under-voted pool with equal incentive is prioritized first for a small budget", () => {
+  // Pool A has the same expected epoch value as B but far fewer existing votes,
+  // so its marginal $-per-vote at the margin starts higher -> should be filled first.
+  const ranked = [
+    fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 100, trailingAvgUsd: 100 }),
+    fixture({ address: "0xB", symbol: "B", currentVotesVeAero: 100_000, trailingAvgUsd: 100 }),
+  ];
+  const result = recommendAllocation(ranked, 10); // tiny budget relative to either pool
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pool, "0xA");
+});
+
+test("only the top K ranked candidates are ever considered", () => {
+  // recommendAllocation trusts the caller's ranking order and just slices the
+  // first topK — so the array order here *is* the rank order (best pool first).
+  const ranked = [
+    fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 50 }),
+    fixture({ address: "0xLOW", symbol: "LOW", currentVotesVeAero: 10, trailingAvgUsd: 1000 }), // would be very attractive, but ranked below the cutoff
+  ];
+  const result = recommendAllocation(ranked, 1000, /* topK */ 1);
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pool, "0xA", "candidate beyond topK must be excluded even if it would be more attractive");
+});

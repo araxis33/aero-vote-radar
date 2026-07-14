@@ -1,5 +1,8 @@
 # aero-vote-radar
 
+[![CI](https://github.com/araxis33/aero-vote-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/araxis33/aero-vote-radar/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 An MCP server + CLI that reads **live on-chain data** from [Aerodrome Finance](https://aerodrome.finance) (Base) to rank pools by veAERO vote efficiency, and recommends a vote allocation that accounts for **self-dilution** — the fact that adding more of your own votes to a pool measurably lowers your own $-per-vote there, which naive "just vote where APR looks highest" approaches ignore.
 
 No API keys, no backend, no database. Every number comes from Aerodrome's own official on-chain "Sugar" contracts and the `Voter` contract, read live off Base mainnet, plus [DefiLlama](https://defillama.com)'s free price API to convert bribe/fee tokens to USD.
@@ -126,7 +129,19 @@ src/
   veAero.ts        VeSugar wrapper for a user's voting power
   mcp-server.ts    MCP stdio server entrypoint
   cli.ts           CLI entrypoint
+test/
+  allocator.test.ts  unit tests for the greedy marginal-allocation algorithm
 ```
+
+## Testing
+
+```bash
+npm test
+```
+
+Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. The on-chain data-fetching code (`pools.ts`, `efficiency.ts`, `veAero.ts`) is exercised live against Base mainnet via the CLI rather than mocked — see the real example output above.
+
+CI (`.github/workflows/ci.yml`) runs the typecheck, build, and test suite on every push.
 
 ## License
 
