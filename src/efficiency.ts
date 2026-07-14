@@ -1,0 +1,86 @@
+import { fetchActivePools, fetchPoolEpochs, type PoolInfo } from "./pools.js";
+import { getTokenPrices, toUsd } from "./prices.js";
+import { TREND_EPOCHS, MIN_TRAILING_USD } from "./constants.js";
+import { mapWithConcurrency } from "./util.js";
+
+const VE_DECIMALS = 18;
+
+export interface PoolEfficiency {
+  pool: PoolInfo;
+  latestEpochTs: number;
+  currentVotesVeAero: number;
+  latestEpochUsd: number;
+  /** Simple trailing average of the last few epochs' USD value — a naive forecast, not an ML prediction. */
+  trailingAvgUsd: number;
+  epochsObserved: number;
+  currentValuePerVote: number;
+  predictedValuePerVote: number;
+  /** predictedValuePerVote / currentValuePerVote - 1. Positive = incentives trending above what current votes are capturing. */
+  predictiveEdge: number;
+}
+
+function epochUsd(
+  epoch: { bribes: { token: string; amount: bigint }[]; fees: { token: string; amount: bigint }[] },
+  prices: Map<string, { price: number; decimals: number }>,
+): number {
+  let total = 0;
+  for (const b of epoch.bribes) total += toUsd(b.amount, b.token, prices);
+  for (const f of epoch.fees) total += toUsd(f.amount, f.token, prices);
+  return total;
+}
+
+/**
+ * Ranks all gauge-live Aerodrome pools by current and trend-predicted $-value
+ * per veAERO vote. Pools with zero recorded votes are excluded — $-per-vote is
+ * undefined for them, not infinite opportunity.
+ */
+export async function rankPoolsByEfficiency(): Promise<PoolEfficiency[]> {
+  const pools = await fetchActivePools();
+
+  // Bound concurrency: firing one RPC call per pool at once (there can be hundreds
+  // of live-gauge pools) reliably trips the public RPC's rate limit.
+  const epochsByPool = await mapWithConcurrency(pools, 8, (p) =>
+    fetchPoolEpochs(p.address, TREND_EPOCHS),
+  );
+
+  const allTokens = epochsByPool.flat().flatMap((e) => [
+    ...e.bribes.map((b) => b.token),
+    ...e.fees.map((f) => f.token),
+  ]);
+  const prices = await getTokenPrices(allTokens);
+
+  const results: PoolEfficiency[] = [];
+
+  pools.forEach((pool, i) => {
+    const epochs = epochsByPool[i];
+    if (!epochs || epochs.length === 0) return;
+
+    const latest = epochs[0];
+    const currentVotesVeAero = Number(latest.votes) / 10 ** VE_DECIMALS;
+    if (currentVotesVeAero <= 0) return;
+
+    const latestEpochUsd = epochUsd(latest, prices);
+    const usdValues = epochs.map((e) => epochUsd(e, prices));
+    const trailingAvgUsd = usdValues.reduce((a, b) => a + b, 0) / usdValues.length;
+    if (trailingAvgUsd < MIN_TRAILING_USD) return; // too thin to be a meaningful signal
+
+    const currentValuePerVote = latestEpochUsd / currentVotesVeAero;
+    const predictedValuePerVote = trailingAvgUsd / currentVotesVeAero;
+    const predictiveEdge =
+      currentValuePerVote > 0 ? predictedValuePerVote / currentValuePerVote - 1 : 0;
+
+    results.push({
+      pool,
+      latestEpochTs: latest.ts,
+      currentVotesVeAero,
+      latestEpochUsd,
+      trailingAvgUsd,
+      epochsObserved: epochs.length,
+      currentValuePerVote,
+      predictedValuePerVote,
+      predictiveEdge,
+    });
+  });
+
+  return results.sort((a, b) => b.predictedValuePerVote - a.predictedValuePerVote);
+}

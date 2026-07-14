@@ -1,0 +1,31 @@
+{
+  "name": "aero-vote-radar",
+  "version": "0.1.0",
+  "description": "MCP server + CLI that reads live Aerodrome (Base) on-chain data to rank pools by veAERO vote efficiency and recommend a self-dilution-aware vote allocation.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": ["aerodrome", "base", "mcp", "veaero", "defi", "ai-agent"],
+  "bin": {
+    "aero-vote-radar": "./dist/cli.js",
+    "aero-vote-radar-mcp": "./dist/mcp-server.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "cli": "tsx src/cli.ts",
+    "mcp": "tsx src/mcp-server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "viem": "^2.55.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
+  }
+}
