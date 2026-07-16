@@ -25,13 +25,19 @@ export async function getTokenPrices(
 
   if (uncached.length > 0) {
     const keys = uncached.map((a) => `base:${a}`).join(",");
-    const res = await fetch(`${DEFILLAMA_PRICE_URL}/${keys}`);
-    if (res.ok) {
-      const data = (await res.json()) as DefiLlamaResponse;
-      for (const [key, coin] of Object.entries(data.coins)) {
-        const address = key.split(":")[1]?.toLowerCase();
-        if (address) cache.set(address, { price: coin.price, decimals: coin.decimals });
+    try {
+      const res = await fetch(`${DEFILLAMA_PRICE_URL}/${keys}`);
+      if (res.ok) {
+        const data = (await res.json()) as DefiLlamaResponse;
+        for (const [key, coin] of Object.entries(data.coins)) {
+          const address = key.split(":")[1]?.toLowerCase();
+          if (address) cache.set(address, { price: coin.price, decimals: coin.decimals });
+        }
       }
+    } catch {
+      // Network-level failure (DNS, timeout, connection refused) — fall through to
+      // the same $0 fallback used for an HTTP error response, per this function's
+      // contract: one pricing outage shouldn't blow up a whole pool's calculation.
     }
     for (const a of uncached) {
       if (!cache.has(a)) cache.set(a, { price: 0, decimals: 18 });
