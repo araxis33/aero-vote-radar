@@ -20,8 +20,27 @@ function getFlag(args: string[], name: string): string | undefined {
   return i === -1 ? undefined : args[i + 1];
 }
 
+/**
+ * Parses a `--name` flag as a positive integer, falling back to `fallback` if
+ * the flag is absent. Returns undefined (rather than NaN or a silently-clamped
+ * value) if the flag was given but isn't a positive integer, so callers can
+ * print a clear usage error instead of e.g. `Array.slice` quietly treating a
+ * garbled `--top abc` as 0 or a negative `--top` as "drop the last N rows".
+ */
+export function parsePositiveIntFlag(args: string[], name: string, fallback: number): number | undefined {
+  const raw = getFlag(args, name);
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
 async function cmdPools(args: string[]) {
-  const top = Number(getFlag(args, "top") ?? 20);
+  const top = parsePositiveIntFlag(args, "top", 20);
+  if (top === undefined) {
+    console.error("Usage: aero-vote-radar pools [--top N] (N must be a positive integer)");
+    process.exitCode = 1;
+    return;
+  }
   const ranked = await rankPoolsByEfficiency();
 
   console.log(`\nTop ${top} Aerodrome pools by predicted $/veAERO vote (of ${ranked.length} live-gauge pools with votes):\n`);
@@ -30,7 +49,6 @@ async function cmdPools(args: string[]) {
       .map((h) => h.padEnd(18))
       .join(""),
   );
-
   for (const p of ranked.slice(0, top)) {
     console.log(
       [
@@ -46,9 +64,10 @@ async function cmdPools(args: string[]) {
 
 async function cmdRecommend(args: string[]) {
   const veaero = Number(getFlag(args, "veaero"));
-  const topK = Number(getFlag(args, "top") ?? 15);
-  if (!veaero || veaero <= 0) {
-    console.error("Usage: aero-vote-radar recommend --veaero <amount> [--top K]");
+  const topK = parsePositiveIntFlag(args, "top", 15);
+
+  if (!veaero || veaero <= 0 || topK === undefined) {
+    console.error("Usage: aero-vote-radar recommend --veaero <amount> [--top K] (K must be a positive integer)");
     process.exitCode = 1;
     return;
   }
@@ -59,7 +78,6 @@ async function cmdRecommend(args: string[]) {
 
   console.log(`\nRecommended allocation for ${veaero.toLocaleString("en-US")} veAERO (top ${topK} candidates considered):\n`);
   console.log(["Symbol", "Weight", "veAERO", "Expected $/epoch"].map((h) => h.padEnd(18)).join(""));
-
   for (const a of allocation) {
     console.log(
       [
@@ -70,7 +88,6 @@ async function cmdRecommend(args: string[]) {
       ].join(""),
     );
   }
-
   console.log(`\nTotal expected value next epoch (heuristic, trailing-average based): ${fmtUsd(totalExpectedUsd)}`);
   console.log("You vote this yourself on aerodrome.finance — this tool never touches your wallet or keys.\n");
 }
@@ -82,13 +99,11 @@ async function cmdMyVeAero(args: string[]) {
     process.exitCode = 1;
     return;
   }
-
   const positions = await fetchVeAeroPositions(address);
   if (positions.length === 0) {
     console.log(`No veAERO locks found for ${address}.`);
     return;
   }
-
   console.log(`\nveAERO locks for ${address}:\n`);
   for (const p of positions) {
     // expiresAt is 0 for permanently-locked veNFTs (no expiry), not literally Jan 1 1970.
@@ -101,7 +116,6 @@ async function cmdMyVeAero(args: string[]) {
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-
   switch (command) {
     case "pools":
       return cmdPools(rest);
@@ -113,9 +127,9 @@ async function main() {
       console.log(`aero-vote-radar — Aerodrome (Base) veAERO vote-efficiency tool
 
 Commands:
-  pools [--top N]                 Rank live-gauge pools by current & predicted $/vote
-  recommend --veaero N [--top K]  Recommend a self-dilution-aware allocation for N veAERO
-  my-veaero <address>             Look up an account's veAERO locks and voting power
+  pools [--top N]                Rank live-gauge pools by current & predicted $/vote
+  recommend --veaero N [--top K] Recommend a self-dilution-aware allocation for N veAERO
+  my-veaero <address>            Look up an account's veAERO locks and voting power
 `);
       return;
   }
