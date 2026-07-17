@@ -5,6 +5,7 @@ import { z } from "zod";
 import { rankPoolsByEfficiency } from "./efficiency.js";
 import { recommendAllocation } from "./allocator.js";
 import { fetchVeAeroPositions } from "./veAero.js";
+import { isValidAddress } from "./util.js";
 
 const server = new McpServer({
   name: "aero-vote-radar",
@@ -81,7 +82,10 @@ server.registerTool(
     title: "Get an account's veAERO voting power",
     description: "Looks up all veAERO locks (NFTs) owned by a Base wallet address and their current voting power, via Aerodrome's VeSugar contract.",
     inputSchema: {
-      address: z.string().describe("Base wallet address (0x...)"),
+      address: z
+        .string()
+        .refine(isValidAddress, "Must be a 0x-prefixed 40-character hex address")
+        .describe("Base wallet address (0x...)"),
     },
   },
   async ({ address }) => {
