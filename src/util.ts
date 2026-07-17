@@ -22,3 +22,8 @@ export async function mapWithConcurrency<T, R>(
   await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
   return results;
 }
+
+/** Validates that a string looks like an EVM address: `0x` followed by exactly 40 hex characters. */
+export function isValidAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
