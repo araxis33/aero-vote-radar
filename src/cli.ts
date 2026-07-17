@@ -2,6 +2,7 @@
 import { rankPoolsByEfficiency } from "./efficiency.js";
 import { recommendAllocation } from "./allocator.js";
 import { fetchVeAeroPositions } from "./veAero.js";
+import { isValidAddress } from "./util.js";
 
 function fmtUsd(n: number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -94,8 +95,8 @@ async function cmdRecommend(args: string[]) {
 
 async function cmdMyVeAero(args: string[]) {
   const address = args[0];
-  if (!address) {
-    console.error("Usage: aero-vote-radar my-veaero <wallet address>");
+  if (!address || !isValidAddress(address)) {
+    console.error("Usage: aero-vote-radar my-veaero <wallet address> (must be a 0x-prefixed 40-character hex address)");
     process.exitCode = 1;
     return;
   }
