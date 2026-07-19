@@ -35,7 +35,10 @@ export function recommendAllocation(
   topK = 15,
   steps = 400,
 ): AllocationResult[] {
-  if (veAeroBudget <= 0) return [];
+  // Reject non-finite budgets (e.g. a caller passing Infinity/NaN through) rather
+  // than letting `stepSize` become Infinity/NaN and poisoning every allocation
+  // below with NaN weights and expected-USD values.
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return [];
 
   const candidates: Candidate[] = ranked.slice(0, topK).map((c) => ({
     address: c.pool.address,

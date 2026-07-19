@@ -47,7 +47,7 @@ server.registerTool(
     description:
       "Given a veAERO amount, recommends how to split votes across the current highest-efficiency Aerodrome pools using a greedy marginal-value ('water-filling') algorithm that accounts for self-dilution — voting more of your own veAERO into a pool measurably lowers your own $-per-vote there. Output is weights and expected USD only; this tool never touches a wallet, private key, or sends any transaction. The user reviews the recommendation and votes themselves on aerodrome.finance.",
     inputSchema: {
-      veAero: z.number().positive().describe("Amount of veAERO voting power to allocate"),
+      veAero: z.number().positive().finite().describe("Amount of veAERO voting power to allocate"),
       topCandidates: z.number().int().positive().max(50).optional().describe("How many top-ranked pools to consider as candidates (default 15)"),
     },
   },

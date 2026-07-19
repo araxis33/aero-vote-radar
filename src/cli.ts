@@ -67,8 +67,8 @@ async function cmdRecommend(args: string[]) {
   const veaero = Number(getFlag(args, "veaero"));
   const topK = parsePositiveIntFlag(args, "top", 15);
 
-  if (!veaero || veaero <= 0 || topK === undefined) {
-    console.error("Usage: aero-vote-radar recommend --veaero <amount> [--top K] (K must be a positive integer)");
+  if (!Number.isFinite(veaero) || veaero <= 0 || topK === undefined) {
+    console.error("Usage: aero-vote-radar recommend --veaero <amount> [--top K] (amount must be a finite positive number, K must be a positive integer)");
     process.exitCode = 1;
     return;
   }

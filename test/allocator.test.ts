@@ -84,6 +84,13 @@ test("under-voted pool with equal incentive is prioritized first for a small bud
   assert.equal(result[0].pool, "0xA");
 });
 
+test("a non-finite budget (Infinity/NaN) returns no allocation instead of NaN weights", () => {
+  const ranked = [fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 100 })];
+  assert.deepEqual(recommendAllocation(ranked, Infinity), []);
+  assert.deepEqual(recommendAllocation(ranked, NaN), []);
+  assert.deepEqual(recommendAllocation(ranked, -Infinity), []);
+});
+
 test("only the top K ranked candidates are ever considered", () => {
   // recommendAllocation trusts the caller's ranking order and just slices the
   // first topK — so the array order here *is* the rank order (best pool first).
