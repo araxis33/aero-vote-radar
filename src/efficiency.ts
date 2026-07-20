@@ -39,9 +39,21 @@ export async function rankPoolsByEfficiency(): Promise<PoolEfficiency[]> {
 
   // Bound concurrency: firing one RPC call per pool at once (there can be hundreds
   // of live-gauge pools) reliably trips the public RPC's rate limit.
+  //
+  // A single pool's epoch call can fail on its own (e.g. a transient RPC error
+  // or a non-standard pool the rewards contract can't resolve) without the rest
+  // of the pools being at fault, so we catch per-pool rather than letting one
+  // failure reject the whole batch and take down `pools`/`recommend` entirely.
+  let epochFetchFailures = 0;
   const epochsByPool = await mapWithConcurrency(pools, 8, (p) =>
-    fetchPoolEpochs(p.address, TREND_EPOCHS),
+    fetchPoolEpochs(p.address, TREND_EPOCHS).catch(() => {
+      epochFetchFailures++;
+      return [];
+    }),
   );
+  if (epochFetchFailures > 0) {
+    console.error(`(skipped ${epochFetchFailures} pool(s) whose epoch history failed to load)`);
+  }
 
   const allTokens = epochsByPool.flat().flatMap((e) => [
     ...e.bribes.map((b) => b.token),
