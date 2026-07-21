@@ -1,4 +1,4 @@
-import { DEFILLAMA_PRICE_URL } from "./constants.js";
+import { DEFILLAMA_PRICE_URL, PRICE_BATCH_SIZE } from "./constants.js";
 
 type DefiLlamaResponse = {
   coins: Record<string, { price: number; decimals: number; symbol: string }>;
@@ -16,6 +16,11 @@ const cache = new Map<string, TokenPrice>();
  * DefiLlama's free, keyless price API. Missing/unpriced tokens (obscure or very
  * new bribe tokens are common) get price 0 rather than throwing, so one unpriced
  * token doesn't blow up a whole pool's calculation — it just contributes $0.
+ *
+ * Requests are chunked into batches of `PRICE_BATCH_SIZE` tokens rather than one
+ * request for the whole (potentially hundreds-long) token list, so a single
+ * oversized/failed request only zeroes out prices for its own batch instead of
+ * every token in the run.
  */
 export async function getTokenPrices(
   tokenAddresses: string[],
@@ -23,8 +28,9 @@ export async function getTokenPrices(
   const unique = [...new Set(tokenAddresses.map((a) => a.toLowerCase()))];
   const uncached = unique.filter((a) => !cache.has(a));
 
-  if (uncached.length > 0) {
-    const keys = uncached.map((a) => `base:${a}`).join(",");
+  for (let i = 0; i < uncached.length; i += PRICE_BATCH_SIZE) {
+    const batch = uncached.slice(i, i + PRICE_BATCH_SIZE);
+    const keys = batch.map((a) => `base:${a}`).join(",");
     try {
       const res = await fetch(`${DEFILLAMA_PRICE_URL}/${keys}`);
       if (res.ok) {
@@ -37,9 +43,10 @@ export async function getTokenPrices(
     } catch {
       // Network-level failure (DNS, timeout, connection refused) — fall through to
       // the same $0 fallback used for an HTTP error response, per this function's
-      // contract: one pricing outage shouldn't blow up a whole pool's calculation.
+      // contract: one pricing outage shouldn't blow up a whole pool's calculation
+      // (and, since this is per-batch, doesn't take down other batches' pricing).
     }
-    for (const a of uncached) {
+    for (const a of batch) {
       if (!cache.has(a)) cache.set(a, { price: 0, decimals: 18 });
     }
   }

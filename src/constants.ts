@@ -24,3 +24,11 @@ export const TREND_EPOCHS = 6;
 export const MIN_TRAILING_USD = 10;
 
 export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";
+
+// Max token addresses per DefiLlama price request. A run can touch bribe/fee
+// tokens across hundreds of live-gauge pools, and one comma-joined URL covering
+// all of them at once risks tripping URL-length limits on DefiLlama's edge/CDN —
+// which would silently zero out pricing for every token in the run, not just the
+// ones that were actually the problem. Batching bounds the blast radius of a
+// single failed/oversized request to just that batch.
+export const PRICE_BATCH_SIZE = 50;
