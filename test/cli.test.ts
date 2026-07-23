@@ -22,3 +22,8 @@ test("parsePositiveIntFlag rejects zero and negative values", () => {
 test("parsePositiveIntFlag rejects non-integer values", () => {
   assert.equal(parsePositiveIntFlag(["--top", "3.5"], "top", 20), undefined);
 });
+
+test("parsePositiveIntFlag rejects a dangling flag with no value instead of silently using the fallback", () => {
+  assert.equal(parsePositiveIntFlag(["--top"], "top", 20), undefined);
+  assert.equal(parsePositiveIntFlag(["--veaero", "25000", "--top"], "top", 20), undefined);
+});

@@ -21,16 +21,25 @@ function getFlag(args: string[], name: string): string | undefined {
   return i === -1 ? undefined : args[i + 1];
 }
 
+function hasFlag(args: string[], name: string): boolean {
+  return args.includes(`--${name}`);
+}
+
 /**
  * Parses a `--name` flag as a positive integer, falling back to `fallback` if
  * the flag is absent. Returns undefined (rather than NaN or a silently-clamped
  * value) if the flag was given but isn't a positive integer, so callers can
  * print a clear usage error instead of e.g. `Array.slice` quietly treating a
  * garbled `--top abc` as 0 or a negative `--top` as "drop the last N rows".
+ *
+ * A dangling flag with no value (e.g. `--top` as the last argument) must hit
+ * this same error path rather than the fallback: `getFlag` returns undefined
+ * for both "flag absent" and "flag present but out of args", so `hasFlag` is
+ * checked separately to tell the two apart.
  */
 export function parsePositiveIntFlag(args: string[], name: string, fallback: number): number | undefined {
   const raw = getFlag(args, name);
-  if (raw === undefined) return fallback;
+  if (raw === undefined) return hasFlag(args, name) ? undefined : fallback;
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : undefined;
 }
