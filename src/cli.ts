@@ -47,11 +47,30 @@ export function parsePositiveIntFlag(args: string[], name: string, fallback: num
 async function cmdPools(args: string[]) {
   const top = parsePositiveIntFlag(args, "top", 20);
   if (top === undefined) {
-    console.error("Usage: aero-vote-radar pools [--top N] (N must be a positive integer)");
+    console.error("Usage: aero-vote-radar pools [--top N] [--json] (N must be a positive integer)");
     process.exitCode = 1;
     return;
   }
   const ranked = await rankPoolsByEfficiency();
+  const topRanked = ranked.slice(0, top);
+
+  if (hasFlag(args, "json")) {
+    console.log(
+      JSON.stringify(
+        topRanked.map((p) => ({
+          symbol: p.pool.symbol,
+          pool: p.pool.address,
+          votesVeAero: p.currentVotesVeAero,
+          currentValuePerVote: p.currentValuePerVote,
+          predictedValuePerVote: p.predictedValuePerVote,
+          predictiveEdge: p.predictiveEdge,
+        })),
+        null,
+        2,
+      ),
+    );
+    return;
+  }
 
   console.log(`\nTop ${top} Aerodrome pools by predicted $/veAERO vote (of ${ranked.length} live-gauge pools with votes):\n`);
   console.log(
@@ -59,7 +78,7 @@ async function cmdPools(args: string[]) {
       .map((h) => h.padEnd(18))
       .join(""),
   );
-  for (const p of ranked.slice(0, top)) {
+  for (const p of topRanked) {
     console.log(
       [
         p.pool.symbol.padEnd(18),
@@ -77,7 +96,7 @@ async function cmdRecommend(args: string[]) {
   const topK = parsePositiveIntFlag(args, "top", 15);
 
   if (!Number.isFinite(veaero) || veaero <= 0 || topK === undefined) {
-    console.error("Usage: aero-vote-radar recommend --veaero <amount> [--top K] (amount must be a finite positive number, K must be a positive integer)");
+    console.error("Usage: aero-vote-radar recommend --veaero <amount> [--top K] [--json] (amount must be a finite positive number, K must be a positive integer)");
     process.exitCode = 1;
     return;
   }
@@ -85,6 +104,11 @@ async function cmdRecommend(args: string[]) {
   const ranked = await rankPoolsByEfficiency();
   const allocation = recommendAllocation(ranked, veaero, topK);
   const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
+
+  if (hasFlag(args, "json")) {
+    console.log(JSON.stringify({ allocation, totalExpectedUsd }, null, 2));
+    return;
+  }
 
   console.log(`\nRecommended allocation for ${veaero.toLocaleString("en-US")} veAERO (top ${topK} candidates considered):\n`);
   console.log(["Symbol", "Weight", "veAERO", "Expected $/epoch"].map((h) => h.padEnd(18)).join(""));
@@ -137,9 +161,11 @@ async function main() {
       console.log(`aero-vote-radar — Aerodrome (Base) veAERO vote-efficiency tool
 
 Commands:
-  pools [--top N]                Rank live-gauge pools by current & predicted $/vote
-  recommend --veaero N [--top K] Recommend a self-dilution-aware allocation for N veAERO
-  my-veaero <address>            Look up an account's veAERO locks and voting power
+  pools [--top N] [--json]                Rank live-gauge pools by current & predicted $/vote
+  recommend --veaero N [--top K] [--json] Recommend a self-dilution-aware allocation for N veAERO
+  my-veaero <address>                     Look up an account's veAERO locks and voting power
+
+Pass --json to pools/recommend for machine-readable output instead of a table.
 `);
       return;
   }
