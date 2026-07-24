@@ -1,4 +1,4 @@
-import { fetchActivePools, fetchPoolEpochs, type PoolInfo } from "./pools.js";
+import { fetchActivePools, fetchPoolEpochs, type PoolInfo, type EpochData } from "./pools.js";
 import { getTokenPrices, toUsd } from "./prices.js";
 import { TREND_EPOCHS, MIN_TRAILING_USD } from "./constants.js";
 import { mapWithConcurrency } from "./util.js";
@@ -19,7 +19,7 @@ export interface PoolEfficiency {
   predictiveEdge: number;
 }
 
-function epochUsd(
+export function epochUsd(
   epoch: { bribes: { token: string; amount: bigint }[]; fees: { token: string; amount: bigint }[] },
   prices: Map<string, { price: number; decimals: number }>,
 ): number {
@@ -27,6 +27,47 @@ function epochUsd(
   for (const b of epoch.bribes) total += toUsd(b.amount, b.token, prices);
   for (const f of epoch.fees) total += toUsd(f.amount, f.token, prices);
   return total;
+}
+
+/**
+ * Turns one pool's already-fetched epoch history into its efficiency metrics, or
+ * null if the pool should be excluded (no epoch data, zero recorded votes, or a
+ * trailing average too thin to be a meaningful signal). Pure and chain-free, so
+ * it's unit-testable without mocking RPC calls — unlike `rankPoolsByEfficiency`,
+ * which fetches live.
+ */
+export function computePoolEfficiency(
+  pool: PoolInfo,
+  epochs: EpochData[],
+  prices: Map<string, { price: number; decimals: number }>,
+): PoolEfficiency | null {
+  if (!epochs || epochs.length === 0) return null;
+
+  const latest = epochs[0];
+  const currentVotesVeAero = Number(latest.votes) / 10 ** VE_DECIMALS;
+  if (currentVotesVeAero <= 0) return null;
+
+  const latestEpochUsd = epochUsd(latest, prices);
+  const usdValues = epochs.map((e) => epochUsd(e, prices));
+  const trailingAvgUsd = usdValues.reduce((a, b) => a + b, 0) / usdValues.length;
+  if (trailingAvgUsd < MIN_TRAILING_USD) return null; // too thin to be a meaningful signal
+
+  const currentValuePerVote = latestEpochUsd / currentVotesVeAero;
+  const predictedValuePerVote = trailingAvgUsd / currentVotesVeAero;
+  const predictiveEdge =
+    currentValuePerVote > 0 ? predictedValuePerVote / currentValuePerVote - 1 : 0;
+
+  return {
+    pool,
+    latestEpochTs: latest.ts,
+    currentVotesVeAero,
+    latestEpochUsd,
+    trailingAvgUsd,
+    epochsObserved: epochs.length,
+    currentValuePerVote,
+    predictedValuePerVote,
+    predictiveEdge,
+  };
 }
 
 /**
@@ -64,34 +105,8 @@ export async function rankPoolsByEfficiency(): Promise<PoolEfficiency[]> {
   const results: PoolEfficiency[] = [];
 
   pools.forEach((pool, i) => {
-    const epochs = epochsByPool[i];
-    if (!epochs || epochs.length === 0) return;
-
-    const latest = epochs[0];
-    const currentVotesVeAero = Number(latest.votes) / 10 ** VE_DECIMALS;
-    if (currentVotesVeAero <= 0) return;
-
-    const latestEpochUsd = epochUsd(latest, prices);
-    const usdValues = epochs.map((e) => epochUsd(e, prices));
-    const trailingAvgUsd = usdValues.reduce((a, b) => a + b, 0) / usdValues.length;
-    if (trailingAvgUsd < MIN_TRAILING_USD) return; // too thin to be a meaningful signal
-
-    const currentValuePerVote = latestEpochUsd / currentVotesVeAero;
-    const predictedValuePerVote = trailingAvgUsd / currentVotesVeAero;
-    const predictiveEdge =
-      currentValuePerVote > 0 ? predictedValuePerVote / currentValuePerVote - 1 : 0;
-
-    results.push({
-      pool,
-      latestEpochTs: latest.ts,
-      currentVotesVeAero,
-      latestEpochUsd,
-      trailingAvgUsd,
-      epochsObserved: epochs.length,
-      currentValuePerVote,
-      predictedValuePerVote,
-      predictiveEdge,
-    });
+    const result = computePoolEfficiency(pool, epochsByPool[i], prices);
+    if (result) results.push(result);
   });
 
   return results.sort((a, b) => b.predictedValuePerVote - a.predictedValuePerVote);
