@@ -1,4 +1,4 @@
-import { DEFILLAMA_PRICE_URL, PRICE_BATCH_SIZE } from "./constants.js";
+import { DEFILLAMA_PRICE_URL, PRICE_BATCH_SIZE, PRICE_CACHE_TTL_MS } from "./constants.js";
 
 type DefiLlamaResponse = {
   coins: Record<string, { price: number; decimals: number; symbol: string }>;
@@ -9,7 +9,15 @@ export interface TokenPrice {
   decimals: number;
 }
 
-const cache = new Map<string, TokenPrice>();
+interface CachedPrice extends TokenPrice {
+  cachedAt: number;
+}
+
+const cache = new Map<string, CachedPrice>();
+
+function isFresh(entry: CachedPrice | undefined): entry is CachedPrice {
+  return entry !== undefined && Date.now() - entry.cachedAt < PRICE_CACHE_TTL_MS;
+}
 
 /**
  * Looks up current USD price + decimals for a batch of Base token addresses via
@@ -26,7 +34,7 @@ export async function getTokenPrices(
   tokenAddresses: string[],
 ): Promise<Map<string, TokenPrice>> {
   const unique = [...new Set(tokenAddresses.map((a) => a.toLowerCase()))];
-  const uncached = unique.filter((a) => !cache.has(a));
+  const uncached = unique.filter((a) => !isFresh(cache.get(a)));
 
   for (let i = 0; i < uncached.length; i += PRICE_BATCH_SIZE) {
     const batch = uncached.slice(i, i + PRICE_BATCH_SIZE);
@@ -37,7 +45,7 @@ export async function getTokenPrices(
         const data = (await res.json()) as DefiLlamaResponse;
         for (const [key, coin] of Object.entries(data.coins)) {
           const address = key.split(":")[1]?.toLowerCase();
-          if (address) cache.set(address, { price: coin.price, decimals: coin.decimals });
+          if (address) cache.set(address, { price: coin.price, decimals: coin.decimals, cachedAt: Date.now() });
         }
       }
     } catch {
@@ -47,12 +55,15 @@ export async function getTokenPrices(
       // (and, since this is per-batch, doesn't take down other batches' pricing).
     }
     for (const a of batch) {
-      if (!cache.has(a)) cache.set(a, { price: 0, decimals: 18 });
+      if (!isFresh(cache.get(a))) cache.set(a, { price: 0, decimals: 18, cachedAt: Date.now() });
     }
   }
 
   const result = new Map<string, TokenPrice>();
-  for (const a of unique) result.set(a, cache.get(a) ?? { price: 0, decimals: 18 });
+  for (const a of unique) {
+    const entry = cache.get(a);
+    result.set(a, entry ? { price: entry.price, decimals: entry.decimals } : { price: 0, decimals: 18 });
+  }
   return result;
 }
 

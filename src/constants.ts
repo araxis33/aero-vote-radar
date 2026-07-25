@@ -32,3 +32,11 @@ export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";
 // ones that were actually the problem. Batching bounds the blast radius of a
 // single failed/oversized request to just that batch.
 export const PRICE_BATCH_SIZE = 50;
+
+// How long a looked-up (or $0-fallback) price stays valid before it's refetched.
+// The CLI is a fresh process per invocation so this never matters there, but
+// mcp-server.ts holds one process open for the life of a client connection —
+// without a TTL, prices (and any transient-failure $0 fallback) would be cached
+// forever for that process, silently going stale or permanently mispricing a
+// token that only failed to price once.
+export const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;

@@ -1,11 +1,14 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { getTokenPrices, toUsd } from "../src/prices.js";
+import { PRICE_CACHE_TTL_MS } from "../src/constants.js";
 
 const originalFetch = global.fetch;
+const originalNow = Date.now;
 
 afterEach(() => {
   global.fetch = originalFetch;
+  Date.now = originalNow;
 });
 
 test("getTokenPrices returns looked-up price/decimals on a successful response", async () => {
@@ -70,6 +73,50 @@ test("getTokenPrices splits a large token list into multiple batched requests", 
   assert.equal(calls[1].length, 50);
   assert.equal(calls[2].length, 20);
   for (const t of tokens) assert.equal(prices.get(t.toLowerCase())?.price, 1);
+});
+
+test("getTokenPrices reuses a fresh cached price instead of refetching", async () => {
+  let calls = 0;
+  global.fetch = (async () => {
+    calls++;
+    return {
+      ok: true,
+      json: async () => ({ coins: { "base:0xfresh1": { price: 7, decimals: 18, symbol: "X" } } }),
+    };
+  }) as typeof fetch;
+
+  let now = 1_000_000;
+  Date.now = () => now;
+
+  await getTokenPrices(["0xFRESH1"]);
+  now += PRICE_CACHE_TTL_MS - 1; // still within TTL
+  const second = await getTokenPrices(["0xFRESH1"]);
+
+  assert.equal(calls, 1, "second lookup within TTL should reuse the cached price, not refetch");
+  assert.deepEqual(second.get("0xfresh1"), { price: 7, decimals: 18 });
+});
+
+test("getTokenPrices refetches once a cached price has aged past the TTL", async () => {
+  let calls = 0;
+  global.fetch = (async () => {
+    calls++;
+    const price = calls === 1 ? 7 : 9;
+    return {
+      ok: true,
+      json: async () => ({ coins: { "base:0xstale1": { price, decimals: 18, symbol: "X" } } }),
+    };
+  }) as typeof fetch;
+
+  let now = 1_000_000;
+  Date.now = () => now;
+
+  const first = await getTokenPrices(["0xSTALE1"]);
+  now += PRICE_CACHE_TTL_MS + 1; // past TTL
+  const second = await getTokenPrices(["0xSTALE1"]);
+
+  assert.equal(calls, 2, "lookup past TTL should refetch rather than serve the stale cached price");
+  assert.deepEqual(first.get("0xstale1"), { price: 7, decimals: 18 });
+  assert.deepEqual(second.get("0xstale1"), { price: 9, decimals: 18 });
 });
 
 test("getTokenPrices: a failed batch only zeroes out that batch's tokens, not other batches'", async () => {
