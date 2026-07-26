@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { rankPoolsByEfficiency } from "./efficiency.js";
+import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
 import { recommendAllocation } from "./allocator.js";
 import { fetchVeAeroPositions } from "./veAero.js";
 import { isValidAddress } from "./util.js";
@@ -23,6 +23,24 @@ function getFlag(args: string[], name: string): string | undefined {
 
 function hasFlag(args: string[], name: string): boolean {
   return args.includes(`--${name}`);
+}
+
+/**
+ * Shapes a ranked pool for --json output. Kept in parity with the MCP
+ * `list_pool_efficiency` tool's response shape, including `epochsObserved` —
+ * without it, a --json consumer can't tell a prediction backed by 6 trailing
+ * epochs from one backed by a single epoch of a brand-new pool.
+ */
+export function poolEfficiencyToJson(p: PoolEfficiency) {
+  return {
+    symbol: p.pool.symbol,
+    pool: p.pool.address,
+    votesVeAero: p.currentVotesVeAero,
+    currentValuePerVote: p.currentValuePerVote,
+    predictedValuePerVote: p.predictedValuePerVote,
+    predictiveEdge: p.predictiveEdge,
+    epochsObserved: p.epochsObserved,
+  };
 }
 
 /**
@@ -55,20 +73,7 @@ async function cmdPools(args: string[]) {
   const topRanked = ranked.slice(0, top);
 
   if (hasFlag(args, "json")) {
-    console.log(
-      JSON.stringify(
-        topRanked.map((p) => ({
-          symbol: p.pool.symbol,
-          pool: p.pool.address,
-          votesVeAero: p.currentVotesVeAero,
-          currentValuePerVote: p.currentValuePerVote,
-          predictedValuePerVote: p.predictedValuePerVote,
-          predictiveEdge: p.predictiveEdge,
-        })),
-        null,
-        2,
-      ),
-    );
+    console.log(JSON.stringify(topRanked.map(poolEfficiencyToJson), null, 2));
     return;
   }
 
