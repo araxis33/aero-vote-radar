@@ -3,62 +3,6 @@
 // (velodrome-finance/sugar, contracts/{LpSugar,RewardsSugar,VeSugar}.vy) —
 // Aerodrome is a fork of Velodrome and shares this tooling/deployment pattern.
 
-const LP_TUPLE_COMPONENTS = [
-  { name: "lp", type: "address" },
-  { name: "symbol", type: "string" },
-  { name: "decimals", type: "uint8" },
-  { name: "liquidity", type: "uint256" },
-  { name: "type", type: "int24" },
-  { name: "tick", type: "int24" },
-  { name: "sqrt_ratio", type: "uint160" },
-  { name: "token0", type: "address" },
-  { name: "reserve0", type: "uint256" },
-  { name: "staked0", type: "uint256" },
-  { name: "token1", type: "address" },
-  { name: "reserve1", type: "uint256" },
-  { name: "staked1", type: "uint256" },
-  { name: "gauge", type: "address" },
-  { name: "gauge_liquidity", type: "uint256" },
-  { name: "gauge_alive", type: "bool" },
-  { name: "fee", type: "address" },
-  { name: "bribe", type: "address" },
-  { name: "factory", type: "address" },
-  { name: "emissions", type: "uint256" },
-  { name: "emissions_token", type: "address" },
-  { name: "emissions_cap", type: "uint256" },
-  { name: "pool_fee", type: "uint256" },
-  { name: "unstaked_fee", type: "uint256" },
-  { name: "token0_fees", type: "uint256" },
-  { name: "token1_fees", type: "uint256" },
-  { name: "locked", type: "uint256" },
-  { name: "emerging", type: "uint256" },
-  { name: "created_at", type: "uint32" },
-  { name: "nfpm", type: "address" },
-  { name: "alm", type: "address" },
-  { name: "root", type: "address" },
-] as const;
-
-export const LP_SUGAR_ABI = [
-  {
-    type: "function",
-    name: "all",
-    stateMutability: "view",
-    inputs: [
-      { name: "_limit", type: "uint256" },
-      { name: "_offset", type: "uint256" },
-      { name: "_filter", type: "uint256" },
-    ],
-    outputs: [{ name: "", type: "tuple[]", components: LP_TUPLE_COMPONENTS }],
-  },
-  {
-    type: "function",
-    name: "byAddress",
-    stateMutability: "view",
-    inputs: [{ name: "_address", type: "address" }],
-    outputs: [{ name: "", type: "tuple", components: LP_TUPLE_COMPONENTS }],
-  },
-] as const;
-
 // Voter is the source of truth for "which pools can receive votes at all" — its
 // `pools` array only contains pools that had a gauge created for them (~1.8k),
 // versus LpSugar's `all()` which scans literally every pool the factory has ever
