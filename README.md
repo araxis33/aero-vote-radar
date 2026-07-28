@@ -39,7 +39,7 @@ Two things worth calling out honestly, so the tool isn't oversold:
 ## Install
 
 ```bash
-git clone https://github.com/<you>/aero-vote-radar
+git clone https://github.com/araxis33/aero-vote-radar
 cd aero-vote-radar
 npm install
 npm run build

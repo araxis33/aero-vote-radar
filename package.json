@@ -4,6 +4,14 @@
   "description": "MCP server + CLI that reads live Aerodrome (Base) on-chain data to rank pools by veAERO vote efficiency and recommend a self-dilution-aware vote allocation.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/araxis33/aero-vote-radar.git"
+  },
+  "homepage": "https://github.com/araxis33/aero-vote-radar#readme",
+  "bugs": {
+    "url": "https://github.com/araxis33/aero-vote-radar/issues"
+  },
   "keywords": ["aerodrome", "base", "mcp", "veaero", "defi", "ai-agent"],
   "bin": {
     "aero-vote-radar": "./dist/cli.js",
