@@ -1,14 +1,16 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { getTokenPrices, toUsd } from "../src/prices.js";
-import { PRICE_CACHE_TTL_MS } from "../src/constants.js";
+import { DEFILLAMA_TIMEOUT_MS, PRICE_CACHE_TTL_MS } from "../src/constants.js";
 
 const originalFetch = global.fetch;
 const originalNow = Date.now;
+const originalAbortTimeout = AbortSignal.timeout;
 
 afterEach(() => {
   global.fetch = originalFetch;
   Date.now = originalNow;
+  AbortSignal.timeout = originalAbortTimeout;
 });
 
 test("getTokenPrices returns looked-up price/decimals on a successful response", async () => {
@@ -38,6 +40,34 @@ test("getTokenPrices falls back to price 0 rather than throwing when fetch itsel
 
   const prices = await getTokenPrices(["0xCCC1"]);
   assert.deepEqual(prices.get("0xccc1"), { price: 0, decimals: 18 });
+});
+
+test("getTokenPrices passes an abort signal so a stalled request can't hang the batch forever", async () => {
+  let receivedSignal: AbortSignal | undefined;
+  global.fetch = (async (_url: string, init?: RequestInit) => {
+    receivedSignal = init?.signal ?? undefined;
+    return { ok: true, json: async () => ({ coins: {} }) };
+  }) as typeof fetch;
+
+  await getTokenPrices(["0xsignalcheck"]);
+
+  assert.ok(receivedSignal instanceof AbortSignal, "fetch should receive an AbortSignal");
+});
+
+test("getTokenPrices falls back to price 0 rather than hanging when the request stalls past the timeout", async () => {
+  // Stub AbortSignal.timeout to fire immediately instead of waiting out the real
+  // DEFILLAMA_TIMEOUT_MS, so this test verifies the stall-handling wiring without
+  // actually taking that long to run.
+  AbortSignal.timeout = () => originalAbortTimeout.call(AbortSignal, 0);
+
+  global.fetch = (async (_url: string, init?: RequestInit) => {
+    return new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("The operation was aborted", "AbortError")));
+    });
+  }) as typeof fetch;
+
+  const prices = await getTokenPrices(["0xstalled1"]);
+  assert.deepEqual(prices.get("0xstalled1"), { price: 0, decimals: 18 });
 });
 
 test("toUsd converts a raw token amount using the looked-up price/decimals", () => {

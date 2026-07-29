@@ -20,6 +20,13 @@ export const MIN_TRAILING_USD = 10;
 
 export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";
 
+// Bounds how long a single DefiLlama batch request can hang before it's treated
+// as a failure. Without this, a stalled connection (no response, no error) never
+// resolves or rejects, so a hung request would block a whole ranking run forever
+// — and for mcp-server.ts, which holds one process open across many tool calls,
+// that wedges every future call too, not just the one that hit it.
+export const DEFILLAMA_TIMEOUT_MS = 8000;
+
 // Max token addresses per DefiLlama price request. A run can touch bribe/fee
 // tokens across hundreds of live-gauge pools, and one comma-joined URL covering
 // all of them at once risks tripping URL-length limits on DefiLlama's edge/CDN —

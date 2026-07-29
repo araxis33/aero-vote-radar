@@ -1,4 +1,4 @@
-import { DEFILLAMA_PRICE_URL, PRICE_BATCH_SIZE, PRICE_CACHE_TTL_MS } from "./constants.js";
+import { DEFILLAMA_PRICE_URL, DEFILLAMA_TIMEOUT_MS, PRICE_BATCH_SIZE, PRICE_CACHE_TTL_MS } from "./constants.js";
 
 type DefiLlamaResponse = {
   coins: Record<string, { price: number; decimals: number; symbol: string }>;
@@ -40,7 +40,7 @@ export async function getTokenPrices(
     const batch = uncached.slice(i, i + PRICE_BATCH_SIZE);
     const keys = batch.map((a) => `base:${a}`).join(",");
     try {
-      const res = await fetch(`${DEFILLAMA_PRICE_URL}/${keys}`);
+      const res = await fetch(`${DEFILLAMA_PRICE_URL}/${keys}`, { signal: AbortSignal.timeout(DEFILLAMA_TIMEOUT_MS) });
       if (res.ok) {
         const data = (await res.json()) as DefiLlamaResponse;
         for (const [key, coin] of Object.entries(data.coins)) {
