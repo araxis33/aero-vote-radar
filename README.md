@@ -58,9 +58,10 @@ npx tsx src/cli.ts pools --top 10
 npx tsx src/cli.ts pools --top 10 --json
 npx tsx src/cli.ts recommend --veaero 25000
 npx tsx src/cli.ts my-veaero 0xYourAddress
+npx tsx src/cli.ts my-veaero 0xYourAddress --json
 ```
 
-Pass `--json` to `pools` or `recommend` for machine-readable output instead of a table — useful for piping into other scripts or tools.
+Pass `--json` to any command for machine-readable output instead of a table — useful for piping into other scripts or tools.
 
 Real output from a live run (Base mainnet, no mocking):
 

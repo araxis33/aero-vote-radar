@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
 import { recommendAllocation } from "./allocator.js";
-import { fetchVeAeroPositions } from "./veAero.js";
+import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { isValidAddress } from "./util.js";
 
 function fmtUsd(n: number): string {
@@ -41,6 +41,15 @@ export function poolEfficiencyToJson(p: PoolEfficiency) {
     predictiveEdge: p.predictiveEdge,
     epochsObserved: p.epochsObserved,
   };
+}
+
+/**
+ * Shapes an account's veAERO positions for --json output, matching the MCP
+ * `get_my_veaero` tool's response shape (`{ address, totalVeAero, locks }`).
+ */
+export function veAeroPositionsToJson(address: string, positions: VeNftSummary[]) {
+  const totalVeAero = positions.reduce((a, b) => a + b.votingPowerVeAero, 0);
+  return { address, totalVeAero, locks: positions };
 }
 
 /**
@@ -132,13 +141,21 @@ async function cmdRecommend(args: string[]) {
 }
 
 async function cmdMyVeAero(args: string[]) {
-  const address = args[0];
+  // Find the first non-flag argument rather than assuming args[0], so
+  // `--json` can be passed either before or after the address.
+  const address = args.find((a) => !a.startsWith("--"));
   if (!address || !isValidAddress(address)) {
-    console.error("Usage: aero-vote-radar my-veaero <wallet address> (must be a 0x-prefixed 40-character hex address)");
+    console.error("Usage: aero-vote-radar my-veaero <wallet address> [--json] (must be a 0x-prefixed 40-character hex address)");
     process.exitCode = 1;
     return;
   }
   const positions = await fetchVeAeroPositions(address);
+
+  if (hasFlag(args, "json")) {
+    console.log(JSON.stringify(veAeroPositionsToJson(address, positions), null, 2));
+    return;
+  }
+
   if (positions.length === 0) {
     console.log(`No veAERO locks found for ${address}.`);
     return;
@@ -168,9 +185,9 @@ async function main() {
 Commands:
   pools [--top N] [--json]                Rank live-gauge pools by current & predicted $/vote
   recommend --veaero N [--top K] [--json] Recommend a self-dilution-aware allocation for N veAERO
-  my-veaero <address>                     Look up an account's veAERO locks and voting power
+  my-veaero <address> [--json]            Look up an account's veAERO locks and voting power
 
-Pass --json to pools/recommend for machine-readable output instead of a table.
+Pass --json to any command for machine-readable output instead of a table.
 `);
       return;
   }

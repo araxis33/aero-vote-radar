@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parsePositiveIntFlag, poolEfficiencyToJson } from "../src/cli.js";
+import { parsePositiveIntFlag, poolEfficiencyToJson, veAeroPositionsToJson } from "../src/cli.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
+import type { VeNftSummary } from "../src/veAero.js";
 
 test("parsePositiveIntFlag returns the fallback when the flag is absent", () => {
   assert.equal(parsePositiveIntFlag([], "top", 20), 20);
@@ -50,5 +51,26 @@ test("poolEfficiencyToJson includes epochsObserved, matching the MCP list_pool_e
     predictedValuePerVote: 0.4,
     predictiveEdge: -0.2,
     epochsObserved: 3,
+  });
+});
+
+test("veAeroPositionsToJson sums voting power across locks and matches the MCP get_my_veaero shape", () => {
+  const positions: VeNftSummary[] = [
+    { id: "6", votingPowerVeAero: 11_362_738.622, expiresAt: 0 },
+    { id: "17324", votingPowerVeAero: 107_871.726, expiresAt: 1_893_456_000 },
+  ];
+
+  assert.deepEqual(veAeroPositionsToJson("0xAccount", positions), {
+    address: "0xAccount",
+    totalVeAero: 11_362_738.622 + 107_871.726,
+    locks: positions,
+  });
+});
+
+test("veAeroPositionsToJson returns a zero total and empty locks for an account with no veAERO", () => {
+  assert.deepEqual(veAeroPositionsToJson("0xEmpty", []), {
+    address: "0xEmpty",
+    totalVeAero: 0,
+    locks: [],
   });
 });
