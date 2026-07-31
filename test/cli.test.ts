@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parsePositiveIntFlag, poolEfficiencyToJson, veAeroPositionsToJson } from "../src/cli.js";
+import { formatCliError, parsePositiveIntFlag, poolEfficiencyToJson, veAeroPositionsToJson } from "../src/cli.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 import type { VeNftSummary } from "../src/veAero.js";
 
@@ -73,4 +73,20 @@ test("veAeroPositionsToJson returns a zero total and empty locks for an account 
     totalVeAero: 0,
     locks: [],
   });
+});
+
+test("formatCliError prefers a viem-style shortMessage over the full multi-paragraph message", () => {
+  const err = new Error(
+    "HTTP request failed.\n\nDocs: https://viem.sh/docs/x\nDetails: over rate limit\n\nVersion: viem@2.55.2",
+  );
+  (err as Error & { shortMessage: string }).shortMessage = "HTTP request failed.";
+  assert.equal(formatCliError(err), "HTTP request failed.");
+});
+
+test("formatCliError falls back to the plain message for a regular Error with no shortMessage", () => {
+  assert.equal(formatCliError(new Error("boom")), "boom");
+});
+
+test("formatCliError stringifies a non-Error thrown value", () => {
+  assert.equal(formatCliError("plain string throw"), "plain string throw");
 });
