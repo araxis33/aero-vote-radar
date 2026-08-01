@@ -1,7 +1,3 @@
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /** Runs `fn` over `items` with at most `concurrency` in flight at once, preserving input order in the result. */
 export async function mapWithConcurrency<T, R>(
   items: T[],
