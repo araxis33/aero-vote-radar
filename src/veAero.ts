@@ -12,6 +12,25 @@ export interface VeNftSummary {
   expiresAt: number;
 }
 
+interface VeNftRaw {
+  id: bigint;
+  voting_amount: bigint;
+  expires_at: bigint;
+}
+
+/**
+ * Turns one raw VeSugar NFT struct into its summary shape. Pure, so it's
+ * unit-testable without mocking RPC calls — unlike `fetchVeAeroPositions`,
+ * which fetches live.
+ */
+export function toVeNftSummary(nft: VeNftRaw): VeNftSummary {
+  return {
+    id: nft.id.toString(),
+    votingPowerVeAero: Number(nft.voting_amount) / 10 ** VE_DECIMALS,
+    expiresAt: Number(nft.expires_at),
+  };
+}
+
 /** Looks up all veAERO NFTs (locks) owned by an account and their current voting power. */
 export async function fetchVeAeroPositions(account: string): Promise<VeNftSummary[]> {
   const nfts = await client.readContract({
@@ -21,9 +40,5 @@ export async function fetchVeAeroPositions(account: string): Promise<VeNftSummar
     args: [account as `0x${string}`],
   });
 
-  return nfts.map((nft) => ({
-    id: nft.id.toString(),
-    votingPowerVeAero: Number(nft.voting_amount) / 10 ** VE_DECIMALS,
-    expiresAt: Number(nft.expires_at),
-  }));
+  return nfts.map(toVeNftSummary);
 }
