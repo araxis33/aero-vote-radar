@@ -2,7 +2,7 @@
 import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
 import { recommendAllocation } from "./allocator.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
-import { isValidAddress } from "./util.js";
+import { formatError, isValidAddress } from "./util.js";
 
 function fmtUsd(n: number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -170,21 +170,6 @@ async function cmdMyVeAero(args: string[]) {
   console.log(`\nTotal voting power: ${total.toLocaleString("en-US")} veAERO\n`);
 }
 
-/**
- * Reduces a thrown value to a single-line message for top-level CLI error
- * output. viem errors (the common case here — a failed RPC call) carry a
- * concise `.shortMessage` but their `.message` is a multi-paragraph dump of
- * docs links, metaMessages, and version info; printing that (or the raw
- * Error, stack trace and all) buries the actual problem in noise.
- */
-export function formatCliError(err: unknown): string {
-  if (err instanceof Error) {
-    const shortMessage = (err as { shortMessage?: unknown }).shortMessage;
-    return typeof shortMessage === "string" ? shortMessage : err.message;
-  }
-  return String(err);
-}
-
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
@@ -209,6 +194,6 @@ Pass --json to any command for machine-readable output instead of a table.
 }
 
 main().catch((err) => {
-  console.error(`Error: ${formatCliError(err)}`);
+  console.error(`Error: ${formatError(err)}`);
   process.exitCode = 1;
 });

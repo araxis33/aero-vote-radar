@@ -5,7 +5,27 @@ import { z } from "zod";
 import { rankPoolsByEfficiency } from "./efficiency.js";
 import { recommendAllocation } from "./allocator.js";
 import { fetchVeAeroPositions } from "./veAero.js";
-import { isValidAddress } from "./util.js";
+import { formatError, isValidAddress } from "./util.js";
+
+/**
+ * Wraps a tool handler so a thrown error (almost always a failed RPC or
+ * price-lookup call, since this server holds one process open across many
+ * calls) comes back as a clean one-line `formatError` message instead of the
+ * MCP SDK's own catch-all, which surfaces viem's raw `.message` — a
+ * multi-paragraph dump of docs links and version info that buries the actual
+ * problem for whatever agent is consuming this tool.
+ */
+function withErrorHandling<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<{ content: { type: "text"; text: string }[] }>,
+) {
+  return async (...args: Args) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: formatError(err) }], isError: true };
+    }
+  };
+}
 
 const server = new McpServer({
   name: "aero-vote-radar",
@@ -22,7 +42,7 @@ server.registerTool(
       top: z.number().int().positive().max(100).optional().describe("How many top pools to return (default 20)"),
     },
   },
-  async ({ top = 20 }) => {
+  withErrorHandling(async ({ top = 20 }) => {
     const ranked = await rankPoolsByEfficiency();
     const rows = ranked.slice(0, top).map((p) => ({
       pool: p.pool.address,
@@ -37,7 +57,7 @@ server.registerTool(
     return {
       content: [{ type: "text", text: JSON.stringify({ poolsConsidered: ranked.length, top: rows }, null, 2) }],
     };
-  },
+  }),
 );
 
 server.registerTool(
@@ -51,7 +71,7 @@ server.registerTool(
       topCandidates: z.number().int().positive().max(50).optional().describe("How many top-ranked pools to consider as candidates (default 15)"),
     },
   },
-  async ({ veAero, topCandidates = 15 }) => {
+  withErrorHandling(async ({ veAero, topCandidates = 15 }) => {
     const ranked = await rankPoolsByEfficiency();
     const allocation = recommendAllocation(ranked, veAero, topCandidates);
     const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
@@ -73,7 +93,7 @@ server.registerTool(
         },
       ],
     };
-  },
+  }),
 );
 
 server.registerTool(
@@ -88,14 +108,14 @@ server.registerTool(
         .describe("Base wallet address (0x...)"),
     },
   },
-  async ({ address }) => {
+  withErrorHandling(async ({ address }) => {
     const positions = await fetchVeAeroPositions(address);
     const totalVeAero = positions.reduce((a, b) => a + b.votingPowerVeAero, 0);
 
     return {
       content: [{ type: "text", text: JSON.stringify({ address, totalVeAero, locks: positions }, null, 2) }],
     };
-  },
+  }),
 );
 
 async function main() {

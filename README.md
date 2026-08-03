@@ -131,13 +131,15 @@ src/
   efficiency.ts    current & trend-predicted $/vote ranking
   allocator.ts     greedy marginal ("water-filling") allocation algorithm
   veAero.ts        VeSugar wrapper for a user's voting power
+  util.ts          address/concurrency helpers + shared error-message formatting
   mcp-server.ts    MCP stdio server entrypoint
   cli.ts           CLI entrypoint
 test/
   allocator.test.ts   unit tests for the greedy marginal-allocation algorithm
   efficiency.test.ts  unit tests for per-pool efficiency math (trailing average, $/vote, predictive edge)
   prices.test.ts      unit tests for DefiLlama price lookup, batching, and USD conversion
-  util.test.ts        unit tests for isValidAddress and mapWithConcurrency
+  veAero.test.ts      unit tests for the veAERO NFT summary mapping (toVeNftSummary)
+  util.test.ts        unit tests for isValidAddress, mapWithConcurrency, and formatError
   cli.test.ts         unit tests for CLI flag parsing
 ```
 
@@ -147,7 +149,7 @@ test/
 npm test
 ```
 
-Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. The pure per-pool efficiency math (`computePoolEfficiency`/`epochUsd` in `efficiency.ts`) is covered the same way — trailing-average computation, the `MIN_TRAILING_USD` cutoff, the zero-votes exclusion, and the `predictiveEdge` divide-by-zero guard — plus DefiLlama pricing/batching (`prices.ts`), the veAERO NFT summary mapping (`toVeNftSummary` in `veAero.ts`, including permanent-lock and large-id precision handling), CLI flag parsing (`cli.ts`), and the address/concurrency helpers (`util.ts`), all with synthetic inputs and no network access. The remaining on-chain data-fetching code (`fetchActivePools`/`fetchPoolEpochs` in `pools.ts`, `fetchVeAeroPositions` in `veAero.ts`) is exercised live against Base mainnet via the CLI instead — see the real example output above.
+Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. The pure per-pool efficiency math (`computePoolEfficiency`/`epochUsd` in `efficiency.ts`) is covered the same way — trailing-average computation, the `MIN_TRAILING_USD` cutoff, the zero-votes exclusion, and the `predictiveEdge` divide-by-zero guard — plus DefiLlama pricing/batching (`prices.ts`), the veAERO NFT summary mapping (`toVeNftSummary` in `veAero.ts`, including permanent-lock and large-id precision handling), CLI flag parsing (`cli.ts`), and the address/concurrency/error-formatting helpers (`util.ts`), all with synthetic inputs and no network access. `formatError` (in `util.ts`) reduces a thrown error to a single clean line — preferring viem's concise `.shortMessage` over its multi-paragraph `.message` — and is shared by both the CLI's top-level error output and every MCP tool handler's error result, so a failed RPC call surfaces the same readable message however the tool is invoked. The remaining on-chain data-fetching code (`fetchActivePools`/`fetchPoolEpochs` in `pools.ts`, `fetchVeAeroPositions` in `veAero.ts`) is exercised live against Base mainnet via the CLI instead — see the real example output above.
 
 CI (`.github/workflows/ci.yml`) runs the typecheck, build, and test suite on every push.
 

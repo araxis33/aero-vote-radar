@@ -23,3 +23,19 @@ export async function mapWithConcurrency<T, R>(
 export function isValidAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
+
+/**
+ * Reduces a thrown value to a single-line message, for both CLI error output
+ * and MCP tool error results. viem errors (the common case here — a failed
+ * RPC call) carry a concise `.shortMessage` but their `.message` is a
+ * multi-paragraph dump of docs links, metaMessages, and version info;
+ * surfacing that (or the raw Error, stack trace and all) buries the actual
+ * problem in noise.
+ */
+export function formatError(err: unknown): string {
+  if (err instanceof Error) {
+    const shortMessage = (err as { shortMessage?: unknown }).shortMessage;
+    return typeof shortMessage === "string" ? shortMessage : err.message;
+  }
+  return String(err);
+}

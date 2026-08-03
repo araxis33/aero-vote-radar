@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isValidAddress, mapWithConcurrency } from "../src/util.js";
+import { formatError, isValidAddress, mapWithConcurrency } from "../src/util.js";
 
 test("isValidAddress accepts a well-formed 0x-prefixed 40-hex-character address", () => {
   assert.equal(isValidAddress("0x1234567890abcdef1234567890ABCDEF12345678"), true);
@@ -73,4 +73,20 @@ test("mapWithConcurrency works when concurrency exceeds the number of items", as
   const items = [1, 2, 3];
   const result = await mapWithConcurrency(items, 100, async (n) => n + 1);
   assert.deepEqual(result, [2, 3, 4]);
+});
+
+test("formatError prefers a viem-style shortMessage over the full multi-paragraph message", () => {
+  const err = new Error(
+    "HTTP request failed.\n\nDocs: https://viem.sh/docs/x\nDetails: over rate limit\n\nVersion: viem@2.55.2",
+  );
+  (err as Error & { shortMessage: string }).shortMessage = "HTTP request failed.";
+  assert.equal(formatError(err), "HTTP request failed.");
+});
+
+test("formatError falls back to the plain message for a regular Error with no shortMessage", () => {
+  assert.equal(formatError(new Error("boom")), "boom");
+});
+
+test("formatError stringifies a non-Error thrown value", () => {
+  assert.equal(formatError("plain string throw"), "plain string throw");
 });
