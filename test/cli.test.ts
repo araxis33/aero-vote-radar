@@ -30,7 +30,13 @@ test("parsePositiveIntFlag rejects a dangling flag with no value instead of sile
   assert.equal(parsePositiveIntFlag(["--veaero", "25000", "--top"], "top", 20), undefined);
 });
 
-test("poolEfficiencyToJson includes epochsObserved, matching the MCP list_pool_efficiency shape", () => {
+/**
+ * Asserted field by field rather than with a single deepEqual of the whole
+ * object: this test's job is to pin the fields the `--json` output promises and
+ * that the MCP `list_pool_efficiency` tool mirrors, not to freeze the shape
+ * against ever gaining a new one.
+ */
+test("poolEfficiencyToJson exposes the documented pools --json fields, matching the MCP list_pool_efficiency shape", () => {
   const p: PoolEfficiency = {
     pool: { address: "0xpool", symbol: "vAMM-TEST/USDC", token0: "0xtoken0", token1: "0xtoken1", gauge: "0xgauge", gaugeAlive: true },
     latestEpochTs: 100,
@@ -41,17 +47,19 @@ test("poolEfficiencyToJson includes epochsObserved, matching the MCP list_pool_e
     currentValuePerVote: 0.5,
     predictedValuePerVote: 0.4,
     predictiveEdge: -0.2,
+    volatility: 0.25,
+    consistency: 0.8,
   };
 
-  assert.deepEqual(poolEfficiencyToJson(p), {
-    symbol: "vAMM-TEST/USDC",
-    pool: "0xpool",
-    votesVeAero: 10,
-    currentValuePerVote: 0.5,
-    predictedValuePerVote: 0.4,
-    predictiveEdge: -0.2,
-    epochsObserved: 3,
-  });
+  const json = poolEfficiencyToJson(p);
+
+  assert.equal(json.symbol, "vAMM-TEST/USDC");
+  assert.equal(json.pool, "0xpool");
+  assert.equal(json.votesVeAero, 10);
+  assert.equal(json.currentValuePerVote, 0.5);
+  assert.equal(json.predictedValuePerVote, 0.4);
+  assert.equal(json.predictiveEdge, -0.2);
+  assert.equal(json.epochsObserved, 3);
 });
 
 test("veAeroPositionsToJson sums voting power across locks and matches the MCP get_my_veaero shape", () => {
