@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computePoolEfficiency, epochUsd } from "../src/efficiency.js";
+import { computeConsistency, computePoolEfficiency, epochUsd } from "../src/efficiency.js";
 import type { PoolInfo, EpochData } from "../src/pools.js";
 import { MIN_TRAILING_USD } from "../src/constants.js";
 
@@ -67,6 +67,55 @@ test("computePoolEfficiency computes currentVotesVeAero, latest/trailing USD, an
   assert.equal(result.currentValuePerVote, 2); // 200 / 100
   assert.equal(result.predictedValuePerVote, 1.5); // 150 / 100
   assert.ok(Math.abs(result.predictiveEdge - -0.25) < 1e-9); // 1.5 / 2 - 1
+});
+
+test("computeConsistency scores a perfectly steady pool as 1 and zero volatility", () => {
+  const { volatility, consistency } = computeConsistency([100, 100, 100, 100]);
+  assert.equal(volatility, 0);
+  assert.equal(consistency, 1);
+});
+
+test("computeConsistency scores a one-off spike far below a steady pool with the same average", () => {
+  const steady = computeConsistency([100, 100, 100, 100, 100, 100]);
+  const spike = computeConsistency([600, 0, 0, 0, 0, 0]);
+
+  // Both average $100/epoch — the trailing average alone cannot tell them apart.
+  assert.ok(spike.consistency < steady.consistency);
+  // cv of [600,0,0,0,0,0] is sqrt(5)≈2.236, so consistency = 1/(1+2.236) ≈ 0.309
+  assert.ok(Math.abs(spike.volatility - Math.sqrt(5)) < 1e-9);
+  assert.ok(Math.abs(spike.consistency - 1 / (1 + Math.sqrt(5))) < 1e-9);
+});
+
+test("computeConsistency treats a single observed epoch as unproven (0), not perfectly steady", () => {
+  assert.deepEqual(computeConsistency([100]), { volatility: 0, consistency: 0 });
+  assert.deepEqual(computeConsistency([]), { volatility: 0, consistency: 0 });
+});
+
+test("computeConsistency returns 0 rather than NaN when every epoch is worth $0", () => {
+  const { volatility, consistency } = computeConsistency([0, 0, 0]);
+  assert.equal(volatility, 0);
+  assert.equal(consistency, 0);
+});
+
+test("computeConsistency is scale-free — same shape at $50/epoch and $50,000/epoch scores identically", () => {
+  const small = computeConsistency([50, 100, 150]);
+  const large = computeConsistency([50_000, 100_000, 150_000]);
+  assert.ok(Math.abs(small.volatility - large.volatility) < 1e-9);
+  assert.ok(Math.abs(small.consistency - large.consistency) < 1e-9);
+});
+
+test("computePoolEfficiency surfaces volatility/consistency for the epochs it observed", () => {
+  const votes = 100n * 10n ** 18n;
+  const epochs = [
+    epoch({ ts: 200, votes, fees: [{ token: "0xfee", amount: 200_000_000n }] }), // $200
+    epoch({ ts: 100, votes, fees: [{ token: "0xfee", amount: 100_000_000n }] }), // $100
+  ];
+  const result = computePoolEfficiency(pool, epochs, prices);
+
+  assert.ok(result);
+  // mean 150, population std dev 50 → cv = 1/3
+  assert.ok(Math.abs(result.volatility - 1 / 3) < 1e-9);
+  assert.ok(Math.abs(result.consistency - 1 / (1 + 1 / 3)) < 1e-9);
 });
 
 test("computePoolEfficiency: predictiveEdge falls back to 0 (not Infinity/NaN) when the latest epoch is worth $0 but the trailing average isn't", () => {
