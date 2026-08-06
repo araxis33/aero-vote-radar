@@ -13,6 +13,14 @@ export const VE_SUGAR_ADDRESS = "0x4d6A741cEE6A8cC5632B2d948C050303F6246D24" as 
 // How many trailing weekly epochs to pull per pool for the trend estimate.
 export const TREND_EPOCHS = 6;
 
+// How many past epochs the `backtest` command replays by default. Each tested
+// epoch needs its own full TREND_EPOCHS window of *older* history to form the
+// estimate it would have had at the time, so the on-chain fetch depth is
+// BACKTEST_EPOCHS + TREND_EPOCHS. RewardsSugar keeps plenty of history, but
+// every extra epoch is more data per pool across hundreds of pools, so this
+// stays modest by default and is overridable with `--epochs`.
+export const BACKTEST_EPOCHS = 6;
+
 // Pools whose trailing-average epoch value is below this are excluded from
 // rankings — at that size, one small one-off bribe swings the "predictive edge"
 // percentage wildly without representing a meaningful voting opportunity.

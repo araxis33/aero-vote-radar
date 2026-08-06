@@ -1,0 +1,218 @@
+import { allocateAcrossCandidates, type AllocationCandidate } from "./allocator.js";
+import { epochUsd } from "./efficiency.js";
+import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
+import { getTokenPrices } from "./prices.js";
+import { BACKTEST_EPOCHS, MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
+import { mapWithConcurrency } from "./util.js";
+
+const VE_DECIMALS = 18;
+
+/** One pool's epoch history, most recent first, with `usd` and `votes` index-aligned. */
+export interface PoolHistory {
+  address: string;
+  symbol: string;
+  usd: number[];
+  votes: number[];
+}
+
+export interface BacktestEpochResult {
+  /** 0 = the most recently completed epoch, 1 = the one before it, and so on. */
+  epochsAgo: number;
+  candidatesConsidered: number;
+  /** What this tool's allocation would actually have earned that epoch. */
+  radarUsd: number;
+  /** What "put everything in the highest current $/vote pool" would have earned. */
+  naiveUsd: number;
+  naiveSymbol: string | null;
+}
+
+export interface BacktestReport {
+  veAeroBudget: number;
+  epochsTested: number;
+  radarTotalUsd: number;
+  naiveTotalUsd: number;
+  /** radarTotalUsd / naiveTotalUsd - 1, or null when the baseline earned nothing to compare against. */
+  upliftPct: number | null;
+  epochsWonByRadar: number;
+  epochs: BacktestEpochResult[];
+}
+
+export interface BacktestOptions {
+  testEpochs?: number;
+  trendEpochs?: number;
+  topK?: number;
+  minTrailingUsd?: number;
+}
+
+/**
+ * Your realised share of a pool's epoch value if you add `x` votes to the `v`
+ * votes everyone else cast: value * x / (v + x) — the same dilution model the
+ * allocator optimises against, now scored against what the epoch actually paid.
+ *
+ * `v === 0` (nobody else voted) collapses to x/x = 1, i.e. you'd have taken the
+ * whole pot. That is what the maths says and what would really have happened,
+ * so it is left as-is rather than special-cased away.
+ */
+function realisedUsd(epochValueUsd: number, othersVotes: number, myVotes: number): number {
+  if (myVotes <= 0) return 0;
+  return (epochValueUsd * myVotes) / (othersVotes + myVotes);
+}
+
+/**
+ * Replays past epochs to answer the question the README can otherwise only
+ * assert: does ranking by trailing-average trend and allocating with
+ * self-dilution actually beat the naive "vote wherever $/vote looks highest
+ * right now" strategy it argues against?
+ *
+ * For each tested epoch it rebuilds the view of the world as it stood *before*
+ * that epoch resolved — trailing average over the preceding `trendEpochs`, and
+ * the vote totals as last seen — picks an allocation from that alone, and only
+ * then scores it against what the epoch actually paid out. Nothing from the
+ * tested epoch feeds the decision, which is what keeps this a backtest rather
+ * than a flattering hindsight fit.
+ *
+ * Honest limits, because a backtest is easy to oversell:
+ *   - It assumes your votes wouldn't have changed anyone else's behaviour. At a
+ *     large enough budget relative to a pool's votes that is optimistic.
+ *   - It only sees pools that still have a live gauge today, so pools that were
+ *     attractive and have since been killed are invisible (survivorship bias).
+ *   - A handful of weekly epochs is a small sample; treat a single-digit uplift
+ *     as noise rather than proof.
+ */
+export function runBacktest(
+  histories: PoolHistory[],
+  veAeroBudget: number,
+  opts: BacktestOptions = {},
+): BacktestReport {
+  const {
+    testEpochs = BACKTEST_EPOCHS,
+    trendEpochs = TREND_EPOCHS,
+    topK = 15,
+    minTrailingUsd = MIN_TRAILING_USD,
+  } = opts;
+
+  const empty: BacktestReport = {
+    veAeroBudget,
+    epochsTested: 0,
+    radarTotalUsd: 0,
+    naiveTotalUsd: 0,
+    upliftPct: null,
+    epochsWonByRadar: 0,
+    epochs: [],
+  };
+
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return empty;
+
+  const epochs: BacktestEpochResult[] = [];
+
+  for (let t = 0; t < testEpochs; t++) {
+    const candidates: AllocationCandidate[] = [];
+    // Outcome data, kept per candidate so scoring can't accidentally reach for
+    // a different pool's epoch than the one it allocated to.
+    const outcomes = new Map<string, { usd: number; votes: number }>();
+    let naiveBest: { symbol: string; address: string; valuePerVote: number } | null = null;
+
+    for (const h of histories) {
+      // Needs the tested epoch itself plus a full trailing window strictly older
+      // than it; anything shorter would silently shrink the estimate's basis.
+      if (h.usd.length <= t + trendEpochs || h.votes.length <= t + trendEpochs) continue;
+
+      const window = h.usd.slice(t + 1, t + 1 + trendEpochs);
+      const trailingAvgUsd = window.reduce((a, b) => a + b, 0) / window.length;
+      if (trailingAvgUsd < minTrailingUsd) continue;
+
+      const knownVotes = h.votes[t + 1];
+      if (knownVotes <= 0) continue;
+
+      candidates.push({
+        address: h.address,
+        symbol: h.symbol,
+        existingVotes: knownVotes,
+        expectedUsd: trailingAvgUsd,
+      });
+      outcomes.set(h.address, { usd: h.usd[t], votes: h.votes[t] });
+
+      // The naive strategy looks only at the most recent *known* epoch's $/vote.
+      const latestValuePerVote = h.usd[t + 1] / knownVotes;
+      if (!naiveBest || latestValuePerVote > naiveBest.valuePerVote) {
+        naiveBest = { symbol: h.symbol, address: h.address, valuePerVote: latestValuePerVote };
+      }
+    }
+
+    if (candidates.length === 0) continue;
+
+    const ranked = [...candidates].sort(
+      (a, b) => b.expectedUsd / b.existingVotes - a.expectedUsd / a.existingVotes,
+    );
+    const allocation = allocateAcrossCandidates(ranked.slice(0, topK), veAeroBudget);
+
+    let radarUsd = 0;
+    for (const a of allocation) {
+      const outcome = outcomes.get(a.pool);
+      if (outcome) radarUsd += realisedUsd(outcome.usd, outcome.votes, a.veAeroAllocated);
+    }
+
+    let naiveUsd = 0;
+    if (naiveBest) {
+      const outcome = outcomes.get(naiveBest.address);
+      if (outcome) naiveUsd = realisedUsd(outcome.usd, outcome.votes, veAeroBudget);
+    }
+
+    epochs.push({
+      epochsAgo: t,
+      candidatesConsidered: candidates.length,
+      radarUsd,
+      naiveUsd,
+      naiveSymbol: naiveBest?.symbol ?? null,
+    });
+  }
+
+  const radarTotalUsd = epochs.reduce((a, e) => a + e.radarUsd, 0);
+  const naiveTotalUsd = epochs.reduce((a, e) => a + e.naiveUsd, 0);
+
+  return {
+    veAeroBudget,
+    epochsTested: epochs.length,
+    radarTotalUsd,
+    naiveTotalUsd,
+    upliftPct: naiveTotalUsd > 0 ? radarTotalUsd / naiveTotalUsd - 1 : null,
+    epochsWonByRadar: epochs.filter((e) => e.radarUsd > e.naiveUsd).length,
+    epochs,
+  };
+}
+
+/** Fetches enough live epoch history off Base to replay `testEpochs` past epochs, then runs the backtest. */
+export async function backtestLive(
+  veAeroBudget: number,
+  testEpochs = BACKTEST_EPOCHS,
+  trendEpochs = TREND_EPOCHS,
+): Promise<BacktestReport> {
+  const pools = await fetchActivePools();
+  const depth = testEpochs + trendEpochs + 1;
+
+  let epochFetchFailures = 0;
+  const epochsByPool = await mapWithConcurrency(pools, 8, (p) =>
+    fetchPoolEpochs(p.address, depth).catch(() => {
+      epochFetchFailures++;
+      return [];
+    }),
+  );
+  if (epochFetchFailures > 0) {
+    console.error(`(skipped ${epochFetchFailures} pool(s) whose epoch history failed to load)`);
+  }
+
+  const allTokens = epochsByPool.flat().flatMap((e) => [
+    ...e.bribes.map((b) => b.token),
+    ...e.fees.map((f) => f.token),
+  ]);
+  const prices = await getTokenPrices(allTokens);
+
+  const histories: PoolHistory[] = pools.map((pool, i) => ({
+    address: pool.address,
+    symbol: pool.symbol,
+    usd: epochsByPool[i].map((e) => epochUsd(e, prices)),
+    votes: epochsByPool[i].map((e) => Number(e.votes) / 10 ** VE_DECIMALS),
+  }));
+
+  return runBacktest(histories, veAeroBudget, { testEpochs, trendEpochs });
+}
