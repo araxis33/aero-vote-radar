@@ -38,6 +38,8 @@ Two things worth calling out honestly, so the tool isn't oversold:
 
 ## Install
 
+Requires Node.js 18.18 or newer (the test suite's `node --import tsx` invocation depends on the `--import` flag, added in 18.18).
+
 ```bash
 git clone https://github.com/araxis33/aero-vote-radar
 cd aero-vote-radar
