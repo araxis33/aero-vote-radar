@@ -17,6 +17,40 @@ export interface PoolEfficiency {
   predictedValuePerVote: number;
   /** predictedValuePerVote / currentValuePerVote - 1. Positive = incentives trending above what current votes are capturing. */
   predictiveEdge: number;
+  /** Coefficient of variation of the observed epochs' USD values. 0 = identical every epoch; 1 = std dev as large as the mean. */
+  volatility: number;
+  /** 1 / (1 + volatility), so 1 = perfectly steady and lower = spikier. See `computeConsistency`. */
+  consistency: number;
+}
+
+/**
+ * Scores how *steady* a pool's incentives have been, not just how large they
+ * average out to. The trailing average alone can't tell these apart:
+ *
+ *   pool A: $100 $100 $100 $100 $100 $100  → avg $100, dependable
+ *   pool B: $600   $0   $0   $0   $0   $0  → avg $100, a single one-off bribe
+ *
+ * Both rank identically on `predictedValuePerVote`, but voting into B is a bet
+ * that a one-week event repeats, which is a materially different proposition.
+ * We report the coefficient of variation (population std dev ÷ mean, so it's
+ * scale-free and comparable across a $50/epoch pool and a $50,000/epoch one)
+ * and map it to a friendlier 0..1 `consistency` via 1/(1+cv).
+ *
+ * A single observed epoch returns consistency 0 rather than 1: one data point
+ * cannot demonstrate steadiness, and claiming perfect consistency from it would
+ * flatter brand-new pools exactly where the tool should be most cautious.
+ * `epochsObserved` is what distinguishes "unproven" from "genuinely erratic",
+ * and a non-zero `--min-consistency` filter therefore excludes both.
+ */
+export function computeConsistency(values: number[]): { volatility: number; consistency: number } {
+  if (values.length < 2) return { volatility: 0, consistency: 0 };
+
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  if (mean <= 0) return { volatility: 0, consistency: 0 };
+
+  const variance = values.reduce((a, v) => a + (v - mean) ** 2, 0) / values.length;
+  const volatility = Math.sqrt(variance) / mean;
+  return { volatility, consistency: 1 / (1 + volatility) };
 }
 
 export function epochUsd(
@@ -56,6 +90,7 @@ export function computePoolEfficiency(
   const predictedValuePerVote = trailingAvgUsd / currentVotesVeAero;
   const predictiveEdge =
     currentValuePerVote > 0 ? predictedValuePerVote / currentValuePerVote - 1 : 0;
+  const { volatility, consistency } = computeConsistency(usdValues);
 
   return {
     pool,
@@ -67,6 +102,8 @@ export function computePoolEfficiency(
     currentValuePerVote,
     predictedValuePerVote,
     predictiveEdge,
+    volatility,
+    consistency,
   };
 }
 
