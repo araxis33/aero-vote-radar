@@ -9,6 +9,8 @@ No API keys, no backend, no database. Every number comes from Aerodrome's own of
 
 **This tool never touches a wallet or private key.** It outputs a recommendation — weights and expected USD — and you vote it yourself on [aerodrome.finance](https://aerodrome.finance).
 
+**No install needed:** there's a hosted version at **[aero.deftools.xyz](https://aero.deftools.xyz)** — enter your veAERO amount and it gives you vote-ready percentages. See [Web app](#web-app) for how it stays current.
+
 ## Why
 
 Aerodrome pools receive weekly bribes + trading fees, split pro-rata among everyone who voted for that pool with their veAERO. Two things make "just vote for the highest-APR pool" a bad strategy:
@@ -39,6 +41,28 @@ Two things worth calling out honestly, so the tool isn't oversold:
 - **`consistency` is a description of the past, not a promise about the future.** It's `1 / (1 + coefficient of variation)` over the observed epochs: 1.00 means the pool paid the same every epoch, lower means spikier. A pool with only one observed epoch scores 0 rather than 1 — a single data point can't demonstrate steadiness, and scoring it as perfect would flatter brand-new pools exactly where the tool should be most cautious. Use `epochsObserved` to tell "unproven" apart from "genuinely erratic".
 - **The backtest is a small sample with survivorship bias.** It only sees pools whose gauge is still alive today, and it assumes your votes wouldn't have changed anyone else's behaviour. Treat a handful of epochs as a sanity check, not a track record.
 - **`Voter.pools()` currently lists ~1,830 pools that have ever had a gauge; ~110–220 pass a minimum trailing-value floor** (pools below ~$10/epoch trailing value are excluded — at that size a single small one-off bribe swings the "edge" percentage wildly without being a meaningful signal). A few hundred Voter-registered entries fail basic ERC20 calls (non-standard/likely cross-chain relay entries) and are skipped with a warning rather than failing the whole run.
+
+## Web app
+
+[aero.deftools.xyz](https://aero.deftools.xyz) is the same ranking and the same allocator, without installing anything.
+
+It exists because the two halves of this tool have very different costs. The **scan** is heavy — one epoch-history call per live-gauge pool, several hundred of them — which a visitor's browser cannot do against a public RPC without being rate-limited into uselessness. The **allocation** is just arithmetic over an already-scanned list, and is instant.
+
+So they're split:
+
+- A scheduled job (`.github/workflows/snapshot.yml`, every 6 hours) runs `npm run snapshot`, which performs the full live scan and writes [`docs/data/snapshot.json`](docs/data/snapshot.json). If the file changed, the job commits it. A scan that returns zero pools throws instead of publishing, so a rate-limited run can't blank out yesterday's perfectly good data.
+- [`docs/index.html`](docs/index.html) fetches that JSON and runs `allocateAcrossCandidates` + `toWholePercentWeights` — ported verbatim from `src/allocator.ts` — in the browser, per keystroke.
+
+Nothing is sent anywhere: the page is a static file plus a JSON file, with no backend and no analytics. Because the personalised half runs client-side, changing your veAERO amount doesn't trigger a re-scan, and the snapshot can be shared by every visitor.
+
+The site is served by GitHub Pages from the `docs/` folder on `main`. To regenerate the snapshot by hand:
+
+```bash
+npm run snapshot                      # writes docs/data/snapshot.json
+npm run snapshot -- some/other.json   # or somewhere else
+```
+
+**Verified parity:** for 25,000 veAERO with no consistency filter, the page and `npm run cli -- recommend --veaero 25000 --vote-ready` produce the same weights (76/20/2/1/1) and the same expected total, to the cent.
 
 ## Install
 
@@ -175,8 +199,14 @@ src/
   backtest.ts      replays past epochs to score this strategy against naive APR-chasing
   veAero.ts        VeSugar wrapper for a user's voting power
   util.ts          address/concurrency helpers + shared error-message formatting
+  snapshot.ts      builds the JSON snapshot the web app reads
   mcp-server.ts    MCP stdio server entrypoint
   cli.ts           CLI entrypoint
+  snapshot-cli.ts  entrypoint for the scheduled snapshot job
+docs/              the web app, served by GitHub Pages
+  index.html       static page: reads the snapshot, runs the allocator client-side
+  data/
+    snapshot.json  latest scan, refreshed every 6 hours by CI
 test/
   allocator.test.ts   unit tests for the greedy marginal-allocation algorithm and percentage rounding
   backtest.test.ts    unit tests for the backtester, including that it never peeks at the epoch under test
@@ -185,6 +215,7 @@ test/
   veAero.test.ts      unit tests for the veAERO NFT summary mapping (toVeNftSummary)
   util.test.ts        unit tests for isValidAddress, mapWithConcurrency, and formatError
   cli.test.ts         unit tests for CLI flag parsing
+  snapshot.test.ts    unit tests for the published snapshot shape
 ```
 
 ## Testing
