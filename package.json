@@ -25,6 +25,7 @@
     "build": "tsc",
     "cli": "tsx src/cli.ts",
     "mcp": "tsx src/mcp-server.ts",
+    "snapshot": "tsx src/snapshot-cli.ts",
     "test": "node --import tsx --test test/**/*.test.ts"
   },
   "dependencies": {
