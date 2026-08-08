@@ -8,7 +8,11 @@ export const BASE_RPC_URL = process.env.BASE_RPC_URL ?? "https://base-rpc.public
 
 export const VOTER_ADDRESS = "0x16613524e02ad97eDfeF371bC883F2F5d6C480A5" as const;
 export const REWARDS_SUGAR_ADDRESS = "0x1b121EfDaF4ABb8785a315C51D29BCE0552A7678" as const;
-export const VE_SUGAR_ADDRESS = "0x4d6A741cEE6A8cC5632B2d948C050303F6246D24" as const;
+// VotingEscrow (the veAERO NFT contract). Obtained by calling `Voter.ve()` on
+// the address above rather than copied from docs, and re-verified 2026-08-08.
+// Replaces VeSugar, whose `byAccount` reverts on a public RPC for accounts with
+// many locks — see the comment on VOTING_ESCROW_ABI in abi.ts.
+export const VOTING_ESCROW_ADDRESS = "0xeBf418Fe2512e7E6bd9b87a8F0f294aCDC67e6B4" as const;
 
 // How many trailing weekly epochs to pull per pool for the trend estimate.
 export const TREND_EPOCHS = 6;

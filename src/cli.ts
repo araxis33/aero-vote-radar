@@ -291,8 +291,14 @@ async function cmdMyVeAero(args: string[]) {
   }
   console.log(`\nveAERO locks for ${address}:\n`);
   for (const p of positions) {
-    // expiresAt is 0 for permanently-locked veNFTs (no expiry), not literally Jan 1 1970.
-    const expires = p.expiresAt === 0 ? "never (permanent lock)" : new Date(p.expiresAt * 1000).toISOString().slice(0, 10);
+    // expiresAt is 0 both for a permanent lock and for a lock with nothing left
+    // in it, so read isPermanent rather than treating 0 as Jan 1 1970 or as
+    // proof of permanence.
+    const expires = p.isPermanent
+      ? "never (permanent lock)"
+      : p.expiresAt === 0
+        ? "no active lock"
+        : new Date(p.expiresAt * 1000).toISOString().slice(0, 10);
     console.log(`  NFT #${p.id}: ${p.votingPowerVeAero.toLocaleString("en-US")} veAERO voting power, expires ${expires}`);
   }
   const total = positions.reduce((a, b) => a + b.votingPowerVeAero, 0);

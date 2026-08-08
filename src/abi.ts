@@ -77,30 +77,56 @@ export const REWARDS_SUGAR_ABI = [
   },
 ] as const;
 
-const LP_VOTES_COMPONENTS = [
-  { name: "lp", type: "address" },
-  { name: "weight", type: "uint256" },
-] as const;
-
-const VE_NFT_COMPONENTS = [
-  { name: "id", type: "uint256" },
-  { name: "account", type: "address" },
-  { name: "decimals", type: "uint8" },
-  { name: "amount", type: "uint128" },
-  { name: "voting_amount", type: "uint256" },
-  { name: "governance_amount", type: "uint256" },
-  { name: "rebase_amount", type: "uint256" },
-  { name: "expires_at", type: "uint256" },
-  { name: "voted_at", type: "uint256" },
-  { name: "votes", type: "tuple[]", components: LP_VOTES_COMPONENTS },
-] as const;
-
-export const VE_SUGAR_ABI = [
+/**
+ * VotingEscrow, the veAERO NFT contract itself.
+ *
+ * This replaces VeSugar's `byAccount`, which returned every lock an account
+ * owns in one call but **reverts on a public RPC once an account holds enough
+ * locks** — each lock in that struct carries its full vote list, so the
+ * response outgrows what the node will return. Confirmed against
+ * 0xbde0c70bdc242577c52dfad53389f82fd149ea5a (22 locks): `byAccount` reverts,
+ * these four functions answer fine.
+ *
+ * Each one returns a single value, so the response size no longer depends on
+ * how much an account has voted. `locked` reports a permanent lock as
+ * `isPermanent = true` with `end = 0`; a fully withdrawn lock also has
+ * `end = 0` but `isPermanent = false`, which is why the flag is read rather
+ * than inferred from the timestamp.
+ */
+export const VOTING_ESCROW_ABI = [
   {
     type: "function",
-    name: "byAccount",
+    name: "balanceOf",
     stateMutability: "view",
-    inputs: [{ name: "_account", type: "address" }],
-    outputs: [{ name: "", type: "tuple[]", components: VE_NFT_COMPONENTS }],
+    inputs: [{ name: "_owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "ownerToNFTokenIdList",
+    stateMutability: "view",
+    inputs: [
+      { name: "_owner", type: "address" },
+      { name: "_index", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "balanceOfNFT",
+    stateMutability: "view",
+    inputs: [{ name: "_tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "locked",
+    stateMutability: "view",
+    inputs: [{ name: "_tokenId", type: "uint256" }],
+    outputs: [
+      { name: "amount", type: "int128" },
+      { name: "end", type: "uint256" },
+      { name: "isPermanent", type: "bool" },
+    ],
   },
 ] as const;
