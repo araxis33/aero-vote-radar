@@ -174,7 +174,7 @@ server.registerTool(
   "get_my_veaero",
   {
     title: "Get an account's veAERO voting power",
-    description: "Looks up all veAERO locks (NFTs) owned by a Base wallet address and their current voting power, via Aerodrome's VeSugar contract.",
+    description: "Looks up all veAERO locks (NFTs) owned by a Base wallet address and their current voting power, read from Aerodrome's VotingEscrow contract.",
     inputSchema: {
       address: z
         .string()

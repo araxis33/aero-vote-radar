@@ -1,6 +1,7 @@
 import { client } from "./chain.js";
 import { VOTING_ESCROW_ABI } from "./abi.js";
 import { VOTING_ESCROW_ADDRESS } from "./constants.js";
+import { normalizeAddress } from "./util.js";
 
 const VE_DECIMALS = 18;
 
@@ -59,9 +60,12 @@ export function toVeNftRaw(id: bigint, votingPower: bigint, locked: LockedBalanc
  *
  * Two multicalls total, regardless of lock count: one to read the id list, one
  * to read voting power and lock terms for every id.
+ *
+ * The address is checksummed first, so a lowercase address from a CLI argument
+ * gets a result rather than a raw "Address ... is invalid" error.
  */
 export async function fetchVeAeroPositions(account: string): Promise<VeNftSummary[]> {
-  const owner = account as `0x${string}`;
+  const owner = normalizeAddress(account);
 
   const lockCount = await client.readContract({
     address: VOTING_ESCROW_ADDRESS,
