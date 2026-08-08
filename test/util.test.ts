@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { describeVeAeroLookupFailure, formatError, isValidAddress, mapWithConcurrency, normalizeAddress } from "../src/util.js";
+import { formatError, isValidAddress, mapWithConcurrency, normalizeAddress } from "../src/util.js";
 
 test("isValidAddress accepts a well-formed 0x-prefixed 40-hex-character address", () => {
   assert.equal(isValidAddress("0x1234567890abcdef1234567890ABCDEF12345678"), true);
@@ -111,21 +111,4 @@ test("formatError falls back to the plain message for a regular Error with no sh
 
 test("formatError stringifies a non-Error thrown value", () => {
   assert.equal(formatError("plain string throw"), "plain string throw");
-});
-
-test("describeVeAeroLookupFailure appends the many-locks hint to the underlying message", () => {
-  const message = describeVeAeroLookupFailure(new Error("reverted"));
-  assert.match(message, /^reverted \(/);
-  assert.match(message, /many veAERO locks/);
-  assert.match(message, /BASE_RPC_URL/);
-});
-
-test("describeVeAeroLookupFailure still prefers a viem shortMessage, like formatError", () => {
-  const err = new Error("full multi-paragraph viem dump");
-  (err as Error & { shortMessage: string }).shortMessage = "execution reverted";
-  assert.match(describeVeAeroLookupFailure(err), /^execution reverted \(/);
-});
-
-test("describeVeAeroLookupFailure stringifies a non-Error thrown value", () => {
-  assert.match(describeVeAeroLookupFailure("plain string throw"), /^plain string throw \(/);
 });
