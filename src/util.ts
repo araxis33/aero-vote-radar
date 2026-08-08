@@ -56,3 +56,16 @@ export function formatError(err: unknown): string {
   }
   return String(err);
 }
+
+/**
+ * Wraps a failure from `VeSugar.byAccount` with a hint about its one known
+ * failure mode: that call returns one large struct per veAERO lock — including
+ * every vote that lock has cast — and reliably reverts outright on a public RPC
+ * once an account holds enough locks (a 22-lock wallet already reverts; see the
+ * web app's `docs/index.html`, which works around it with plain VotingEscrow
+ * calls instead). Without this, a wallet that hits this fails with a bare
+ * "reverted" message that gives no indication of why or what to do about it.
+ */
+export function describeVeAeroLookupFailure(err: unknown): string {
+  return `${formatError(err)} (this can happen for wallets holding many veAERO locks, where VeSugar.byAccount reverts on a public RPC — try setting BASE_RPC_URL to a private RPC with a higher gas allowance, or look the address up at the web app instead)`;
+}

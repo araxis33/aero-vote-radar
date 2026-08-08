@@ -1,7 +1,7 @@
 import { client } from "./chain.js";
 import { VE_SUGAR_ABI } from "./abi.js";
 import { VE_SUGAR_ADDRESS } from "./constants.js";
-import { normalizeAddress } from "./util.js";
+import { describeVeAeroLookupFailure, normalizeAddress } from "./util.js";
 
 const VE_DECIMALS = 18;
 
@@ -40,12 +40,18 @@ export function toVeNftSummary(nft: VeNftRaw): VeNftSummary {
  * a raw "Address ... is invalid" error instead of returning a result.
  */
 export async function fetchVeAeroPositions(account: string): Promise<VeNftSummary[]> {
-  const nfts = await client.readContract({
-    address: VE_SUGAR_ADDRESS,
-    abi: VE_SUGAR_ABI,
-    functionName: "byAccount",
-    args: [normalizeAddress(account)],
-  });
+  try {
+    const nfts = await client.readContract({
+      address: VE_SUGAR_ADDRESS,
+      abi: VE_SUGAR_ABI,
+      functionName: "byAccount",
+      args: [normalizeAddress(account)],
+    });
 
-  return nfts.map(toVeNftSummary);
+    return nfts.map(toVeNftSummary);
+  } catch (err) {
+    // Re-thrown as a plain Error (not a viem error subclass) so formatError's
+    // shortMessage branch doesn't discard this hint in favor of viem's own.
+    throw new Error(describeVeAeroLookupFailure(err));
+  }
 }
