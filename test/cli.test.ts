@@ -81,8 +81,8 @@ test("poolEfficiencyToJson includes epochsObserved and the consistency fields, m
 
 test("veAeroPositionsToJson sums voting power across locks and matches the MCP get_my_veaero shape", () => {
   const positions: VeNftSummary[] = [
-    { id: "6", votingPowerVeAero: 11_362_738.622, expiresAt: 0 },
-    { id: "17324", votingPowerVeAero: 107_871.726, expiresAt: 1_893_456_000 },
+    { id: "6", votingPowerVeAero: 11_362_738.622, expiresAt: 0, isPermanent: true },
+    { id: "17324", votingPowerVeAero: 107_871.726, expiresAt: 1_893_456_000, isPermanent: false },
   ];
 
   assert.deepEqual(veAeroPositionsToJson("0xAccount", positions), {

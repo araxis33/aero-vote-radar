@@ -20,14 +20,14 @@ test("getTokenPrices returns looked-up price/decimals on a successful response",
       json: async () => ({
         coins: { "base:0xaaa": { price: 2.5, decimals: 6, symbol: "AAA" } },
       }),
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
 
   const prices = await getTokenPrices(["0xAAA"]);
   assert.deepEqual(prices.get("0xaaa"), { price: 2.5, decimals: 6 });
 });
 
 test("getTokenPrices falls back to price 0 on a non-ok HTTP response", async () => {
-  global.fetch = (async () => ({ ok: false })) as typeof fetch;
+  global.fetch = (async () => ({ ok: false })) as unknown as typeof fetch;
 
   const prices = await getTokenPrices(["0xBBB1"]);
   assert.deepEqual(prices.get("0xbbb1"), { price: 0, decimals: 18 });
@@ -113,7 +113,7 @@ test("getTokenPrices reuses a fresh cached price instead of refetching", async (
       ok: true,
       json: async () => ({ coins: { "base:0xfresh1": { price: 7, decimals: 18, symbol: "X" } } }),
     };
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
 
   let now = 1_000_000;
   Date.now = () => now;
@@ -135,7 +135,7 @@ test("getTokenPrices refetches once a cached price has aged past the TTL", async
       ok: true,
       json: async () => ({ coins: { "base:0xstale1": { price, decimals: 18, symbol: "X" } } }),
     };
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
 
   let now = 1_000_000;
   Date.now = () => now;
