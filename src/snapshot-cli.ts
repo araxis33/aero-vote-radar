@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { writeSnapshot } from "./snapshot.js";
+import { formatError } from "./util.js";
 
 /**
  * Entrypoint for the scheduled snapshot job. Kept separate from snapshot.js so
@@ -13,6 +14,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+  console.error(`Error: ${formatError(err)}`);
   process.exitCode = 1;
 });
