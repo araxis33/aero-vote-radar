@@ -327,10 +327,11 @@ function toWholePercentWeights(allocation) {
 // --- reading veAERO voting power -------------------------------------------
 // Three read-only calls against the VotingEscrow contract, whose address was
 // read off Voter.ve() rather than copied from a blog post. Deliberately NOT
-// VeSugar.byAccount, which the CLI uses: that returns one large struct per lock
-// (including every vote it has cast) and reverts outright on a public RPC for
-// wallets holding many locks — a 22-lock wallet already fails. These three
-// methods return plain integers, so they decode with parseInt and never revert.
+// VeSugar.byAccount, which returns one large struct per lock (including every
+// vote it has cast) and reverts outright on a public RPC for wallets holding
+// many locks — a 22-lock wallet already fails. These three methods return
+// plain integers, so they decode with parseInt and never revert. The CLI
+// (src/veAero.ts) reads the same way, for the same reason.
 
 const VE_ADDRESS = "0xebf418fe2512e7e6bd9b87a8f0f294acdc67e6b4";
 const SEL_BALANCE_OF = "0x70a08231";       // balanceOf(address)

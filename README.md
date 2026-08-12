@@ -29,7 +29,7 @@ Aerodrome pools receive weekly bribes + trading fees, split pro-rata among every
 | Which pools can receive votes, which gauges are alive | `Voter` | `0x16613524e02ad97eDfeF371bC883F2F5d6C480A5` |
 | Pool token/symbol metadata | the pool contracts themselves (ERC20-like) | (per-pool) |
 | Weekly epoch history — votes, bribes, fees | `RewardsSugar` | `0x1b121EfDaF4ABb8785a315C51D29BCE0552A7678` |
-| Your veAERO locks & voting power | `VeSugar` | `0x4d6A741cEE6A8cC5632B2d948C050303F6246D24` |
+| Your veAERO locks & voting power | `VotingEscrow` | `0xeBf418Fe2512e7E6bd9b87a8F0f294aCDC67e6B4` |
 | USD pricing for bribe/fee tokens | [DefiLlama](https://defillama.com) `coins.llama.fi` (free, keyless) | — |
 
 All addresses are pulled from Aerodrome/Velodrome's own [official Sugar deployment file](https://github.com/velodrome-finance/sugar/blob/master/deployments/base.env) and cross-checked against verified contract names on Basescan.
@@ -61,7 +61,7 @@ The page also:
 - **Copies the weights** as `93%  sAMM-WETH/msETH` lines, so they can go straight into Aerodrome's UI instead of being retyped from the screen.
 - **Labels each pool `vAMM` or `sAMM`** — volatile (`x·y=k`, for tokens whose prices move independently) versus stable (a flatter curve for pairs meant to hold the same value). Each row links to the pool contract on Basescan.
 
-**Why the wallet lookup does not use `VeSugar.byAccount` like the CLI's `--address` does:** that method returns one large struct per lock, including every vote each lock has cast, and on a public RPC it **reverts** for wallets holding many locks — `0xbde0…ea5a`, with 22 locks, fails outright. The page instead makes three plain calls against the `VotingEscrow` contract (`balanceOf` → `ownerToNFTokenIdList` → `balanceOfNFT`), all of which return single integers. Verified equal to the VeSugar path where VeSugar works (`0xde86…ee31`: both report `81.50845401781879`), and working on the 22-lock wallet where it doesn't. The contract address is read from `Voter.ve()` rather than copied from documentation. Note that voting power decays continuously toward a lock's expiry, so two reads seconds apart legitimately differ.
+**Why this reads `VotingEscrow` directly instead of `VeSugar.byAccount`:** that method returns one large struct per lock, including every vote each lock has cast, and on a public RPC it **reverts** for wallets holding many locks — `0xbde0…ea5a`, with 22 locks, fails outright. Both the web page and the CLI's `--address`/`my-veaero` instead make three plain calls against the `VotingEscrow` contract (`balanceOf` → `ownerToNFTokenIdList` → `balanceOfNFT`), all of which return single integers. Verified equal to the VeSugar path where VeSugar works (`0xde86…ee31`: both report `81.50845401781879`), and working on the 22-lock wallet where it doesn't. The contract address is read from `Voter.ve()` rather than copied from documentation. Note that voting power decays continuously toward a lock's expiry, so two reads seconds apart legitimately differ.
 
 The site is served by GitHub Pages from the `docs/` folder on `main`. To regenerate the snapshot by hand:
 
@@ -205,7 +205,7 @@ src/
   efficiency.ts    current & trend-predicted $/vote ranking + consistency scoring
   allocator.ts     greedy marginal ("water-filling") allocation + whole-percent vote weights
   backtest.ts      replays past epochs to score this strategy against naive APR-chasing
-  veAero.ts        VeSugar wrapper for a user's voting power
+  veAero.ts        VotingEscrow wrapper for a user's voting power
   util.ts          address/concurrency helpers + shared error-message formatting
   snapshot.ts      builds the JSON snapshot the web app reads
   mcp-server.ts    MCP stdio server entrypoint
