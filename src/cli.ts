@@ -195,6 +195,19 @@ async function cmdRecommend(args: string[]) {
     return;
   }
 
+  if (allocation.length === 0) {
+    // Without this, --vote-ready would print "whole percentages, summing to
+    // exactly 100" followed by zero rows and $0 — actively misleading rather
+    // than just empty. Mirrors the "not enough epoch history" guard in
+    // cmdBacktest for the same underlying situation: nothing qualified.
+    const reason =
+      minConsistency > 0
+        ? `No live-gauge pool passes --min-consistency ${minConsistency} right now — try a lower value.`
+        : "No live-gauge pool with a big enough trailing average is available to allocate to right now.";
+    console.log(`\n${reason}\n`);
+    return;
+  }
+
   if (hasFlag(args, "vote-ready")) {
     console.log(`\nVote-ready weights for ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO — whole percentages, summing to exactly 100:\n`);
     for (const v of votePercents) {
