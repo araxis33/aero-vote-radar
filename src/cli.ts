@@ -158,7 +158,11 @@ async function resolveBudget(args: string[]): Promise<number | null> {
       console.error(`No veAERO voting power found for ${address} — nothing to allocate.`);
       return null;
     }
-    console.log(`\nUsing ${total.toLocaleString("en-US", { maximumFractionDigits: 3 })} veAERO of live voting power from ${address} (${positions.length} lock(s)).`);
+    // stderr, not stdout: this status line runs before cmdRecommend/cmdBacktest
+    // get a chance to check --json, so putting it on stdout would prepend
+    // human-readable text to what's supposed to be a clean JSON payload for
+    // `recommend --address ... --json` / `backtest --address ... --json`.
+    console.error(`\nUsing ${total.toLocaleString("en-US", { maximumFractionDigits: 3 })} veAERO of live voting power from ${address} (${positions.length} lock(s)).`);
     return total;
   }
 
