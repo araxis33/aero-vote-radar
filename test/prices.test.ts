@@ -149,6 +149,38 @@ test("getTokenPrices refetches once a cached price has aged past the TTL", async
   assert.deepEqual(second.get("0xstale1"), { price: 9, decimals: 18 });
 });
 
+test("getTokenPrices fetches batches concurrently rather than one after another", async () => {
+  let inFlight = 0;
+  let maxInFlight = 0;
+  let calls = 0;
+  global.fetch = (async (url: string) => {
+    calls++;
+    inFlight++;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    const keys = url.toString().split("/prices/current/")[1].split(",");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    inFlight--;
+    return {
+      ok: true,
+      json: async () => ({
+        coins: Object.fromEntries(keys.map((k) => [k, { price: 1, decimals: 18, symbol: "X" }])),
+      }),
+    };
+  }) as typeof fetch;
+
+  // 8 batches (400 tokens / 50 per batch) run with bounded concurrency, so more
+  // than one is ever in flight at once and the whole lookup finishes in roughly
+  // one batch's latency instead of eight sequential ones.
+  const tokens = Array.from({ length: 400 }, (_, i) => `0xconc${i.toString().padStart(4, "0")}`);
+  const start = Date.now();
+  await getTokenPrices(tokens);
+  const elapsed = Date.now() - start;
+
+  assert.equal(calls, 8);
+  assert.ok(maxInFlight > 1, `expected overlapping batch requests, max in flight was ${maxInFlight}`);
+  assert.ok(elapsed < 8 * 10, `expected batches to overlap, took ${elapsed}ms for 8 x 10ms batches`);
+});
+
 test("getTokenPrices: a failed batch only zeroes out that batch's tokens, not other batches'", async () => {
   global.fetch = (async (url: string) => {
     const keys = url.toString().split("/prices/current/")[1].split(",");

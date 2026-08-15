@@ -47,6 +47,12 @@ export const DEFILLAMA_TIMEOUT_MS = 8000;
 // single failed/oversized request to just that batch.
 export const PRICE_BATCH_SIZE = 50;
 
+// How many DefiLlama batch requests run at once. Bounded rather than unbounded
+// (a run can produce several batches) so a burst of simultaneous requests
+// doesn't look like abuse to DefiLlama's edge/CDN — matches the concurrency
+// cap already used for Base RPC calls in pools.ts/efficiency.ts/backtest.ts.
+export const PRICE_BATCH_CONCURRENCY = 4;
+
 // How long a looked-up (or $0-fallback) price stays valid before it's refetched.
 // The CLI is a fresh process per invocation so this never matters there, but
 // mcp-server.ts holds one process open for the life of a client connection —

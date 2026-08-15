@@ -1,4 +1,5 @@
-import { DEFILLAMA_PRICE_URL, DEFILLAMA_TIMEOUT_MS, PRICE_BATCH_SIZE, PRICE_CACHE_TTL_MS } from "./constants.js";
+import { DEFILLAMA_PRICE_URL, DEFILLAMA_TIMEOUT_MS, PRICE_BATCH_SIZE, PRICE_BATCH_CONCURRENCY, PRICE_CACHE_TTL_MS } from "./constants.js";
+import { mapWithConcurrency } from "./util.js";
 
 type DefiLlamaResponse = {
   coins: Record<string, { price: number; decimals: number; symbol: string }>;
@@ -28,7 +29,11 @@ function isFresh(entry: CachedPrice | undefined): entry is CachedPrice {
  * Requests are chunked into batches of `PRICE_BATCH_SIZE` tokens rather than one
  * request for the whole (potentially hundreds-long) token list, so a single
  * oversized/failed request only zeroes out prices for its own batch instead of
- * every token in the run.
+ * every token in the run. Batches are fetched with bounded concurrency rather
+ * than one after another — a run touching a few hundred tokens can produce
+ * several batches, and awaiting them sequentially means a slow or timed-out
+ * batch (up to `DEFILLAMA_TIMEOUT_MS` each) adds its full delay to every batch
+ * behind it instead of overlapping.
  */
 export async function getTokenPrices(
   tokenAddresses: string[],
@@ -36,8 +41,12 @@ export async function getTokenPrices(
   const unique = [...new Set(tokenAddresses.map((a) => a.toLowerCase()))];
   const uncached = unique.filter((a) => !isFresh(cache.get(a)));
 
+  const batches: string[][] = [];
   for (let i = 0; i < uncached.length; i += PRICE_BATCH_SIZE) {
-    const batch = uncached.slice(i, i + PRICE_BATCH_SIZE);
+    batches.push(uncached.slice(i, i + PRICE_BATCH_SIZE));
+  }
+
+  await mapWithConcurrency(batches, PRICE_BATCH_CONCURRENCY, async (batch) => {
     const keys = batch.map((a) => `base:${a}`).join(",");
     try {
       const res = await fetch(`${DEFILLAMA_PRICE_URL}/${keys}`, { signal: AbortSignal.timeout(DEFILLAMA_TIMEOUT_MS) });
@@ -57,7 +66,7 @@ export async function getTokenPrices(
     for (const a of batch) {
       if (!isFresh(cache.get(a))) cache.set(a, { price: 0, decimals: 18, cachedAt: Date.now() });
     }
-  }
+  });
 
   const result = new Map<string, TokenPrice>();
   for (const a of unique) {
