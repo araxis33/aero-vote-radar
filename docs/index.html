@@ -346,6 +346,14 @@ const RPCS = [
   "https://base.llamarpc.com",
 ];
 
+// A public RPC can also just hang with no response and no error — a stalled
+// connection that a plain try/catch never sees. Without a timeout that would
+// leave the "Look up" button spinning forever instead of moving on to the
+// next endpoint in RPCS, even though the retry loop below exists precisely to
+// route around a bad endpoint. Mirrors DEFILLAMA_TIMEOUT_MS's use of
+// AbortSignal.timeout in src/prices.ts for the same reason.
+const RPC_TIMEOUT_MS = 8000;
+
 const word = (hex) => hex.replace(/^0x/, "").toLowerCase().padStart(64, "0");
 const hexOf = (n) => word(BigInt(n).toString(16));
 
@@ -360,6 +368,7 @@ async function ethCall(data) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: VE_ADDRESS, data }, "latest"] }),
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json();
