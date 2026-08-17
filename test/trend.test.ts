@@ -71,3 +71,25 @@ test("a zero-paying older half reports null instead of infinite growth", () => {
   assert.equal(momentum, null);
   assert.equal(completedEpochs, 4); // history was long enough; the baseline was not usable
 });
+
+test("a baseline of loose change reports null rather than a headline percentage", () => {
+  // Taken from real snapshot data: $0.02/epoch rising to $5.75 computes to
+  // +29,286%, which would outrank every genuine mover on the board.
+  assert.equal(computeTrend([5.75, 5.75, 0.02, 0.02], false).momentum, null);
+});
+
+test("a real move over a real baseline is still reported", () => {
+  // Also from live data: $53.88/epoch to $416.53 is the move the floor must not eat.
+  const { momentum } = computeTrend([416.53, 416.53, 53.88, 53.88], false);
+  assert.ok(momentum !== null && momentum > 6 && momentum < 8);
+});
+
+test("only the older half is floored, so a collapse to near-nothing still reports", () => {
+  // $200/epoch decaying to $3: the recent half is tiny, which is the finding.
+  const { momentum } = computeTrend([3, 3, 200, 200], false);
+  assert.ok(momentum !== null && momentum < -0.95);
+});
+
+test("the baseline floor is overridable for callers with a different threshold", () => {
+  assert.equal(computeTrend([5.75, 5.75, 0.02, 0.02], false, 0.01).momentum, 286.5);
+});

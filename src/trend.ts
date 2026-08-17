@@ -1,3 +1,5 @@
+import { MIN_TRAILING_USD } from "./constants.js";
+
 /**
  * Weekly epoch length in seconds. Aerodrome's voting epochs are exactly one
  * week long and flip at Thursday 00:00 UTC, which falls out of the arithmetic
@@ -61,16 +63,28 @@ const average = (values: number[]): number => values.reduce((a, b) => a + b, 0) 
  * `epochUsd` is most-recent-first, matching the contract's own ordering.
  *
  * Null momentum means "no comparable baseline", and there are two ways to get
- * there: too little completed history, or an older half that paid nothing at
- * all. The second case is deliberately not reported as infinite growth — a pool
- * that went from $0 to $500 once is a brand-new incentive programme, not an
- * established uptrend, and putting it at the top of a "ramping up" list would
- * promote exactly the unproven pools the rest of this tool is careful about.
+ * there: too little completed history, or an older half too small to divide by.
+ *
+ * That second guard is not a rounding detail, it is what makes the figure worth
+ * showing. A ratio explodes when its denominator is tiny: measured against real
+ * Aerodrome data, an unguarded version put a pool that went from $0.02 to $5.75
+ * an epoch at the top of the "ramping up" list at +29,286%, ahead of one that
+ * genuinely went from $54 to $417. Neither the cents nor the percentage means
+ * anything — it is the same reasoning behind `MIN_TRAILING_USD`, applied to the
+ * baseline instead of the average, so the same floor is reused as the default.
+ *
+ * Only the older half is floored, not the recent one: a pool collapsing from
+ * $200 an epoch to $12 has a small recent half and that is precisely the move
+ * worth reporting.
  *
  * An odd number of completed epochs drops the middle one rather than assigning
  * it to a side, so both halves always carry equal weight.
  */
-export function computeTrend(epochUsd: number[], currentEpochPartial: boolean): Trend {
+export function computeTrend(
+  epochUsd: number[],
+  currentEpochPartial: boolean,
+  minBaselineUsd: number = MIN_TRAILING_USD,
+): Trend {
   const completed = currentEpochPartial ? epochUsd.slice(1) : epochUsd.slice();
   if (completed.length < MOMENTUM_MIN_EPOCHS) {
     return { momentum: null, completedEpochs: completed.length };
@@ -79,7 +93,9 @@ export function computeTrend(epochUsd: number[], currentEpochPartial: boolean): 
   const half = Math.floor(completed.length / 2);
   const recentAvg = average(completed.slice(0, half));
   const olderAvg = average(completed.slice(completed.length - half));
-  if (olderAvg <= 0) return { momentum: null, completedEpochs: completed.length };
+  if (olderAvg < minBaselineUsd || olderAvg <= 0) {
+    return { momentum: null, completedEpochs: completed.length };
+  }
 
   return { momentum: recentAvg / olderAvg - 1, completedEpochs: completed.length };
 }
