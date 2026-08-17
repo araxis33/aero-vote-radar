@@ -113,6 +113,44 @@
   .ext { color: var(--dim); font-size: 12px; }
   .ext:hover { color: var(--accent); }
 
+  /* sparkline + momentum --------------------------------------------------- */
+  /* Sized in px rather than em: every sparkline must share one baseline width so
+     the column reads as a single chart, and bar height is meaningless unless the
+     plot box is identical row to row. */
+  .spark { display: block; width: 78px; height: 24px; }
+  .spark rect { fill: var(--aero-soft); }
+  /* The epoch still in progress: outline only, no fill. A dimmer solid bar would
+     still read as "this week collapsed" — an empty frame reads as "not counted yet". */
+  .spark rect.partial { fill: none; stroke: var(--dim); stroke-width: 1; stroke-dasharray: 2 2; }
+  .spark rect.zero { fill: var(--line); }
+  .mom { font-variant-numeric: tabular-nums; font-weight: 620; }
+  .mom .arrow { margin-right: 3px; }
+  .mom.flat { color: var(--muted); font-weight: 500; }
+  .mom.none { color: var(--dim); font-weight: 500; }
+
+  /* movers ----------------------------------------------------------------- */
+  .movers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 680px) { .movers { grid-template-columns: 1fr; } }
+  .movers .panel { padding: 15px 17px; }
+  .movers h3 {
+    margin: 0 0 3px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .movers h3.up { color: var(--good); }
+  .movers h3.down { color: var(--bad); }
+  .movers .h3note { color: var(--dim); font-size: 12px; margin: 0 0 11px; }
+  .mover {
+    display: grid; grid-template-columns: 1fr auto auto; align-items: center;
+    gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .mover:last-child { border-bottom: none; }
+  .mover .name {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 14px; min-width: 0;
+  }
+  .mover .avg { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .movers .empty { color: var(--dim); font-size: 13px; padding: 7px 0; }
+
   .note {
     border-left: 3px solid var(--warn); background: rgba(255, 184, 77, 0.07);
     padding: 11px 13px; border-radius: 0 8px 8px 0; font-size: 13.5px; margin-top: 13px; color: #f0dcbb;
@@ -231,18 +269,34 @@
 </div>
 <div class="note" id="allocNote" hidden></div>
 
+<h2>Which way incentives are moving</h2>
+<p class="h2note">Recent finished epochs against the older ones, per pool. A high average is worth less if it is on the way down.</p>
+<div class="movers">
+  <div class="panel">
+    <h3 class="up">Ramping up</h3>
+    <p class="h3note">Paying more lately than they used to.</p>
+    <div id="moversUp"></div>
+  </div>
+  <div class="panel">
+    <h3 class="down">Fading</h3>
+    <p class="h3note">Still on the board, but paying less than they used to.</p>
+    <div id="moversDown"></div>
+  </div>
+</div>
+
 <h2>All ranked pools</h2>
 <p class="h2note">Every live-gauge pool that clears a minimum trailing value, sorted by predicted dollars per vote.</p>
 <div class="scroll">
   <table>
     <thead>
-      <tr><th>Pool</th><th>Predicted $/vote</th><th>Current $/vote</th><th>Edge</th><th>Trailing avg</th><th>Votes</th><th>Consistency</th><th>Epochs</th></tr>
+      <tr><th>Pool</th><th>History</th><th>Trend</th><th>Predicted $/vote</th><th>Current $/vote</th><th>Edge</th><th>Trailing avg</th><th>Votes</th><th>Consistency</th><th>Epochs</th></tr>
     </thead>
     <tbody id="rankBody"></tbody>
   </table>
 </div>
 <div class="legend">
   <span><b class="badge v" style="margin-right:4px">vAMM</b> volatile pool — plain <code>x·y=k</code>, for tokens whose prices move independently</span>
+  <span><svg class="spark" style="display:inline-block; width:34px; height:14px; vertical-align:-2px; margin-right:4px" viewBox="0 0 34 14" aria-hidden="true"><rect x="0" y="4" width="9" height="10"/><rect x="12" y="2" width="9" height="12"/><rect class="partial" x="24.5" y="7.5" width="8" height="6"/></svg> the dashed last bar is the epoch still running — a part-week, so it is charted but left out of the trend. Bar heights are square-rooted so a single huge week doesn’t flatten the rest; hover for exact dollars</span>
   <span><b class="badge s" style="margin-right:4px">sAMM</b> stable pool — a flatter curve for pairs meant to hold the same value, like two stablecoins or ETH and a liquid-staking version of it</span>
 </div>
 
@@ -251,6 +305,7 @@
   <p><strong>Value per vote.</strong> Each pool pays out bribes plus fees to whoever voted for it, split by vote weight. Divide that by the votes already sitting there and you get dollars per veAERO. The <em>predicted</em> figure uses a trailing average across recent epochs rather than just last week's number.</p>
   <p><strong>Self-dilution.</strong> Voting into a pool adds your votes to the denominator, so the last vote you cast into a pool is worth less than the first. The allocation hands out your veAERO in small slices, each time to whichever pool currently offers the most for the next slice. That is why it spreads across several pools instead of dumping everything into the top-ranked one.</p>
   <p><strong>Consistency.</strong> A pool that paid $600 once and nothing for five weeks averages the same as one paying $100 every week, and the average alone cannot tell them apart. Consistency scores how steady the payouts have been: 1 is perfectly even, lower is spikier. A pool with only one epoch of history scores 0 — one data point cannot prove steadiness.</p>
+  <p><strong>History and trend.</strong> The bars are the pool's last six epochs, oldest on the left, and the trend figure next to them is the recent finished epochs' average against the older ones'. It answers something the average and consistency both hide: a pool climbing from $50 to $500 an epoch and one sliding from $500 to $50 score identically on those two. Two deliberate choices: the epoch still running is drawn as a dashed outline and left out of the trend, because a scan taken mid-week has only counted part of that week; and a pool whose older epochs paid only loose change reports no trend at all rather than a huge percentage, since dividing by pennies produces headline numbers that mean nothing. Bar heights are square-rooted so one enormous week doesn't flatten the rest into invisible stubs — taller always means a bigger epoch, but the height is not proportional to the dollars. Hover any chart for the exact figures.</p>
   <p><strong>Reading your wallet.</strong> The lookup calls three read-only Base contract methods on the veAERO contract — how many locks you own, their token ids, and each one's current voting power — and adds them up. It cannot move anything, and it never asks for a signature.</p>
   <p><strong>What it does not model.</strong> Other voters react to incentives too, and this holds their votes fixed at the last snapshot. It does not predict new bribes, and it is not advice — it is arithmetic on public data.</p>
 </details>
@@ -406,6 +461,124 @@ const num = (n, d) => n.toLocaleString("en-US", { maximumFractionDigits: d === u
 const pctChange = (n) => (n >= 0 ? "+" : "") + Math.round(n * 100).toLocaleString("en-US") + "%";
 const consistencyClass = (c) => (c >= 0.6 ? "c-good" : c >= 0.45 ? "c-warn" : "c-bad");
 
+// --- history chart ----------------------------------------------------------
+
+const SPARK_W = 78;
+const SPARK_H = 24;
+const SPARK_GAP = 3;
+/** Shortest bar drawn for a non-zero epoch, so a small week stays visible next to a huge one. */
+const SPARK_MIN_BAR = 2.5;
+/** Below this the trend is called flat rather than a direction, so ±3% drift isn't dressed up as a signal. */
+const MOVER_MIN = 0.1;
+const MOVER_COUNT = 5;
+
+/**
+ * Draws one pool's epoch history as bars, oldest on the left.
+ *
+ * The series arrives most-recent-first (the contract's own ordering, kept all
+ * the way through the snapshot) and is reversed here rather than at the source:
+ * every consumer other than a left-to-right chart wants index 0 to mean "now".
+ *
+ * Each pool is scaled to its own maximum. A shared scale across pools would
+ * flatten every small pool into an invisible line, and the question this column
+ * answers is "which way is this pool going", not "is it bigger than that one" —
+ * the $ columns next to it already answer that.
+ *
+ * Bar heights are square-rooted rather than linear, and that is a deliberate
+ * trade with a real cost. Incentives are spiky enough that one big week buries
+ * the rest: fBOMB/cbBTC ran $783 an epoch against a $8,946 peak, which on a
+ * linear scale in 24 pixels is a two-pixel stub — indistinguishable from a dead
+ * week, so the shape the column exists to show is destroyed by the outlier.
+ * A square root keeps the ordering exact (it is monotonic, so a taller bar is
+ * always a bigger epoch) while compressing the peak, at the price of a bar's
+ * height no longer being proportional to its dollars. The exact figures are one
+ * hover away in the tooltip, and the trend figure beside it is computed from the
+ * numbers rather than from the drawing.
+ */
+function sparkline(epochUsd, partial) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "spark");
+  svg.setAttribute("viewBox", "0 0 " + SPARK_W + " " + SPARK_H);
+  svg.setAttribute("aria-hidden", "true");
+
+  const series = epochUsd.slice().reverse();
+  const n = series.length;
+  const max = Math.max(...series);
+  const barW = (SPARK_W - SPARK_GAP * (n - 1)) / n;
+
+  series.forEach((value, i) => {
+    // The in-progress epoch is index 0 of the original series, so the last bar here.
+    const isPartial = partial && i === n - 1;
+    const scaled = max > 0 ? Math.sqrt(value / max) * SPARK_H : 0;
+    const h = value > 0 ? Math.max(SPARK_MIN_BAR, scaled) : 1.5;
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    if (isPartial) {
+      // Inset by half a stroke width, or the dashed outline clips on the edges.
+      const outlineH = Math.max(4, h);
+      rect.setAttribute("class", "partial");
+      rect.setAttribute("x", (i * (barW + SPARK_GAP) + 0.5).toFixed(2));
+      rect.setAttribute("y", (SPARK_H - outlineH + 0.5).toFixed(2));
+      rect.setAttribute("width", (barW - 1).toFixed(2));
+      rect.setAttribute("height", (outlineH - 1).toFixed(2));
+    } else {
+      if (value <= 0) rect.setAttribute("class", "zero");
+      rect.setAttribute("x", (i * (barW + SPARK_GAP)).toFixed(2));
+      rect.setAttribute("y", (SPARK_H - h).toFixed(2));
+      rect.setAttribute("width", barW.toFixed(2));
+      rect.setAttribute("height", h.toFixed(2));
+    }
+    svg.appendChild(rect);
+  });
+
+  const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+  title.textContent =
+    "Oldest to newest: " + series.map((v) => usd(v)).join(" · ") +
+    (partial ? " — the last one is this epoch so far, still accruing" : "");
+  svg.appendChild(title);
+
+  return svg;
+}
+
+/** History cell, or a dash when the snapshot predates the series being published. */
+function historyCell(p) {
+  const td = document.createElement("td");
+  td.dataset.label = "History";
+  if (!Array.isArray(p.epochUsd) || p.epochUsd.length === 0) {
+    td.className = "mom none";
+    td.textContent = "—";
+    return td;
+  }
+  td.appendChild(sparkline(p.epochUsd, Boolean(p.currentEpochPartial)));
+  return td;
+}
+
+/** Trend cell: direction and size, or a dash when there is no honest basis for one. */
+function momentumCell(p) {
+  const td = document.createElement("td");
+  td.dataset.label = "Trend";
+
+  if (typeof p.momentum !== "number") {
+    td.className = "mom none";
+    td.textContent = "—";
+    td.title = "Not enough finished epochs to compare a recent half against an older one";
+    return td;
+  }
+
+  const flat = Math.abs(p.momentum) < MOVER_MIN;
+  const arrow = flat ? "→" : p.momentum > 0 ? "↑" : "↓";
+  td.className = "mom " + (flat ? "flat" : p.momentum > 0 ? "c-good" : "c-bad");
+  td.title = flat
+    ? "Holding roughly level across the epochs it has been paying"
+    : "Recent finished epochs against the older ones";
+
+  const span = document.createElement("span");
+  span.className = "arrow";
+  span.textContent = arrow;
+  td.append(span, document.createTextNode(flat ? "level" : pctChange(p.momentum)));
+  return td;
+}
+
 function cell(text, cls, label) {
   const td = document.createElement("td");
   td.textContent = text;
@@ -464,6 +637,8 @@ const el = {
   mincons: document.getElementById("mincons"),
   allocBody: document.getElementById("allocBody"),
   rankBody: document.getElementById("rankBody"),
+  moversUp: document.getElementById("moversUp"),
+  moversDown: document.getElementById("moversDown"),
   allocNote: document.getElementById("allocNote"),
   copyBtn: document.getElementById("copyBtn"),
   statUsd: document.getElementById("statUsd"),
@@ -487,11 +662,75 @@ function renderMeta() {
   el.meta.append(dot, text);
 }
 
+/** One line in the movers panel: name, its history, and the size of the move. */
+function moverRow(p) {
+  const row = document.createElement("div");
+  row.className = "mover";
+
+  const name = document.createElement("span");
+  name.className = "name";
+  name.textContent = p.symbol.replace(/^[sv]AMM-/i, "");
+  name.title = p.symbol + " — trailing average " + usd(p.trailingAvgUsd) + " per epoch";
+
+  const chart = document.createElement("span");
+  chart.appendChild(sparkline(p.epochUsd, Boolean(p.currentEpochPartial)));
+
+  const pct = document.createElement("span");
+  pct.className = "mom " + (p.momentum > 0 ? "c-good" : "c-bad");
+  pct.textContent = pctChange(p.momentum);
+
+  row.append(name, chart, pct);
+  return row;
+}
+
+function moversEmpty(message) {
+  const div = document.createElement("div");
+  div.className = "empty";
+  div.textContent = message;
+  return div;
+}
+
+/**
+ * Fills the two movers panels.
+ *
+ * Deliberately not filtered by the controls above: the allocation answers "where
+ * should my veAERO go", while this answers "what is happening to incentives" —
+ * a pool collapsing is worth seeing even when a consistency filter would have
+ * excluded it from your own allocation.
+ *
+ * Pools with null momentum are absent by construction rather than by a filter
+ * here: the snapshot only reports a figure where a recent half and an older half
+ * of finished epochs can actually be compared.
+ */
+function renderMovers() {
+  const scored = snapshot.pools.filter((p) => typeof p.momentum === "number" && Array.isArray(p.epochUsd));
+
+  if (scored.length === 0) {
+    // Either a snapshot published before the history existed, or a scan too
+    // early in this pool set's life for any pool to have four finished epochs.
+    const note = "No pool has enough finished epochs yet — this fills in as history builds.";
+    el.moversUp.replaceChildren(moversEmpty(note));
+    el.moversDown.replaceChildren(moversEmpty(note));
+    return;
+  }
+
+  const up = scored.filter((p) => p.momentum >= MOVER_MIN).sort((a, b) => b.momentum - a.momentum);
+  const down = scored.filter((p) => p.momentum <= -MOVER_MIN).sort((a, b) => a.momentum - b.momentum);
+
+  const rows = (list, emptyNote) =>
+    list.length ? list.slice(0, MOVER_COUNT).map(moverRow) : [moversEmpty(emptyNote)];
+
+  el.moversUp.replaceChildren(...rows(up, "Nothing is ramping by more than 10% right now."));
+  el.moversDown.replaceChildren(...rows(down, "Nothing is fading by more than 10% right now."));
+}
+
 function renderRanking() {
   const frag = document.createDocumentFragment();
   for (const p of snapshot.pools) {
     const tr = document.createElement("tr");
     tr.appendChild(poolCell(p.symbol, p.pool));
+    tr.appendChild(historyCell(p));
+    tr.appendChild(momentumCell(p));
     tr.appendChild(cell(p.predictedValuePerVote.toFixed(6), "num"));
     tr.appendChild(cell(p.currentValuePerVote.toFixed(6), "num"));
     tr.appendChild(cell(pctChange(p.predictiveEdge), "num"));
@@ -649,6 +888,7 @@ fetch("data/snapshot.json", { cache: "no-cache" })
   .then((data) => {
     snapshot = data;
     renderMeta();
+    renderMovers();
     renderRanking();
     renderAllocation();
   })
