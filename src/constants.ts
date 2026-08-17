@@ -25,6 +25,13 @@ export const TREND_EPOCHS = 6;
 // stays modest by default and is overridable with `--epochs`.
 export const BACKTEST_EPOCHS = 6;
 
+// Upper bound on `--epochs`/`epochs` for the backtest command and MCP tool. The
+// on-chain fetch depth (BACKTEST_EPOCHS + TREND_EPOCHS worth of epochs, per
+// pool) scales directly with this, across every live-gauge pool — an unbounded
+// value here means one mistyped flag (or an agent-supplied argument) turns
+// into an enormous multi-hundred-pool fetch against a shared public RPC.
+export const MAX_BACKTEST_EPOCHS = 20;
+
 // Pools whose trailing-average epoch value is below this are excluded from
 // rankings — at that size, one small one-off bribe swings the "predictive edge"
 // percentage wildly without representing a meaningful voting opportunity.

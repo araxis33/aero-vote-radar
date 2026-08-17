@@ -30,6 +30,20 @@ test("parsePositiveIntFlag rejects a dangling flag with no value instead of sile
   assert.equal(parsePositiveIntFlag(["--veaero", "25000", "--top"], "top", 20), undefined);
 });
 
+test("parsePositiveIntFlag accepts a value at or below the given max", () => {
+  assert.equal(parsePositiveIntFlag(["--epochs", "20"], "epochs", 6, 20), 20);
+  assert.equal(parsePositiveIntFlag(["--epochs", "6"], "epochs", 6, 20), 6);
+});
+
+test("parsePositiveIntFlag rejects a value above the given max instead of silently clamping it", () => {
+  assert.equal(parsePositiveIntFlag(["--epochs", "21"], "epochs", 6, 20), undefined);
+  assert.equal(parsePositiveIntFlag(["--epochs", "100000"], "epochs", 6, 20), undefined);
+});
+
+test("parsePositiveIntFlag ignores max when the flag is absent, still returning the fallback", () => {
+  assert.equal(parsePositiveIntFlag([], "epochs", 6, 20), 6);
+});
+
 test("parseUnitIntervalFlag returns the fallback when the flag is absent", () => {
   assert.equal(parseUnitIntervalFlag([], "min-consistency", 0), 0);
 });

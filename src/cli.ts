@@ -3,7 +3,7 @@ import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
 import { recommendAllocation, toWholePercentWeights } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
-import { BACKTEST_EPOCHS } from "./constants.js";
+import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
 
 function fmtUsd(n: number): string {
@@ -67,12 +67,17 @@ export function veAeroPositionsToJson(address: string, positions: VeNftSummary[]
  * this same error path rather than the fallback: `getFlag` returns undefined
  * for both "flag absent" and "flag present but out of args", so `hasFlag` is
  * checked separately to tell the two apart.
+ *
+ * `max`, when given, rejects a value above it the same way — callers whose
+ * flag drives an on-chain fetch (e.g. `--epochs`) can bound it so a mistyped
+ * value can't balloon into a much larger live scan than intended.
  */
-export function parsePositiveIntFlag(args: string[], name: string, fallback: number): number | undefined {
+export function parsePositiveIntFlag(args: string[], name: string, fallback: number, max?: number): number | undefined {
   const raw = getFlag(args, name);
   if (raw === undefined) return hasFlag(args, name) ? undefined : fallback;
   const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : undefined;
+  if (!Number.isInteger(n) || n <= 0) return undefined;
+  return max !== undefined && n > max ? undefined : n;
 }
 
 /**
@@ -240,9 +245,9 @@ async function cmdRecommend(args: string[]) {
 }
 
 async function cmdBacktest(args: string[]) {
-  const epochs = parsePositiveIntFlag(args, "epochs", BACKTEST_EPOCHS);
+  const epochs = parsePositiveIntFlag(args, "epochs", BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS);
   if (epochs === undefined) {
-    console.error("Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--json] (N must be a positive integer)");
+    console.error(`Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS})`);
     process.exitCode = 1;
     return;
   }
@@ -346,8 +351,8 @@ Commands:
       percentages that sum to 100, ready for Aerodrome's voting UI.
 
   backtest (--veaero N | --address 0x...) [--epochs N] [--json]
-      Replay past epochs and compare this tool's allocation against the naive
-      "vote for the highest current $/vote" strategy.
+      Replay past epochs (up to ${MAX_BACKTEST_EPOCHS}) and compare this tool's allocation against the
+      naive "vote for the highest current $/vote" strategy.
 
   my-veaero <address> [--json]
       Look up an account's veAERO locks and voting power

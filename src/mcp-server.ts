@@ -6,7 +6,7 @@ import { rankPoolsByEfficiency } from "./efficiency.js";
 import { recommendAllocation, toWholePercentWeights } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions } from "./veAero.js";
-import { BACKTEST_EPOCHS } from "./constants.js";
+import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
 
 /**
@@ -157,7 +157,7 @@ server.registerTool(
         .refine(isValidAddress, "Must be a 0x-prefixed 40-character hex address")
         .optional()
         .describe("Base wallet address to read live voting power from, instead of stating an amount."),
-      epochs: z.number().int().positive().max(20).optional().describe(`How many past epochs to replay (default ${BACKTEST_EPOCHS})`),
+      epochs: z.number().int().positive().max(MAX_BACKTEST_EPOCHS).optional().describe(`How many past epochs to replay (default ${BACKTEST_EPOCHS}, max ${MAX_BACKTEST_EPOCHS})`),
     },
   },
   withErrorHandling(async ({ veAero, address, epochs = BACKTEST_EPOCHS }) => {
