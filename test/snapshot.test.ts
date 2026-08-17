@@ -30,13 +30,49 @@ function ranked(overrides: Partial<PoolEfficiency> & { symbol?: string }): PoolE
 }
 
 test("toSnapshotPool publishes the allocator's inputs, not just the derived per-vote figures", () => {
-  const p = toSnapshotPool(ranked({}));
+  const p = toSnapshotPool(ranked({}), new Date("2026-08-17T00:00:00Z"));
   // The browser re-runs allocateAcrossCandidates, which needs both of these;
   // the CLI's JSON shape carries neither.
   assert.equal(p.votesVeAero, 500);
   assert.equal(p.trailingAvgUsd, 120);
   assert.equal(p.symbol, "vAMM-TEST/USDC");
   assert.equal(p.pool, "0xpool");
+});
+
+test("toSnapshotPool publishes the epoch series and the pool's own epoch date", () => {
+  const p = toSnapshotPool(
+    ranked({ epochUsdSeries: [300, 200, 100, 100, 100, 100], latestEpochTs: 1_786_579_200 }),
+    new Date("2026-08-17T00:00:00Z"),
+  );
+  assert.deepEqual(p.epochUsd, [300, 200, 100, 100, 100, 100]);
+  assert.equal(p.latestEpochTs, 1_786_579_200);
+});
+
+test("toSnapshotPool flags a mid-week scan's newest epoch as partial and keeps it out of momentum", () => {
+  // Epoch opened 2026-08-13, scanned four days later: epochUsd[0] is a part-week.
+  const series = [60, 200, 200, 200, 200];
+  const midWeek = toSnapshotPool(
+    ranked({ epochUsdSeries: series, latestEpochTs: 1_786_579_200 }),
+    new Date("2026-08-17T00:00:00Z"),
+  );
+  assert.equal(midWeek.currentEpochPartial, true);
+  assert.equal(midWeek.momentum, 0); // the steady $200 epochs, part-week excluded
+
+  // The same pool data a week on: that epoch has closed, so it now counts.
+  const afterRollover = toSnapshotPool(
+    ranked({ epochUsdSeries: series, latestEpochTs: 1_786_579_200 }),
+    new Date("2026-08-24T00:00:00Z"),
+  );
+  assert.equal(afterRollover.currentEpochPartial, false);
+  assert.ok((afterRollover.momentum as number) < -0.3);
+});
+
+test("buildSnapshot judges partial epochs against its own generatedAt, not the wall clock", () => {
+  const snap = buildSnapshot(
+    [ranked({ latestEpochTs: 1_786_579_200 })],
+    new Date("2026-08-17T00:00:00Z"),
+  );
+  assert.equal(snap.pools[0].currentEpochPartial, true);
 });
 
 test("buildSnapshot records the generation time as an ISO string", () => {

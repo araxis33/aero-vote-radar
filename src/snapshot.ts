@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { rankPoolsByEfficiency } from "./efficiency.js";
+import { computeTrend, isEpochInProgress } from "./trend.js";
 import type { PoolEfficiency } from "./efficiency.js";
 
 /**
@@ -24,6 +25,22 @@ export interface SnapshotPool {
   epochsObserved: number;
   volatility: number;
   consistency: number;
+  /** Unix seconds of this pool's most recent epoch. Older epochs are one week apart, so the whole series' dates follow from it. */
+  latestEpochTs: number;
+  /**
+   * Per-epoch USD value, most recent first — what the page charts. Published as
+   * the raw series rather than a pre-rendered shape so the page can draw it, and
+   * a reader can check it, without a second source of truth.
+   */
+  epochUsd: number[];
+  /**
+   * True when `epochUsd[0]` is the epoch still running, and therefore a partial
+   * week that is not comparable to the finished ones next to it. The page draws
+   * that bar differently and the trend ignores it.
+   */
+  currentEpochPartial: boolean;
+  /** Recent completed epochs' average over the older ones', minus 1. Null when there is no honest basis for it — see `computeTrend`. */
+  momentum: number | null;
 }
 
 export interface Snapshot {
@@ -35,7 +52,16 @@ export interface Snapshot {
   pools: SnapshotPool[];
 }
 
-export function toSnapshotPool(p: PoolEfficiency): SnapshotPool {
+/**
+ * `generatedAt` is a parameter rather than read from the clock inside: whether a
+ * pool's newest epoch was still running is a fact about when the scan ran, and
+ * taking it from the same timestamp the snapshot publishes keeps the flag and
+ * the `generatedAt` field from ever disagreeing (and keeps this pure/testable).
+ */
+export function toSnapshotPool(p: PoolEfficiency, generatedAt: Date): SnapshotPool {
+  const currentEpochPartial = isEpochInProgress(p.latestEpochTs, Math.floor(generatedAt.getTime() / 1000));
+  const { momentum } = computeTrend(p.epochUsdSeries, currentEpochPartial);
+
   return {
     symbol: p.pool.symbol,
     pool: p.pool.address,
@@ -48,6 +74,10 @@ export function toSnapshotPool(p: PoolEfficiency): SnapshotPool {
     epochsObserved: p.epochsObserved,
     volatility: p.volatility,
     consistency: p.consistency,
+    latestEpochTs: p.latestEpochTs,
+    epochUsd: p.epochUsdSeries,
+    currentEpochPartial,
+    momentum,
   };
 }
 
@@ -62,7 +92,7 @@ export function toSnapshotPool(p: PoolEfficiency): SnapshotPool {
  * whichever epoch the top-ranked pool happened to be sitting on.
  */
 export function buildSnapshot(ranked: PoolEfficiency[], generatedAt: Date): Snapshot {
-  const pools = ranked.map(toSnapshotPool);
+  const pools = ranked.map((p) => toSnapshotPool(p, generatedAt));
   return {
     generatedAt: generatedAt.toISOString(),
     latestEpochTs: ranked.reduce((max, p) => Math.max(max, p.latestEpochTs), 0),
