@@ -19,6 +19,7 @@ function ranked(overrides: Partial<PoolEfficiency> & { symbol?: string }): PoolE
     latestEpochUsd: 100,
     trailingAvgUsd: 120,
     epochsObserved: 6,
+    epochUsdSeries: [100, 110, 120, 130, 120, 140],
     currentValuePerVote: 0.2,
     predictedValuePerVote: 0.24,
     predictiveEdge: 0.2,

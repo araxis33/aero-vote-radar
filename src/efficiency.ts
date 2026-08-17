@@ -17,6 +17,17 @@ export interface PoolEfficiency {
   predictedValuePerVote: number;
   /** predictedValuePerVote / currentValuePerVote - 1. Positive = incentives trending above what current votes are capturing. */
   predictiveEdge: number;
+  /**
+   * Each observed epoch's USD value, most recent first — the raw series the
+   * trailing average, volatility and consistency are all derived from.
+   *
+   * Kept rather than discarded because averaging is lossy in a way that hides
+   * direction: a pool ramping from $50 to $500 and one decaying from $500 to
+   * $50 produce the same `trailingAvgUsd` and the same `consistency`. Holding
+   * the series makes trend (and a chart of it) possible without a second
+   * on-chain fetch, since these values are computed here anyway.
+   */
+  epochUsdSeries: number[];
   /** Coefficient of variation of the observed epochs' USD values. 0 = identical every epoch; 1 = std dev as large as the mean. */
   volatility: number;
   /** 1 / (1 + volatility), so 1 = perfectly steady and lower = spikier. See `computeConsistency`. */
@@ -99,6 +110,7 @@ export function computePoolEfficiency(
     latestEpochUsd,
     trailingAvgUsd,
     epochsObserved: epochs.length,
+    epochUsdSeries: usdValues,
     currentValuePerVote,
     predictedValuePerVote,
     predictiveEdge,

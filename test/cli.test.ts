@@ -73,6 +73,7 @@ test("poolEfficiencyToJson includes epochsObserved and the consistency fields, m
     latestEpochUsd: 5,
     trailingAvgUsd: 4,
     epochsObserved: 3,
+    epochUsdSeries: [5, 4, 3],
     currentValuePerVote: 0.5,
     predictedValuePerVote: 0.4,
     predictiveEdge: -0.2,

@@ -69,6 +69,21 @@ test("computePoolEfficiency computes currentVotesVeAero, latest/trailing USD, an
   assert.ok(Math.abs(result.predictiveEdge - -0.25) < 1e-9); // 1.5 / 2 - 1
 });
 
+test("computePoolEfficiency carries the per-epoch USD series through, most recent first", () => {
+  const votes = 100n * 10n ** 18n;
+  const epochs = [
+    epoch({ ts: 300, votes, fees: [{ token: "0xfee", amount: 300_000_000n }] }), // $300
+    epoch({ ts: 200, votes, fees: [{ token: "0xfee", amount: 200_000_000n }] }), // $200
+    epoch({ ts: 100, votes, fees: [{ token: "0xfee", amount: 100_000_000n }] }), // $100
+  ];
+  const result = computePoolEfficiency(pool, epochs, prices);
+
+  assert.ok(result);
+  assert.deepEqual(result.epochUsdSeries, [300, 200, 100]);
+  // The series is the basis of the average, not a separate reading of the chain.
+  assert.equal(result.trailingAvgUsd, 200);
+});
+
 test("computeConsistency scores a perfectly steady pool as 1 and zero volatility", () => {
   const { volatility, consistency } = computeConsistency([100, 100, 100, 100]);
   assert.equal(volatility, 0);

@@ -19,6 +19,7 @@ function fixture(overrides: Partial<PoolEfficiency> & { address: string; symbol:
     latestEpochUsd: 0,
     trailingAvgUsd: 0,
     epochsObserved: 6,
+    epochUsdSeries: [100, 110, 120, 130, 120, 140],
     currentValuePerVote: 0,
     predictedValuePerVote: 0,
     predictiveEdge: 0,
