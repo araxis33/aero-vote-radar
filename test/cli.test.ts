@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parsePositiveIntFlag, parseUnitIntervalFlag, poolEfficiencyToJson, veAeroPositionsToJson } from "../src/cli.js";
+import { EPOCH_SECONDS } from "../src/trend.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 import type { VeNftSummary } from "../src/veAero.js";
 
@@ -81,7 +82,9 @@ test("poolEfficiencyToJson includes epochsObserved and the consistency fields, m
     consistency: 0.8,
   };
 
-  assert.deepEqual(poolEfficiencyToJson(p), {
+  // Only 3 epochs observed — below MOMENTUM_MIN_EPOCHS, so momentum is null
+  // regardless of the "as of" time passed in.
+  assert.deepEqual(poolEfficiencyToJson(p, 1000), {
     symbol: "vAMM-TEST/USDC",
     pool: "0xpool",
     votesVeAero: 10,
@@ -91,7 +94,30 @@ test("poolEfficiencyToJson includes epochsObserved and the consistency fields, m
     epochsObserved: 3,
     volatility: 0.25,
     consistency: 0.8,
+    momentum: null,
   });
+});
+
+test("poolEfficiencyToJson wires momentum from the pool's epoch series and the given time, matching the MCP tool", () => {
+  const p: PoolEfficiency = {
+    pool: { address: "0xpool", symbol: "vAMM-TEST/USDC", token0: "0xtoken0", token1: "0xtoken1", gauge: "0xgauge", gaugeAlive: true },
+    latestEpochTs: 1_786_579_200, // a Thursday 00:00 UTC epoch boundary
+    currentVotesVeAero: 10,
+    latestEpochUsd: 400,
+    trailingAvgUsd: 250,
+    epochsObserved: 4,
+    epochUsdSeries: [400, 400, 100, 100],
+    currentValuePerVote: 40,
+    predictedValuePerVote: 25,
+    predictiveEdge: -0.375,
+    volatility: 0.6,
+    consistency: 0.625,
+  };
+
+  // A full epoch after latestEpochTs: that epoch has closed, so all 4 entries
+  // are completed history and momentum compares the recent half to the older half.
+  const asOfUnixSeconds = p.latestEpochTs + EPOCH_SECONDS;
+  assert.equal(poolEfficiencyToJson(p, asOfUnixSeconds).momentum, 3);
 });
 
 test("veAeroPositionsToJson sums voting power across locks and matches the MCP get_my_veaero shape", () => {

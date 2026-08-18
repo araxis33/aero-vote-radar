@@ -8,6 +8,7 @@ import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
+import { computeTrend, isEpochInProgress } from "./trend.js";
 
 /**
  * Resolves a veAERO budget from either an explicit amount or a wallet address,
@@ -57,7 +58,7 @@ server.registerTool(
   {
     title: "List Aerodrome pool vote efficiency",
     description:
-      "Ranks all live-gauge Aerodrome (Base) pools by current and trend-predicted USD value per veAERO vote, using live on-chain data from Aerodrome's Sugar contracts plus DefiLlama USD pricing. 'Predicted' is a simple trailing average of recent epochs, not a machine-learning forecast.",
+      "Ranks all live-gauge Aerodrome (Base) pools by current and trend-predicted USD value per veAERO vote, using live on-chain data from Aerodrome's Sugar contracts plus DefiLlama USD pricing. 'Predicted' is a simple trailing average of recent epochs, not a machine-learning forecast. Each pool also reports `momentum`: the recent completed epochs' average over the older ones', minus 1 (null without enough history) — direction that the trailing average and consistency alone can't show.",
     inputSchema: {
       top: z.number().int().positive().max(100).optional().describe("How many top pools to return (default 20)"),
       minConsistency: z
@@ -71,17 +72,23 @@ server.registerTool(
   withErrorHandling(async ({ top = 20, minConsistency = 0 }) => {
     const ranked = await rankPoolsByEfficiency();
     const eligible = ranked.filter((p) => p.consistency >= minConsistency);
-    const rows = eligible.slice(0, top).map((p) => ({
-      pool: p.pool.address,
-      symbol: p.pool.symbol,
-      currentVotesVeAero: p.currentVotesVeAero,
-      currentValuePerVoteUsd: p.currentValuePerVote,
-      predictedValuePerVoteUsd: p.predictedValuePerVote,
-      predictiveEdgePct: p.predictiveEdge * 100,
-      epochsObserved: p.epochsObserved,
-      volatility: p.volatility,
-      consistency: p.consistency,
-    }));
+    const asOfUnixSeconds = Math.floor(Date.now() / 1000);
+    const rows = eligible.slice(0, top).map((p) => {
+      const currentEpochPartial = isEpochInProgress(p.latestEpochTs, asOfUnixSeconds);
+      const { momentum } = computeTrend(p.epochUsdSeries, currentEpochPartial);
+      return {
+        pool: p.pool.address,
+        symbol: p.pool.symbol,
+        currentVotesVeAero: p.currentVotesVeAero,
+        currentValuePerVoteUsd: p.currentValuePerVote,
+        predictedValuePerVoteUsd: p.predictedValuePerVote,
+        predictiveEdgePct: p.predictiveEdge * 100,
+        epochsObserved: p.epochsObserved,
+        volatility: p.volatility,
+        consistency: p.consistency,
+        momentum,
+      };
+    });
 
     return {
       content: [

@@ -5,6 +5,7 @@ import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
+import { computeTrend, isEpochInProgress } from "./trend.js";
 
 function fmtUsd(n: number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -32,8 +33,17 @@ function hasFlag(args: string[], name: string): boolean {
  * `list_pool_efficiency` tool's response shape, including `epochsObserved` —
  * without it, a --json consumer can't tell a prediction backed by 6 trailing
  * epochs from one backed by a single epoch of a brand-new pool.
+ *
+ * `momentum` is derived here rather than stored on `PoolEfficiency`, the same
+ * way `snapshot.ts`'s `toSnapshotPool` derives it for the web app — it needs
+ * to know whether the latest epoch is still in progress, which depends on
+ * *when* the caller is asking, not on anything the ranking itself computed.
+ * `asOfUnixSeconds` is a parameter (not read from the clock inside) so this
+ * stays pure and testable.
  */
-export function poolEfficiencyToJson(p: PoolEfficiency) {
+export function poolEfficiencyToJson(p: PoolEfficiency, asOfUnixSeconds: number) {
+  const currentEpochPartial = isEpochInProgress(p.latestEpochTs, asOfUnixSeconds);
+  const { momentum } = computeTrend(p.epochUsdSeries, currentEpochPartial);
   return {
     symbol: p.pool.symbol,
     pool: p.pool.address,
@@ -44,6 +54,7 @@ export function poolEfficiencyToJson(p: PoolEfficiency) {
     epochsObserved: p.epochsObserved,
     volatility: p.volatility,
     consistency: p.consistency,
+    momentum,
   };
 }
 
@@ -106,7 +117,8 @@ async function cmdPools(args: string[]) {
   const topRanked = eligible.slice(0, top);
 
   if (hasFlag(args, "json")) {
-    console.log(JSON.stringify(topRanked.map(poolEfficiencyToJson), null, 2));
+    const asOfUnixSeconds = Math.floor(Date.now() / 1000);
+    console.log(JSON.stringify(topRanked.map((p) => poolEfficiencyToJson(p, asOfUnixSeconds)), null, 2));
     return;
   }
 

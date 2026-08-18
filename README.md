@@ -184,7 +184,7 @@ npx tsx src/mcp-server.ts
 
 or, after `npm run build` and `npm link` / publishing, point any MCP-capable agent (Claude, etc.) at the `aero-vote-radar-mcp` binary. It exposes four tools:
 
-- **`list_pool_efficiency`** — ranked pools with current + predicted $/vote, predictive edge, and consistency. Optional `minConsistency` filter.
+- **`list_pool_efficiency`** — ranked pools with current + predicted $/vote, predictive edge, consistency, and momentum (recent-vs-older completed-epoch trend). Optional `minConsistency` filter.
 - **`recommend_allocation`** — given a veAERO amount *or* a wallet `address` to read it from, returns weights, whole-percent vote weights, and expected USD per pool.
 - **`backtest_strategy`** — replays past epochs and compares this strategy against naive APR-chasing.
 - **`get_my_veaero`** — looks up an account's veAERO locks and total voting power.
