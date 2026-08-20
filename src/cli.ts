@@ -149,24 +149,29 @@ async function cmdPools(args: string[]) {
 const RECOMMEND_USAGE =
   "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--vote-ready] [--json]";
 
+const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS})`;
+
 /**
  * Resolves the veAERO budget from either an explicit `--veaero` amount or, with
  * `--address`, the wallet's actual on-chain voting power — so the common case
- * stops being "go look up your own balance first, then retype it here".
+ * stops being "go look up your own balance first, then retype it here". Shared
+ * by `recommend` and `backtest`, which take a `usage` string each so a bad
+ * `--veaero`/`--address` shows the calling command's own usage (flags, etc.)
+ * rather than always printing `recommend`'s.
  * Returns null after printing its own error, so the caller just bails.
  */
-async function resolveBudget(args: string[]): Promise<number | null> {
+async function resolveBudget(args: string[], usage: string): Promise<number | null> {
   const rawVeaero = getFlag(args, "veaero");
   const address = getFlag(args, "address");
 
   if (rawVeaero !== undefined && address !== undefined) {
-    console.error(`${RECOMMEND_USAGE}\nPass either --veaero or --address, not both.`);
+    console.error(`${usage}\nPass either --veaero or --address, not both.`);
     return null;
   }
 
   if (address !== undefined) {
     if (!isValidAddress(address)) {
-      console.error(`${RECOMMEND_USAGE}\n--address must be a 0x-prefixed 40-character hex address.`);
+      console.error(`${usage}\n--address must be a 0x-prefixed 40-character hex address.`);
       return null;
     }
     const positions = await fetchVeAeroPositions(address);
@@ -185,7 +190,7 @@ async function resolveBudget(args: string[]): Promise<number | null> {
 
   const veaero = Number(rawVeaero);
   if (rawVeaero === undefined || !Number.isFinite(veaero) || veaero <= 0) {
-    console.error(`${RECOMMEND_USAGE}\nAmount must be a finite positive number.`);
+    console.error(`${usage}\nAmount must be a finite positive number.`);
     return null;
   }
   return veaero;
@@ -200,7 +205,7 @@ async function cmdRecommend(args: string[]) {
     return;
   }
 
-  const veaero = await resolveBudget(args);
+  const veaero = await resolveBudget(args, RECOMMEND_USAGE);
   if (veaero === null) {
     process.exitCode = 1;
     return;
@@ -259,12 +264,12 @@ async function cmdRecommend(args: string[]) {
 async function cmdBacktest(args: string[]) {
   const epochs = parsePositiveIntFlag(args, "epochs", BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS);
   if (epochs === undefined) {
-    console.error(`Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS})`);
+    console.error(BACKTEST_USAGE);
     process.exitCode = 1;
     return;
   }
 
-  const veaero = await resolveBudget(args);
+  const veaero = await resolveBudget(args, BACKTEST_USAGE);
   if (veaero === null) {
     process.exitCode = 1;
     return;
