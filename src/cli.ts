@@ -160,7 +160,7 @@ const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --a
  * rather than always printing `recommend`'s.
  * Returns null after printing its own error, so the caller just bails.
  */
-async function resolveBudget(args: string[], usage: string): Promise<number | null> {
+export async function resolveBudget(args: string[], usage: string): Promise<number | null> {
   const rawVeaero = getFlag(args, "veaero");
   const address = getFlag(args, "address");
 

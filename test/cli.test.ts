@@ -1,9 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parsePositiveIntFlag, parseUnitIntervalFlag, poolEfficiencyToJson, veAeroPositionsToJson } from "../src/cli.js";
+import { parsePositiveIntFlag, parseUnitIntervalFlag, poolEfficiencyToJson, veAeroPositionsToJson, resolveBudget } from "../src/cli.js";
 import { EPOCH_SECONDS } from "../src/trend.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 import type { VeNftSummary } from "../src/veAero.js";
+
+/** Runs `fn` with console.error silenced, returning its return value and everything logged. */
+async function captureStderr<T>(fn: () => Promise<T>): Promise<{ result: T; logged: string[] }> {
+  const original = console.error;
+  const logged: string[] = [];
+  console.error = (...parts: unknown[]) => {
+    logged.push(parts.join(" "));
+  };
+  try {
+    const result = await fn();
+    return { result, logged };
+  } finally {
+    console.error = original;
+  }
+}
 
 test("parsePositiveIntFlag returns the fallback when the flag is absent", () => {
   assert.equal(parsePositiveIntFlag([], "top", 20), 20);
@@ -139,4 +154,46 @@ test("veAeroPositionsToJson returns a zero total and empty locks for an account 
     totalVeAero: 0,
     locks: [],
   });
+});
+
+// resolveBudget backs both `recommend` and `backtest`'s budget resolution, but
+// unlike the rest of this file's flag parsers it had no direct test coverage —
+// these cover every branch that doesn't require a live RPC call (a valid
+// --address still hits fetchVeAeroPositions, so that branch is exercised live
+// via the CLI instead, same as fetchActivePools/fetchVeAeroPositions elsewhere).
+
+test("resolveBudget rejects passing both --veaero and --address", async () => {
+  const { result, logged } = await captureStderr(() =>
+    resolveBudget(["--veaero", "25000", "--address", "0x1234567890123456789012345678901234567890"], "USAGE"),
+  );
+  assert.equal(result, null);
+  assert.ok(logged.some((l) => l.includes("not both")), `expected a "not both" message, got: ${logged.join(" | ")}`);
+});
+
+test("resolveBudget rejects a malformed --address before attempting any RPC call", async () => {
+  const { result, logged } = await captureStderr(() => resolveBudget(["--address", "not-an-address"], "USAGE"));
+  assert.equal(result, null);
+  assert.ok(logged.some((l) => l.includes("40-character hex address")), `expected an address-format message, got: ${logged.join(" | ")}`);
+});
+
+test("resolveBudget rejects a missing --veaero/--address entirely", async () => {
+  const { result, logged } = await captureStderr(() => resolveBudget([], "USAGE"));
+  assert.equal(result, null);
+  assert.ok(logged.some((l) => l.includes("finite positive number")), `expected an amount-format message, got: ${logged.join(" | ")}`);
+});
+
+test("resolveBudget rejects a non-numeric --veaero", async () => {
+  const { result } = await captureStderr(() => resolveBudget(["--veaero", "abc"], "USAGE"));
+  assert.equal(result, null);
+});
+
+test("resolveBudget rejects zero and negative --veaero amounts", async () => {
+  assert.equal((await captureStderr(() => resolveBudget(["--veaero", "0"], "USAGE"))).result, null);
+  assert.equal((await captureStderr(() => resolveBudget(["--veaero", "-100"], "USAGE"))).result, null);
+});
+
+test("resolveBudget accepts a valid --veaero amount and logs nothing", async () => {
+  const { result, logged } = await captureStderr(() => resolveBudget(["--veaero", "25000"], "USAGE"));
+  assert.equal(result, 25000);
+  assert.deepEqual(logged, []);
 });
