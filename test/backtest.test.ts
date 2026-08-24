@@ -118,3 +118,57 @@ test("runBacktest respects topK, so a strong candidate beyond the cutoff is neve
   // 1000 * 100/(100+100) = 500 if everything went to BEST alone.
   assert.ok(Math.abs(report.radarTotalUsd - 500) < 1e-6);
 });
+
+test("runBacktest's naive baseline may pick a pool the radar's own filters exclude", () => {
+  // The whole point of the comparison is that the baseline chases the highest
+  // instantaneous $/vote, including into thin one-off-bribe pools the radar
+  // deliberately screens out. If the baseline could only choose from pools that
+  // already cleared `minTrailingUsd`, both sides would be picking from one
+  // pre-vetted set and the backtest would be measuring the radar against itself.
+  //
+  // STEADY pays $100 across 1,000 votes — $0.10/vote, and a trailing average
+  // well clear of the floor. SPIKE pays $15 into a hundredth of a vote —
+  // $1,500/vote, 15,000x higher — but averages $7.50 over the trailing window,
+  // below the floor, so it is not a radar candidate.
+  const steadyPool = history("STEADY", [100, 100, 100, 100, 100], [1000, 1000, 1000, 1000, 1000]);
+  const spikePool = history("SPIKE", [12, 15, 0, 0, 0], [0.01, 0.01, 0.01, 0.01, 0.01]);
+
+  const report = runBacktest([steadyPool, spikePool], 100, {
+    testEpochs: 1,
+    trendEpochs: 2,
+    minTrailingUsd: 10,
+  });
+
+  assert.equal(report.epochsTested, 1);
+  // Only STEADY clears the trailing-average floor, so the radar sees one candidate...
+  assert.equal(report.epochs[0].candidatesConsidered, 1);
+  // ...while the baseline is free to chase SPIKE's $1,500/vote, and does.
+  assert.equal(report.epochs[0].naiveSymbol, "SPIKE");
+
+  // It is then scored on what SPIKE actually paid the tested epoch, which is the
+  // half of this that silently returned $0 while outcomes were only recorded for
+  // radar candidates: $12 shared between the 0.01 votes already there and our 100.
+  assert.ok(report.epochs[0].naiveUsd > 0);
+  assert.ok(Math.abs(report.epochs[0].naiveUsd - (12 * 100) / 100.01) < 1e-6);
+});
+
+test("widening the baseline leaves the radar's own candidate set untouched", () => {
+  // Guard against the fix over-correcting: pools admitted only so the baseline
+  // can see them must not become allocation candidates themselves.
+  const steadyPool = history("STEADY", [100, 100, 100, 100, 100], [1000, 1000, 1000, 1000, 1000]);
+  const spikePool = history("SPIKE", [12, 15, 0, 0, 0], [0.01, 0.01, 0.01, 0.01, 0.01]);
+
+  const withSpike = runBacktest([steadyPool, spikePool], 100, {
+    testEpochs: 1,
+    trendEpochs: 2,
+    minTrailingUsd: 10,
+  });
+  const withoutSpike = runBacktest([steadyPool], 100, {
+    testEpochs: 1,
+    trendEpochs: 2,
+    minTrailingUsd: 10,
+  });
+
+  assert.equal(withSpike.epochs[0].candidatesConsidered, withoutSpike.epochs[0].candidatesConsidered);
+  assert.ok(Math.abs(withSpike.radarTotalUsd - withoutSpike.radarTotalUsd) < 1e-9);
+});
