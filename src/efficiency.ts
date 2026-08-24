@@ -1,5 +1,5 @@
 import { fetchActivePools, fetchPoolEpochs, type PoolInfo, type EpochData } from "./pools.js";
-import { getTokenPrices, toUsd } from "./prices.js";
+import { getTokenPrices, toUsd, countUnpricedTokens } from "./prices.js";
 import { TREND_EPOCHS, MIN_TRAILING_USD } from "./constants.js";
 import { mapWithConcurrency } from "./util.js";
 
@@ -150,6 +150,12 @@ export async function rankPoolsByEfficiency(): Promise<PoolEfficiency[]> {
     ...e.fees.map((f) => f.token),
   ]);
   const prices = await getTokenPrices(allTokens);
+  const unpriced = countUnpricedTokens(prices);
+  if (unpriced > 0) {
+    console.error(
+      `(${unpriced} of ${prices.size} reward token(s) have no USD price and count as $0 — pools paid only in those will look empty)`,
+    );
+  }
 
   const results: PoolEfficiency[] = [];
 

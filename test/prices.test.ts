@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { getTokenPrices, toUsd } from "../src/prices.js";
+import { getTokenPrices, toUsd, countUnpricedTokens } from "../src/prices.js";
 import { DEFILLAMA_TIMEOUT_MS, PRICE_CACHE_TTL_MS, PRICE_FAILURE_CACHE_TTL_MS } from "../src/constants.js";
 
 const originalFetch = global.fetch;
@@ -261,4 +261,20 @@ test("a successfully looked-up price keeps the full cache TTL", async () => {
   now += PRICE_CACHE_TTL_MS;
   await getTokenPrices(["0xTTL2"]);
   assert.equal(calls, 2);
+});
+
+test("countUnpricedTokens counts only the tokens that came back without a price", () => {
+  // An unpriced token contributes $0 to every epoch it appears in, which is the
+  // right call — one obscure bribe token must not blow up a pool's whole
+  // calculation. But a pool paid entirely in something DefiLlama doesn't cover
+  // then reads as $0, drops under the trailing floor and disappears from the
+  // ranking silently. This is what lets callers say so out loud.
+  const prices = new Map([
+    ["0x1", { price: 2.5, decimals: 18 }],
+    ["0x2", { price: 0, decimals: 18 }],
+    ["0x3", { price: 0.000001, decimals: 6 }],
+    ["0x4", { price: 0, decimals: 18 }],
+  ]);
+  assert.equal(countUnpricedTokens(prices), 2);
+  assert.equal(countUnpricedTokens(new Map()), 0);
 });

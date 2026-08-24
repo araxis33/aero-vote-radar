@@ -1,7 +1,7 @@
 import { allocateAcrossCandidates, type AllocationCandidate } from "./allocator.js";
 import { epochUsd } from "./efficiency.js";
 import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
-import { getTokenPrices } from "./prices.js";
+import { getTokenPrices, countUnpricedTokens } from "./prices.js";
 import { BACKTEST_EPOCHS, MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
 import { mapWithConcurrency } from "./util.js";
 
@@ -224,6 +224,12 @@ export async function backtestLive(
     ...e.fees.map((f) => f.token),
   ]);
   const prices = await getTokenPrices(allTokens);
+  const unpriced = countUnpricedTokens(prices);
+  if (unpriced > 0) {
+    console.error(
+      `(${unpriced} of ${prices.size} reward token(s) have no USD price and count as $0 — pools paid only in those will look empty)`,
+    );
+  }
 
   const histories: PoolHistory[] = pools.map((pool, i) => ({
     address: pool.address,

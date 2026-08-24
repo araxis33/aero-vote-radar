@@ -87,6 +87,24 @@ export async function getTokenPrices(
   return result;
 }
 
+/**
+ * How many of the looked-up tokens ended up with no usable price.
+ *
+ * An unpriced token silently contributes $0 to every epoch it appears in, which
+ * is the right behaviour — one obscure bribe token shouldn't blow up a pool's
+ * whole calculation — but it is not a fact worth hiding. A pool incentivised
+ * entirely in something DefiLlama doesn't cover reads as $0, falls under
+ * MIN_TRAILING_USD, and vanishes from the ranking with nothing said. Callers
+ * report this the same way they already report skipped pools and failed epoch
+ * fetches, so a thin-looking scan can be recognised as a pricing gap rather
+ * than a quiet market.
+ */
+export function countUnpricedTokens(prices: Map<string, TokenPrice>): number {
+  let unpriced = 0;
+  for (const { price } of prices.values()) if (price === 0) unpriced++;
+  return unpriced;
+}
+
 /** Converts a raw on-chain token amount to a USD value using a looked-up price/decimals map. */
 export function toUsd(amount: bigint, token: string, prices: Map<string, TokenPrice>): number {
   const info = prices.get(token.toLowerCase());
