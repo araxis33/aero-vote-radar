@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { recommendAllocation, toWholePercentWeights } from "../src/allocator.js";
+import { allocateAcrossCandidates, recommendAllocation, toWholePercentWeights } from "../src/allocator.js";
 import type { AllocationResult } from "../src/allocator.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 
@@ -174,4 +174,46 @@ test("only the top K ranked candidates are ever considered", () => {
 
   assert.equal(result.length, 1);
   assert.equal(result[0].pool, "0xA", "candidate beyond topK must be excluded even if it would be more attractive");
+});
+
+test("allocateAcrossCandidates funds a pool nobody else has voted on", () => {
+  // V = 0 is the best case, not the worst: your share is R*x/(0+x) = R, the
+  // whole epoch value. The marginal-value derivative R*V/(V+x)^2 is 0 there, so
+  // before this was special-cased such a pool never received a single step no
+  // matter how large R was — it was silently skipped in favour of any crowded
+  // pool with a sliver of value left.
+  const result = allocateAcrossCandidates(
+    [
+      { address: "0xEMPTY", symbol: "EMPTY", existingVotes: 0, expectedUsd: 500 },
+      { address: "0xCROWDED", symbol: "CROWDED", existingVotes: 1_000_000, expectedUsd: 100 },
+    ],
+    1000,
+  );
+
+  const empty = result.find((r) => r.symbol === "EMPTY");
+  assert.ok(empty, "the unvoted pool must receive an allocation");
+  assert.ok(empty.veAeroAllocated > 0);
+  // Holding all of the votes means collecting all of the value.
+  assert.ok(Math.abs(empty.expectedUsd - 500) < 1e-6);
+});
+
+test("allocateAcrossCandidates gives an unvoted pool one slice, not the whole budget", () => {
+  // The entire gain lands with the first slice — R*x/x is R whatever x is — so
+  // piling more budget in adds nothing. The rest must stay available for pools
+  // that can still pay for it.
+  const result = allocateAcrossCandidates(
+    [
+      { address: "0xEMPTY", symbol: "EMPTY", existingVotes: 0, expectedUsd: 500 },
+      { address: "0xREAL", symbol: "REAL", existingVotes: 1000, expectedUsd: 400 },
+    ],
+    1000,
+    400,
+  );
+
+  const empty = result.find((r) => r.symbol === "EMPTY");
+  const real = result.find((r) => r.symbol === "REAL");
+  assert.ok(empty && real);
+  // One step of a 1,000 veAERO budget over 400 steps.
+  assert.ok(Math.abs(empty.veAeroAllocated - 2.5) < 1e-9);
+  assert.ok(real.veAeroAllocated > empty.veAeroAllocated);
 });

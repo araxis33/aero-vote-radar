@@ -112,6 +112,30 @@ export function recommendAllocation(
  * The allocation algorithm itself, over an already-selected candidate set. See
  * `recommendAllocation` for the maths and the assumptions it rests on.
  */
+/**
+ * What the next `stepSize` of budget is worth to this candidate, per veAERO, so
+ * candidates on very different scales stay comparable.
+ *
+ * For a pool that already has V votes from other people, your dollar return at x
+ * of your own is R*x/(V+x), whose derivative R*V/(V+x)^2 is the usual answer.
+ *
+ * That derivative is 0 when V is 0 — and a pool nobody else has voted on is the
+ * best case there is, not the worst: your share is R*x/(0+x) = R, the whole
+ * epoch value, for any x above zero. Left to the derivative alone such a pool
+ * would never receive a single step, no matter how large R was. The entire gain
+ * arrives with the first slice and nothing is added by the ones after it, which
+ * is what the `allocated === 0` branch says.
+ *
+ * `backtest.ts`'s `realisedUsd` already scores V = 0 this way ("you'd have taken
+ * the whole pot"); this keeps the allocator from contradicting the scorer.
+ */
+function marginalValuePerVeAero(c: Candidate, stepSize: number): number {
+  if (c.expectedUsd <= 0) return 0;
+  if (c.existingVotes === 0) return c.allocated === 0 ? c.expectedUsd / stepSize : 0;
+  const v = c.existingVotes + c.allocated;
+  return (c.expectedUsd * c.existingVotes) / (v * v);
+}
+
 export function allocateAcrossCandidates(
   input: AllocationCandidate[],
   veAeroBudget: number,
@@ -131,9 +155,7 @@ export function allocateAcrossCandidates(
     let bestMarginal = 0;
 
     for (let i = 0; i < candidates.length; i++) {
-      const c = candidates[i];
-      const v = c.existingVotes + c.allocated;
-      const marginal = c.expectedUsd > 0 ? (c.expectedUsd * c.existingVotes) / (v * v) : 0;
+      const marginal = marginalValuePerVeAero(candidates[i], stepSize);
       if (marginal > bestMarginal) {
         bestMarginal = marginal;
         bestIndex = i;

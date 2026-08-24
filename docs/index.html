@@ -325,6 +325,19 @@
 // keystroke, which is why the personalised half lives in the browser.
 // ---------------------------------------------------------------------------
 
+/**
+ * What the next `stepSize` of budget is worth to this candidate, per veAERO.
+ * The V = 0 branch matters: a pool nobody else has voted on pays its whole
+ * epoch value to whoever votes at all, but the derivative R*V/(V+x)^2 is 0
+ * there, so without it such a pool would never receive a single step.
+ */
+function marginalValuePerVeAero(c, stepSize) {
+  if (c.expectedUsd <= 0) return 0;
+  if (c.existingVotes === 0) return c.allocated === 0 ? c.expectedUsd / stepSize : 0;
+  const v = c.existingVotes + c.allocated;
+  return (c.expectedUsd * c.existingVotes) / (v * v);
+}
+
 function allocateAcrossCandidates(input, veAeroBudget, steps) {
   steps = steps || 400;
   if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return [];
@@ -336,9 +349,7 @@ function allocateAcrossCandidates(input, veAeroBudget, steps) {
     let bestIndex = -1;
     let bestMarginal = 0;
     for (let i = 0; i < candidates.length; i++) {
-      const c = candidates[i];
-      const v = c.existingVotes + c.allocated;
-      const marginal = c.expectedUsd > 0 ? (c.expectedUsd * c.existingVotes) / (v * v) : 0;
+      const marginal = marginalValuePerVeAero(candidates[i], stepSize);
       if (marginal > bestMarginal) { bestMarginal = marginal; bestIndex = i; }
     }
     if (bestIndex === -1) break;
