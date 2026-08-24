@@ -2,6 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { createRequire } from "node:module";
 import { rankPoolsByEfficiency } from "./efficiency.js";
 import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
@@ -48,9 +49,19 @@ function withErrorHandling<Args extends unknown[]>(
   };
 }
 
+/**
+ * Read from package.json rather than repeated here. The two had already been
+ * written twice and would have drifted at the first release, leaving clients
+ * told one version by the manifest and another by the handshake.
+ *
+ * `../package.json` resolves from both `src/` under tsx and `dist/` when
+ * installed, since the manifest ships with the package either way.
+ */
+const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
+
 const server = new McpServer({
   name: "aero-vote-radar",
-  version: "0.1.0",
+  version,
 });
 
 server.registerTool(
