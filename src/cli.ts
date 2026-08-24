@@ -344,6 +344,16 @@ async function cmdMyVeAero(args: string[]) {
   console.log(`\nTotal voting power: ${total.toLocaleString("en-US")} veAERO\n`);
 }
 
+/**
+ * Whether `command` is a request for help rather than a mistake — no arguments
+ * at all, or an explicit help flag. Both print the same text; only the exit code
+ * differs, because a script that runs `aero-vote-radar poolz` and reads $? needs
+ * to be told it typed something wrong.
+ */
+function isHelpRequest(command: string | undefined): boolean {
+  return command === undefined || command === "help" || command === "--help" || command === "-h";
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
@@ -355,8 +365,10 @@ async function main() {
       return cmdBacktest(rest);
     case "my-veaero":
       return cmdMyVeAero(rest);
-    default:
-      console.log(`aero-vote-radar — Aerodrome (Base) veAERO vote-efficiency tool
+    default: {
+      // An unrecognised command exits non-zero: printing usage and reporting
+      // success meant a typo in a script looked exactly like a completed run.
+      const usage = `aero-vote-radar — Aerodrome (Base) veAERO vote-efficiency tool
 
 Commands:
   pools [--top N] [--min-consistency 0..1] [--json]
@@ -375,8 +387,17 @@ Commands:
       Look up an account's veAERO locks and voting power
 
 Pass --json to any command for machine-readable output instead of a table.
+`;
+      if (isHelpRequest(command)) {
+        console.log(usage);
+        return;
+      }
+      console.error(`Unknown command: ${command}
 `);
+      console.error(usage);
+      process.exitCode = 1;
       return;
+    }
   }
 }
 
