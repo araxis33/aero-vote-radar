@@ -363,6 +363,7 @@ function allocateAcrossCandidates(input, veAeroBudget, steps) {
       weight: c.allocated / veAeroBudget,
       veAeroAllocated: c.allocated,
       expectedUsd: (c.expectedUsd * c.allocated) / (c.existingVotes + c.allocated),
+      poolExpectedUsd: c.expectedUsd,
     }))
     .sort((a, b) => b.veAeroAllocated - a.veAeroAllocated);
 }
@@ -388,6 +389,27 @@ function toWholePercentWeights(allocation) {
   }
 
   return new Map(rows.map((r) => [r.pool, r.percent]));
+}
+
+/**
+ * Expected USD from the vote actually cast, not from the continuous allocation.
+ * Sub-1% rows are dropped, and their points are redistributed to the rows that
+ * survived — so those rows receive more veAERO than the allocator penciled in.
+ * Each surviving pool is therefore rescored at the veAERO its percentage really
+ * puts there. Mirrors expectedUsdForWholePercentVote in src/allocator.ts.
+ */
+function expectedUsdForWholePercentVote(allocation, veAeroBudget) {
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return 0;
+
+  const byPool = new Map(allocation.map((a) => [a.pool, a]));
+  let total = 0;
+  for (const [pool, percent] of toWholePercentWeights(allocation)) {
+    const row = byPool.get(pool);
+    if (!row || percent <= 0) continue;
+    const votes = (percent / 100) * veAeroBudget;
+    total += (row.poolExpectedUsd * votes) / (row.existingVotes + votes);
+  }
+  return total;
 }
 
 // --- reading veAERO voting power -------------------------------------------
@@ -813,7 +835,9 @@ function renderAllocation() {
   el.allocBody.replaceChildren(frag);
   el.copyBtn.disabled = lastPercents.length === 0;
 
-  const totalUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
+  // The headline must describe the vote on screen, not the continuous allocation
+  // behind it: sub-1% rows are not shown and their points went to the rows that are.
+  const totalUsd = expectedUsdForWholePercentVote(allocation, budget);
   el.statUsd.textContent = usd(totalUsd);
   el.statPools.textContent = String(shown.length);
   el.statPerVote.textContent = "$" + (totalUsd / budget).toFixed(5);

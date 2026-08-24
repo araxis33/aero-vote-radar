@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { allocateAcrossCandidates, toWholePercentWeights, type AllocationCandidate } from "../src/allocator.js";
+import {
+  allocateAcrossCandidates,
+  toWholePercentWeights,
+  expectedUsdForWholePercentVote,
+  type AllocationCandidate,
+} from "../src/allocator.js";
 
 /**
  * The static site cannot import the TypeScript allocator: `docs/` is served by
@@ -47,13 +52,19 @@ function extractFunction(source: string, name: string): string {
 
 type SiteAllocate = (input: unknown[], budget: number, steps?: number) => { pool: string; symbol: string; weight: number; veAeroAllocated: number; expectedUsd: number }[];
 type SitePercents = (allocation: unknown[]) => Map<string, number>;
+type SiteExpected = (allocation: unknown[], budget: number) => number;
 
 const siteModule = new Function(`
   ${extractFunction(siteSource, "marginalValuePerVeAero")}
   ${extractFunction(siteSource, "allocateAcrossCandidates")}
   ${extractFunction(siteSource, "toWholePercentWeights")}
-  return { allocateAcrossCandidates, toWholePercentWeights };
-`)() as { allocateAcrossCandidates: SiteAllocate; toWholePercentWeights: SitePercents };
+  ${extractFunction(siteSource, "expectedUsdForWholePercentVote")}
+  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote };
+`)() as {
+  allocateAcrossCandidates: SiteAllocate;
+  toWholePercentWeights: SitePercents;
+  expectedUsdForWholePercentVote: SiteExpected;
+};
 
 /** Candidate sets chosen to exercise the branches the two copies could disagree on. */
 const cases: { name: string; candidates: AllocationCandidate[]; budget: number }[] = [
@@ -125,5 +136,16 @@ for (const { name, candidates, budget } of cases) {
     );
 
     assert.deepEqual(theirsPercents, oursPercents);
+  });
+}
+
+for (const { name, candidates, budget } of cases) {
+  test(`docs/index.html quotes the same expected $ for the cast vote: ${name}`, () => {
+    const ours = expectedUsdForWholePercentVote(allocateAcrossCandidates(candidates, budget), budget);
+    const theirs = siteModule.expectedUsdForWholePercentVote(
+      siteModule.allocateAcrossCandidates(candidates, budget),
+      budget,
+    );
+    assert.ok(Math.abs(theirs - ours) < 1e-9, `site says $${theirs}, module says $${ours}`);
   });
 }

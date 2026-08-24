@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { rankPoolsByEfficiency } from "./efficiency.js";
-import { recommendAllocation, toWholePercentWeights } from "./allocator.js";
+import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
@@ -128,6 +128,8 @@ server.registerTool(
     const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
     const allocation = recommendAllocation(ranked, budget, topCandidates);
     const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
+    const votePercents = toWholePercentWeights(allocation);
+    const votePercentsExpectedUsd = expectedUsdForWholePercentVote(allocation, budget);
 
     return {
       content: [
@@ -138,9 +140,10 @@ server.registerTool(
               veAeroBudget: budget,
               budgetSource: address ? `live on-chain voting power of ${address}` : "caller-supplied amount",
               totalExpectedUsdNextEpoch: totalExpectedUsd,
+              votePercentsExpectedUsdNextEpoch: votePercentsExpectedUsd,
               allocation,
-              votePercents: toWholePercentWeights(allocation),
-              note: "Weights and expected $ are a heuristic recommendation based on trailing-epoch trends and current vote snapshots, not a guarantee. `votePercents` are whole percentages summing to exactly 100, ready to enter in Aerodrome's voting UI. You sign and submit the vote yourself.",
+              votePercents,
+              note: "Weights and expected $ are a heuristic recommendation based on trailing-epoch trends and current vote snapshots, not a guarantee. `votePercents` are whole percentages summing to exactly 100, ready to enter in Aerodrome's voting UI. Quote `votePercentsExpectedUsdNextEpoch` when telling the user what they would earn: `totalExpectedUsdNextEpoch` belongs to the continuous `allocation`, which includes rows too small to round up to 1% and so cannot be voted as written. You sign and submit the vote yourself.",
             },
             null,
             2,

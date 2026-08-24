@@ -5,7 +5,12 @@ export interface AllocationResult {
   symbol: string;
   weight: number;
   veAeroAllocated: number;
+  /** Your share of the pool's expected epoch value at exactly `veAeroAllocated` votes. */
   expectedUsd: number;
+  /** Votes already in the pool from everyone else — the V in R*x/(V+x). */
+  existingVotes: number;
+  /** The pool's whole expected epoch value, before your dilution — the R. */
+  poolExpectedUsd: number;
 }
 
 export interface WholePercentWeight {
@@ -61,6 +66,43 @@ export function toWholePercentWeights(allocation: AllocationResult[]): WholePerc
 }
 
 /**
+ * Expected USD from the vote a user can actually cast, rather than from the
+ * continuous allocation behind it.
+ *
+ * These are not the same number, for two reasons that pull in opposite
+ * directions. Rows too small to round up to 1% are dropped — you cannot cast a
+ * 0% vote — so their value should not be claimed. But the largest-remainder
+ * rounding then redistributes those points across the rows that survived, so the
+ * whole budget still gets voted, and the surviving pools receive *more* veAERO
+ * than the allocator penciled in. Summing `expectedUsd` over the kept rows would
+ * be wrong in both directions at once.
+ *
+ * So each surviving pool's share is recomputed at the veAERO its percentage
+ * really puts there, against the same R*x/(V+x) dilution model the allocation
+ * was chosen under — which is why `AllocationResult` carries V and R and not
+ * only the already-diluted figure.
+ */
+export function expectedUsdForWholePercentVote(
+  allocation: AllocationResult[],
+  veAeroBudget: number,
+): number {
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return 0;
+
+  const byPool = new Map(allocation.map((a) => [a.pool, a]));
+  let total = 0;
+
+  for (const { pool, percent } of toWholePercentWeights(allocation)) {
+    const row = byPool.get(pool);
+    if (!row) continue;
+    const votes = (percent / 100) * veAeroBudget;
+    if (votes <= 0) continue;
+    total += (row.poolExpectedUsd * votes) / (row.existingVotes + votes);
+  }
+
+  return total;
+}
+
+/**
  * The minimal shape the allocator actually needs. Stated as its own type so
  * callers that aren't holding a full `PoolEfficiency` — notably the backtester,
  * which reconstructs each historical epoch's view of the world — can run the
@@ -109,10 +151,6 @@ export function recommendAllocation(
 }
 
 /**
- * The allocation algorithm itself, over an already-selected candidate set. See
- * `recommendAllocation` for the maths and the assumptions it rests on.
- */
-/**
  * What the next `stepSize` of budget is worth to this candidate, per veAERO, so
  * candidates on very different scales stay comparable.
  *
@@ -136,6 +174,10 @@ function marginalValuePerVeAero(c: Candidate, stepSize: number): number {
   return (c.expectedUsd * c.existingVotes) / (v * v);
 }
 
+/**
+ * The allocation algorithm itself, over an already-selected candidate set. See
+ * `recommendAllocation` for the maths and the assumptions it rests on.
+ */
 export function allocateAcrossCandidates(
   input: AllocationCandidate[],
   veAeroBudget: number,
@@ -174,6 +216,8 @@ export function allocateAcrossCandidates(
       weight: c.allocated / veAeroBudget,
       veAeroAllocated: c.allocated,
       expectedUsd: (c.expectedUsd * c.allocated) / (c.existingVotes + c.allocated),
+      existingVotes: c.existingVotes,
+      poolExpectedUsd: c.expectedUsd,
     }))
     .sort((a, b) => b.veAeroAllocated - a.veAeroAllocated);
 }
