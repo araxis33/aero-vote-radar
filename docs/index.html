@@ -338,8 +338,13 @@ function marginalValuePerVeAero(c, stepSize) {
   return (c.expectedUsd * c.existingVotes) / (v * v);
 }
 
+// 100 steps, not 400: a vote is cast in whole percentages, so one step is one
+// castable percentage point. Finer steps only hand out fractions of a point
+// that toWholePercentWeights then rounds away, printing an expected total no
+// real vote could earn. Kept in step with WHOLE_PERCENT_STEPS in src/allocator.ts
+// — site-parity.test.ts fails if these two drift apart.
 function allocateAcrossCandidates(input, veAeroBudget, steps) {
-  steps = steps || 400;
+  steps = steps || 100;
   if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return [];
 
   const candidates = input.map((c) => ({ ...c, allocated: 0 }));

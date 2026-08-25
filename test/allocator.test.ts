@@ -242,11 +242,16 @@ test("expectedUsdForWholePercentVote scores the rounded vote, not the continuous
 });
 
 test("expectedUsdForWholePercentVote counts the veAERO that dropped rows hand back", () => {
-  // Fifteen pools on very different scales: several round to 0% and their
-  // points are redistributed to the survivors, so those survivors end up with
-  // more veAERO than the allocator penciled in. Summing `expectedUsd` over the
-  // kept rows would miss that and understate the vote; summing over every row
-  // would claim value from pools the user is told not to vote for.
+  // Fifteen pools on very different scales, allocated at a deliberately finer
+  // granularity than a vote can express: several round to 0% and their points
+  // are redistributed to the survivors, so those survivors end up with more
+  // veAERO than the allocator penciled in. Summing `expectedUsd` over the kept
+  // rows would miss that and understate the vote; summing over every row would
+  // claim value from pools the user is told not to vote for.
+  //
+  // The default granularity no longer produces this situation at all (see the
+  // test below), but the function still has to be right for a caller that asks
+  // for finer steps, and for an allocation assembled by hand.
   const candidates = Array.from({ length: 15 }, (_, i) => ({
     address: `0x${i}`,
     symbol: `P${i}`,
@@ -254,7 +259,7 @@ test("expectedUsdForWholePercentVote counts the veAERO that dropped rows hand ba
     expectedUsd: 50 * (i + 1),
   }));
   const budget = 1_000_000;
-  const allocation = allocateAcrossCandidates(candidates, budget);
+  const allocation = allocateAcrossCandidates(candidates, budget, 400);
   const percents = toWholePercentWeights(allocation);
 
   assert.ok(percents.length < allocation.length, "this case must actually drop rows");
@@ -285,5 +290,81 @@ test("expectedUsdForWholePercentVote returns 0 for an empty allocation or a bad 
   );
   for (const budget of [0, -1, NaN, Infinity]) {
     assert.equal(expectedUsdForWholePercentVote(allocation, budget), 0);
+  }
+});
+
+test("the default allocation is castable: every row survives rounding to whole percent", () => {
+  // The case that motivated the change: 1,000,000 veAERO across fifteen pools
+  // on wildly different scales. At 400 steps the allocator handed nine of them
+  // shares under 0.5%, which toWholePercentWeights then rounded to nothing, so
+  // the printed table described a vote that could not be cast.
+  const candidates = Array.from({ length: 15 }, (_, i) => ({
+    address: `0x${i}`,
+    symbol: `P${i}`,
+    existingVotes: 10 ** (1 + (i % 5)),
+    expectedUsd: 50 * (i + 1),
+  }));
+  const budget = 1_000_000;
+
+  const allocation = allocateAcrossCandidates(candidates, budget);
+  const percents = toWholePercentWeights(allocation);
+
+  assert.equal(percents.length, allocation.length, "no row may be rounded away");
+  assert.equal(
+    percents.reduce((a, p) => a + p.percent, 0),
+    100,
+  );
+
+  // And the finer granularity really did drop rows, so the guarantee above is
+  // the change and not an accident of these particular numbers.
+  const fine = allocateAcrossCandidates(candidates, budget, 400);
+  assert.ok(toWholePercentWeights(fine).length < fine.length);
+});
+
+test("on the default lattice, the quoted total and the castable total are the same number", () => {
+  // Two figures that used to disagree: what the table totals, and what the vote
+  // you can actually type in is worth. On the 1% lattice there is nothing left
+  // to round, so they must agree to the cent.
+  const candidates = Array.from({ length: 12 }, (_, i) => ({
+    address: `0x${i}`,
+    symbol: `P${i}`,
+    existingVotes: 500 * (i + 1),
+    expectedUsd: 40 * (i + 1),
+  }));
+  const budget = 250_000;
+
+  const allocation = allocateAcrossCandidates(candidates, budget);
+  const quoted = allocation.reduce((a, b) => a + b.expectedUsd, 0);
+  const castable = expectedUsdForWholePercentVote(allocation, budget);
+
+  assert.ok(Math.abs(quoted - castable) < 1e-6, `${quoted} vs ${castable}`);
+});
+
+test("every allocated amount is a whole percent of the budget", () => {
+  // Checked across a spread of budgets and candidate counts rather than one
+  // case, because the guarantee is arithmetic, not a property of these inputs.
+  for (const budget of [1, 137, 25_000, 1_000_000, 8_432_119]) {
+    for (const n of [1, 2, 7, 15]) {
+      const candidates = Array.from({ length: n }, (_, i) => ({
+        address: `0x${i}`,
+        symbol: `P${i}`,
+        existingVotes: 100 * (i + 1) ** 2,
+        expectedUsd: 25 * (i + 1),
+      }));
+
+      const allocation = allocateAcrossCandidates(candidates, budget);
+      const unit = budget / 100;
+
+      for (const row of allocation) {
+        const units = row.veAeroAllocated / unit;
+        assert.ok(
+          Math.abs(units - Math.round(units)) < 1e-6,
+          `${row.symbol} got ${row.veAeroAllocated} of ${budget}, which is ${units} percentage points`,
+        );
+      }
+
+      const spent = allocation.reduce((a, b) => a + b.veAeroAllocated, 0);
+      assert.ok(Math.abs(spent - budget) < budget * 1e-9, `budget conservation: ${spent} vs ${budget}`);
+    }
   }
 });

@@ -1,5 +1,27 @@
 import type { PoolEfficiency } from "./efficiency.js";
 
+/**
+ * Aerodrome's voting UI accepts whole percentages, so a vote is cast on a
+ * 1%-of-your-balance lattice whatever the maths would have preferred. Running
+ * the greedy allocator in exactly 100 steps makes each step one castable
+ * percentage point, which is why this is the granularity and not a resolution
+ * knob to be turned up.
+ *
+ * Finer steps do not buy accuracy here, they lose it. At 400 steps the
+ * allocator hands out quarter-points it cannot vote, and `toWholePercentWeights`
+ * then rounds them away: on a 1,000,000 veAERO run against live data the
+ * allocator spread the budget across 15 pools of which 9 came back under 0.5%
+ * and were dropped, so the table printed an expected total that no castable
+ * vote could earn.
+ *
+ * Nothing is given up by quantising. Each pool's return R*x/(V+x) is concave in
+ * x, and for a separable sum of concave functions, handing out identical
+ * indivisible units to the best marginal each time is exactly optimal for that
+ * lattice — not an approximation of the continuous answer, but the best answer
+ * to the question actually being asked.
+ */
+export const WHOLE_PERCENT_STEPS = 100;
+
 export interface AllocationResult {
   pool: string;
   symbol: string;
@@ -136,7 +158,7 @@ export function recommendAllocation(
   ranked: PoolEfficiency[],
   veAeroBudget: number,
   topK = 15,
-  steps = 400,
+  steps = WHOLE_PERCENT_STEPS,
 ): AllocationResult[] {
   return allocateAcrossCandidates(
     ranked.slice(0, topK).map((c) => ({
@@ -181,7 +203,7 @@ function marginalValuePerVeAero(c: Candidate, stepSize: number): number {
 export function allocateAcrossCandidates(
   input: AllocationCandidate[],
   veAeroBudget: number,
-  steps = 400,
+  steps = WHOLE_PERCENT_STEPS,
 ): AllocationResult[] {
   // Reject non-finite budgets (e.g. a caller passing Infinity/NaN through) rather
   // than letting `stepSize` become Infinity/NaN and poisoning every allocation
