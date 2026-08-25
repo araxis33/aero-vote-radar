@@ -172,3 +172,71 @@ test("widening the baseline leaves the radar's own candidate set untouched", () 
   assert.equal(withSpike.epochs[0].candidatesConsidered, withoutSpike.epochs[0].candidatesConsidered);
   assert.ok(Math.abs(withSpike.radarTotalUsd - withoutSpike.radarTotalUsd) < 1e-9);
 });
+
+test("--min-consistency drops spiky pools from the radar's candidates, and says how many", () => {
+  // Same trailing average ($100), same votes, opposite steadiness: STEADY paid
+  // 100/100 across the window, SPIKY paid 180 then 20.
+  const steadyPool = history("STEADY", [100, 100, 100, 100], [1000, 1000, 1000, 1000]);
+  const spikyPool = history("SPIKY", [100, 180, 20, 100], [1000, 1000, 1000, 1000]);
+  const shared = { testEpochs: 1, trendEpochs: 2, minTrailingUsd: 10 };
+
+  const unfiltered = runBacktest([steadyPool, spikyPool], 1000, shared);
+  assert.equal(unfiltered.epochs[0].candidatesConsidered, 2);
+  assert.equal(unfiltered.epochs[0].candidatesExcludedByConsistency, 0);
+  assert.equal(unfiltered.minConsistency, 0);
+
+  const filtered = runBacktest([steadyPool, spikyPool], 1000, { ...shared, minConsistency: 0.8 });
+  assert.equal(filtered.epochs[0].candidatesConsidered, 1);
+  assert.equal(filtered.epochs[0].candidatesExcludedByConsistency, 1);
+  assert.equal(filtered.minConsistency, 0.8);
+});
+
+test("the naive baseline is not filtered, so uplift stays comparable across runs", () => {
+  // SPIKY has the highest last-known $/vote (180/1000 vs 100/1000), so the
+  // baseline picks it either way. If the filter leaked into the baseline, the
+  // filtered run's naive figure would change and the two uplifts would be
+  // measuring different things.
+  const steadyPool = history("STEADY", [100, 100, 100, 100], [1000, 1000, 1000, 1000]);
+  const spikyPool = history("SPIKY", [100, 180, 20, 100], [1000, 1000, 1000, 1000]);
+  const shared = { testEpochs: 1, trendEpochs: 2, minTrailingUsd: 10 };
+
+  const unfiltered = runBacktest([steadyPool, spikyPool], 1000, shared);
+  const filtered = runBacktest([steadyPool, spikyPool], 1000, { ...shared, minConsistency: 0.8 });
+
+  assert.equal(filtered.epochs[0].naiveSymbol, "SPIKY");
+  assert.equal(unfiltered.epochs[0].naiveSymbol, "SPIKY");
+  assert.ok(Math.abs(filtered.naiveTotalUsd - unfiltered.naiveTotalUsd) < 1e-9);
+});
+
+test("consistency is measured as of the decision, not from the epoch being tested", () => {
+  // The tested epoch (index 0) is a $999 outlier, but the trailing window the
+  // decision was made from is flat. Judging it on today's full history would
+  // reject the pool using information that did not exist yet — a hindsight fit.
+  const pool = history("LATESPIKE", [999, 100, 100, 100], [1000, 1000, 1000, 1000]);
+
+  const report = runBacktest([pool], 1000, {
+    testEpochs: 1,
+    trendEpochs: 2,
+    minTrailingUsd: 10,
+    minConsistency: 1,
+  });
+
+  assert.equal(report.epochs[0].candidatesConsidered, 1);
+  assert.equal(report.epochs[0].candidatesExcludedByConsistency, 0);
+});
+
+test("a consistency floor nothing clears leaves no epoch tested rather than a flattering one", () => {
+  const spikyPool = history("SPIKY", [100, 180, 20, 100], [1000, 1000, 1000, 1000]);
+
+  const report = runBacktest([spikyPool], 1000, {
+    testEpochs: 1,
+    trendEpochs: 2,
+    minTrailingUsd: 10,
+    minConsistency: 0.95,
+  });
+
+  assert.equal(report.epochsTested, 0);
+  assert.equal(report.radarTotalUsd, 0);
+  assert.equal(report.upliftPct, null);
+  assert.equal(report.minConsistency, 0.95);
+});

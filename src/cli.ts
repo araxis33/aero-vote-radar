@@ -149,7 +149,7 @@ async function cmdPools(args: string[]) {
 const RECOMMEND_USAGE =
   "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--vote-ready] [--json]";
 
-const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS})`;
+const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
 /**
  * Resolves the veAERO budget from either an explicit `--veaero` amount or, with
@@ -278,7 +278,8 @@ async function cmdRecommend(args: string[]) {
 
 async function cmdBacktest(args: string[]) {
   const epochs = parsePositiveIntFlag(args, "epochs", BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS);
-  if (epochs === undefined) {
+  const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
+  if (epochs === undefined || minConsistency === undefined) {
     console.error(BACKTEST_USAGE);
     process.exitCode = 1;
     return;
@@ -290,7 +291,7 @@ async function cmdBacktest(args: string[]) {
     return;
   }
 
-  const report = await backtestLive(veaero, epochs);
+  const report = await backtestLive(veaero, epochs, undefined, minConsistency);
 
   if (hasFlag(args, "json")) {
     console.log(JSON.stringify(report, null, 2));
@@ -298,11 +299,19 @@ async function cmdBacktest(args: string[]) {
   }
 
   if (report.epochsTested === 0) {
-    console.log("\nNot enough epoch history to backtest — no epoch had a qualifying candidate pool.\n");
+    // Same distinction `recommend` draws: "there is no history" and "your filter
+    // rejected all of it" call for different next moves, and one message for
+    // both sends you looking for a data problem that isn't there.
+    console.log(
+      minConsistency > 0
+        ? `\nNo epoch had a candidate pool passing --min-consistency ${minConsistency} — try a lower value.\n`
+        : "\nNot enough epoch history to backtest — no epoch had a qualifying candidate pool.\n",
+    );
     return;
   }
 
-  console.log(`\nBacktest over the last ${report.epochsTested} epoch(s) with ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO:\n`);
+  const filterNote = minConsistency > 0 ? ` (only pools with consistency ≥ ${minConsistency})` : "";
+  console.log(`\nBacktest over the last ${report.epochsTested} epoch(s) with ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO${filterNote}:\n`);
   console.log(["EpochsAgo", "Radar $", "Naive $", "Naive picked"].map((h) => h.padEnd(18)).join(""));
   for (const e of report.epochs) {
     console.log(
@@ -318,6 +327,16 @@ async function cmdBacktest(args: string[]) {
   const uplift = report.upliftPct === null ? "n/a (baseline earned $0)" : `${(report.upliftPct * 100).toFixed(1)}%`;
   console.log(`\nTotal: radar ${fmtUsd(report.radarTotalUsd)} vs naive ${fmtUsd(report.naiveTotalUsd)} — uplift ${uplift}`);
   console.log(`Radar earned more in ${report.epochsWonByRadar} of ${report.epochsTested} epoch(s).`);
+
+  if (minConsistency > 0) {
+    // Worth stating plainly: a filter that leaves two pools to choose between
+    // has changed the strategy far more than the uplift figure alone suggests.
+    const excluded = report.epochs.reduce((a, e) => a + e.candidatesExcludedByConsistency, 0);
+    const kept = report.epochs.reduce((a, e) => a + e.candidatesConsidered, 0);
+    console.log(
+      `The filter dropped ${excluded} pool-epoch(s) and left ${kept} to allocate across. The naive baseline is deliberately left unfiltered, so this uplift is comparable with an unfiltered run.`,
+    );
+  }
   console.log("\nEpochsAgo 0 is the most recently completed epoch. 'Naive' = put everything in the pool with the");
   console.log("highest $/vote at the time. Decisions use only data available before each epoch resolved, but this");
   console.log("assumes your votes wouldn't have moved anyone else's, and only sees pools whose gauge is still alive.\n");
@@ -394,9 +413,11 @@ Commands:
       power on-chain instead of you typing the amount; --vote-ready prints whole
       percentages that sum to 100, ready for Aerodrome's voting UI.
 
-  backtest (--veaero N | --address 0x...) [--epochs N] [--json]
+  backtest (--veaero N | --address 0x...) [--epochs N] [--min-consistency 0..1] [--json]
       Replay past epochs (up to ${MAX_BACKTEST_EPOCHS}) and compare this tool's allocation against the
-      naive "vote for the highest current $/vote" strategy.
+      naive "vote for the highest current $/vote" strategy. Pass the same
+      --min-consistency you vote with, so the backtest tests the strategy you
+      actually run; the naive baseline stays unfiltered either way.
 
   my-veaero <address> [--json]
       Look up an account's veAERO locks and voting power

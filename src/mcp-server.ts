@@ -179,11 +179,19 @@ server.registerTool(
         .optional()
         .describe("Base wallet address to read live voting power from, instead of stating an amount."),
       epochs: z.number().int().positive().max(MAX_BACKTEST_EPOCHS).optional().describe(`How many past epochs to replay (default ${BACKTEST_EPOCHS}, max ${MAX_BACKTEST_EPOCHS})`),
+      minConsistency: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe(
+          "Only allocate to pools whose consistency — measured over the trailing window as it stood before each tested epoch, never today's — was at least this (0..1). Use it to backtest the same filtered strategy you would pass to the allocation tool; without it the report describes the unfiltered strategy instead. The naive baseline stays unfiltered either way, so uplift figures remain comparable.",
+        ),
     },
   },
-  withErrorHandling(async ({ veAero, address, epochs = BACKTEST_EPOCHS }) => {
+  withErrorHandling(async ({ veAero, address, epochs = BACKTEST_EPOCHS, minConsistency = 0 }) => {
     const budget = await resolveVeAeroBudget(veAero, address);
-    const report = await backtestLive(budget, epochs);
+    const report = await backtestLive(budget, epochs, undefined, minConsistency);
 
     return {
       content: [{ type: "text", text: JSON.stringify(report, null, 2) }],
