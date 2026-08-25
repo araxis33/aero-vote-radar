@@ -5,6 +5,7 @@ import {
   expectedUsdForWholePercentVote,
   recommendAllocation,
   toWholePercentWeights,
+  unallocatedVeAero,
 } from "../src/allocator.js";
 import type { AllocationResult } from "../src/allocator.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
@@ -367,4 +368,87 @@ test("every allocated amount is a whole percent of the budget", () => {
       assert.ok(Math.abs(spent - budget) < budget * 1e-9, `budget conservation: ${spent} vs ${budget}`);
     }
   }
+});
+
+test("maxWeight caps a pool that would otherwise take the whole vote", () => {
+  // One pool is strictly better at every margin, so uncapped it takes 100%.
+  const candidates = [
+    { address: "0xA", symbol: "A", existingVotes: 1000, expectedUsd: 5000 },
+    { address: "0xB", symbol: "B", existingVotes: 1000, expectedUsd: 50 },
+    { address: "0xC", symbol: "C", existingVotes: 1000, expectedUsd: 40 },
+  ];
+  const budget = 10_000;
+
+  const uncapped = allocateAcrossCandidates(candidates, budget);
+  assert.equal(uncapped[0].symbol, "A");
+
+  const capped = allocateAcrossCandidates(candidates, budget, undefined, 0.4);
+  const aRow = capped.find((r) => r.symbol === "A")!;
+
+  assert.ok(aRow.weight <= 0.4 + 1e-9, `A took ${aRow.weight}, cap was 0.4`);
+  assert.ok(capped.length > 1, "the capped budget has to go somewhere");
+  assert.ok(Math.abs(capped.reduce((a, b) => a + b.veAeroAllocated, 0) - budget) < 1e-6);
+});
+
+test("the cap is enforced on the lattice, so it is never exceeded by a rounding step", () => {
+  const candidates = Array.from({ length: 6 }, (_, i) => ({
+    address: `0x${i}`,
+    symbol: `P${i}`,
+    existingVotes: 100 * (i + 1),
+    expectedUsd: 900 - i * 10,
+  }));
+
+  for (const cap of [0.2, 0.25, 0.33, 0.5, 0.75]) {
+    const allocation = allocateAcrossCandidates(candidates, 50_000, undefined, cap);
+    const percents = toWholePercentWeights(allocation);
+    for (const p of percents) {
+      assert.ok(p.percent <= Math.floor(cap * 100), `cap ${cap}: ${p.symbol} got ${p.percent}%`);
+    }
+  }
+});
+
+test("a cap too tight for the candidate set leaves veAERO unplaced rather than exceeding it", () => {
+  // Three pools capped at 20% can hold 60% of the budget and no more. The
+  // allocator must stop, not quietly overshoot — and the caller must be able to
+  // see it, because toWholePercentWeights would scale the rows back to 100%.
+  const candidates = Array.from({ length: 3 }, (_, i) => ({
+    address: `0x${i}`,
+    symbol: `P${i}`,
+    existingVotes: 1000,
+    expectedUsd: 500,
+  }));
+  const budget = 10_000;
+
+  const allocation = allocateAcrossCandidates(candidates, budget, undefined, 0.2);
+  const spent = allocation.reduce((a, b) => a + b.veAeroAllocated, 0);
+
+  assert.ok(Math.abs(spent - budget * 0.6) < 1e-6, `expected 60% placed, got ${spent}`);
+  assert.ok(Math.abs(unallocatedVeAero(allocation, budget) - budget * 0.4) < 1e-6);
+
+  // The trap this guards: rounding renormalises and hands back 33/33/34.
+  const percents = toWholePercentWeights(allocation);
+  assert.equal(percents.reduce((a, p) => a + p.percent, 0), 100);
+  assert.ok(percents.some((p) => p.percent > 20), "normalisation really does breach the cap");
+});
+
+test("unallocatedVeAero reports nothing for an ordinary uncapped allocation", () => {
+  const candidates = [
+    { address: "0xA", symbol: "A", existingVotes: 1000, expectedUsd: 500 },
+    { address: "0xB", symbol: "B", existingVotes: 2000, expectedUsd: 400 },
+  ];
+  const allocation = allocateAcrossCandidates(candidates, 25_000);
+
+  assert.equal(unallocatedVeAero(allocation, 25_000), 0);
+  assert.equal(unallocatedVeAero([], 0), 0);
+});
+
+test("a cap of 1 or above changes nothing", () => {
+  const candidates = [
+    { address: "0xA", symbol: "A", existingVotes: 1000, expectedUsd: 5000 },
+    { address: "0xB", symbol: "B", existingVotes: 1000, expectedUsd: 50 },
+  ];
+  const plain = allocateAcrossCandidates(candidates, 10_000);
+  const capped = allocateAcrossCandidates(candidates, 10_000, undefined, 1);
+
+  assert.deepEqual(capped, plain);
 });

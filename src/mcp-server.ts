@@ -4,7 +4,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { createRequire } from "node:module";
 import { rankPoolsByEfficiency } from "./efficiency.js";
-import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
+import {
+  recommendAllocation,
+  toWholePercentWeights,
+  expectedUsdForWholePercentVote,
+  unallocatedVeAero,
+} from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
@@ -132,12 +137,30 @@ server.registerTool(
         .max(1)
         .optional()
         .describe("Only allocate to pools whose consistency score is at least this (0..1), filtering out pools whose apparent value is one one-off bribe."),
+      maxWeight: z
+        .number()
+        .gt(0)
+        .max(1)
+        .optional()
+        .describe(
+          "Cap on any single pool's share of the vote (0..1, default 1 = uncapped). The unconstrained optimum is often one pool at 100%, which is correct arithmetic and more concentration than many voters want. Too tight a cap for the candidate set leaves part of the budget unplaceable and the call fails rather than silently renormalising past the cap.",
+        ),
     },
   },
-  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0 }) => {
+  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0, maxWeight = 1 }) => {
     const budget = await resolveVeAeroBudget(veAero, address);
     const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
-    const allocation = recommendAllocation(ranked, budget, topCandidates);
+    const allocation = recommendAllocation(ranked, budget, topCandidates, undefined, maxWeight);
+
+    // Same guard the CLI applies: toWholePercentWeights normalises by the
+    // weights it is handed, so publishing a part-spent allocation would restore
+    // the concentration the cap was asked to prevent.
+    const unplaced = unallocatedVeAero(allocation, budget);
+    if (unplaced > 0) {
+      throw new Error(
+        `maxWeight ${maxWeight} is too tight for the ${allocation.length} pool(s) that qualified: ${Math.round((unplaced / budget) * 100)}% of the veAERO has nowhere to go. Raise maxWeight, raise topCandidates, or lower minConsistency.`,
+      );
+    }
     const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
     const votePercents = toWholePercentWeights(allocation);
     const votePercentsExpectedUsd = expectedUsdForWholePercentVote(allocation, budget);

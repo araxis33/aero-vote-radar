@@ -238,6 +238,16 @@
         <option value="0.7">0.7 — very steady</option>
       </select>
     </div>
+    <div class="field">
+      <label for="maxweight">Max per pool</label>
+      <select id="maxweight">
+        <option value="1" selected>No cap</option>
+        <option value="0.5">50%</option>
+        <option value="0.34">34%</option>
+        <option value="0.25">25%</option>
+        <option value="0.2">20%</option>
+      </select>
+    </div>
   </div>
   <p class="hint">Read-only. The page never asks to connect a wallet, and nothing you type is sent anywhere except a public Base RPC call to read your voting power.</p>
 </section>
@@ -343,22 +353,29 @@ function marginalValuePerVeAero(c, stepSize) {
 // that toWholePercentWeights then rounds away, printing an expected total no
 // real vote could earn. Kept in step with WHOLE_PERCENT_STEPS in src/allocator.ts
 // — site-parity.test.ts fails if these two drift apart.
-function allocateAcrossCandidates(input, veAeroBudget, steps) {
+function allocateAcrossCandidates(input, veAeroBudget, steps, maxWeight) {
   steps = steps || 100;
+  maxWeight = maxWeight === undefined ? 1 : maxWeight;
   if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return [];
 
-  const candidates = input.map((c) => ({ ...c, allocated: 0 }));
+  const candidates = input.map((c) => ({ ...c, allocated: 0, units: 0 }));
   const stepSize = veAeroBudget / steps;
+  const maxUnits =
+    Number.isFinite(maxWeight) && maxWeight > 0 && maxWeight < 1
+      ? Math.max(1, Math.floor(maxWeight * steps))
+      : steps;
 
   for (let s = 0; s < steps; s++) {
     let bestIndex = -1;
     let bestMarginal = 0;
     for (let i = 0; i < candidates.length; i++) {
+      if (candidates[i].units >= maxUnits) continue;
       const marginal = marginalValuePerVeAero(candidates[i], stepSize);
       if (marginal > bestMarginal) { bestMarginal = marginal; bestIndex = i; }
     }
     if (bestIndex === -1) break;
     candidates[bestIndex].allocated += stepSize;
+    candidates[bestIndex].units++;
   }
 
   return candidates
@@ -673,6 +690,7 @@ const el = {
   veaero: document.getElementById("veaero"),
   topk: document.getElementById("topk"),
   mincons: document.getElementById("mincons"),
+  maxweight: document.getElementById("maxweight"),
   allocBody: document.getElementById("allocBody"),
   rankBody: document.getElementById("rankBody"),
   moversUp: document.getElementById("moversUp"),
@@ -825,6 +843,7 @@ function renderAllocation() {
   const budget = Number(el.veaero.value);
   const topK = Math.max(1, Math.min(60, Number(el.topk.value) || 15));
   const minConsistency = Number(el.mincons.value);
+  const maxWeight = Number(el.maxweight.value) || 1;
 
   el.allocNote.hidden = true;
 
@@ -845,7 +864,24 @@ function renderAllocation() {
       existingVotes: p.votesVeAero, expectedUsd: p.trailingAvgUsd,
     })),
     budget,
+    undefined,
+    maxWeight,
   );
+
+  // A cap too tight for the pools that qualified leaves part of the budget
+  // unplaceable, and toWholePercentWeights normalises whatever it is given
+  // straight back to 100% — handing back the concentration the cap was set to
+  // avoid. Say so instead of drawing a table that quietly breaks the cap.
+  const placed = allocation.reduce((a, b) => a + b.veAeroAllocated, 0);
+  if (placed < budget * (1 - 1e-9)) {
+    clearAllocation(
+      "A cap of " + Math.round(maxWeight * 100) + "% is too tight for the " + allocation.length +
+      " pool(s) that qualified — " + Math.round(((budget - placed) / budget) * 100) +
+      "% of your veAERO would have nowhere to go. Raise the cap, consider more pools, or lower the consistency filter.",
+    );
+    return;
+  }
+
   const percents = toWholePercentWeights(allocation);
 
   // Rows rounded down to 0% are dropped — you cannot cast a 0% vote — so the
@@ -945,7 +981,7 @@ async function copyWeights() {
 
 // --- wiring -----------------------------------------------------------------
 
-for (const control of [el.veaero, el.topk, el.mincons]) {
+for (const control of [el.veaero, el.topk, el.mincons, el.maxweight]) {
   control.addEventListener("input", renderAllocation);
   control.addEventListener("change", renderAllocation);
 }

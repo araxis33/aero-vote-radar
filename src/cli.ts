@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
-import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
+import {
+  recommendAllocation,
+  toWholePercentWeights,
+  expectedUsdForWholePercentVote,
+  unallocatedVeAero,
+} from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
@@ -147,7 +152,7 @@ async function cmdPools(args: string[]) {
 }
 
 const RECOMMEND_USAGE =
-  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--vote-ready] [--json]";
+  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-ready] [--json]";
 
 const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
@@ -214,8 +219,11 @@ export function epochDeadlineLine(now: Date = new Date()): string {
 async function cmdRecommend(args: string[]) {
   const topK = parsePositiveIntFlag(args, "top", 15);
   const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
-  if (topK === undefined || minConsistency === undefined) {
-    console.error(`${RECOMMEND_USAGE}\nK must be a positive integer, min-consistency a number from 0 to 1.`);
+  const maxWeight = parseUnitIntervalFlag(args, "max-weight", 1);
+  if (topK === undefined || minConsistency === undefined || maxWeight === undefined || maxWeight === 0) {
+    console.error(
+      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1.`,
+    );
     process.exitCode = 1;
     return;
   }
@@ -227,7 +235,22 @@ async function cmdRecommend(args: string[]) {
   }
 
   const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
-  const allocation = recommendAllocation(ranked, veaero, topK);
+  const allocation = recommendAllocation(ranked, veaero, topK, undefined, maxWeight);
+
+  // A cap too tight for the candidate set leaves part of the budget unplaced,
+  // and every downstream figure would then describe a vote that spends less
+  // than the user has. Refusing here is the only honest option: printing the
+  // rows anyway means toWholePercentWeights scales them back to 100% and hands
+  // back exactly the concentration --max-weight was asked to prevent.
+  const unplaced = unallocatedVeAero(allocation, veaero);
+  if (unplaced > 0) {
+    const pct = Math.round((unplaced / veaero) * 100);
+    console.error(
+      `--max-weight ${maxWeight} is too tight for the ${allocation.length} pool(s) that qualified: ${pct}% of your veAERO has nowhere to go. Raise --max-weight, raise --top, or lower --min-consistency.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
   const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
   const votePercents = toWholePercentWeights(allocation);
   // What the rounded, actually-castable vote is worth. Not the sum above — see
@@ -237,7 +260,7 @@ async function cmdRecommend(args: string[]) {
   if (hasFlag(args, "json")) {
     console.log(
       JSON.stringify(
-        { veAeroBudget: veaero, allocation, votePercents, totalExpectedUsd, votePercentsExpectedUsd },
+        { veAeroBudget: veaero, maxWeight, allocation, votePercents, totalExpectedUsd, votePercentsExpectedUsd },
         null,
         2,
       ),
@@ -275,7 +298,8 @@ async function cmdRecommend(args: string[]) {
     return;
   }
 
-  console.log(`\nRecommended allocation for ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO (top ${topK} candidates considered):\n`);
+  const capNote = maxWeight < 1 ? `, no pool above ${Math.round(maxWeight * 100)}%` : "";
+  console.log(`\nRecommended allocation for ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO (top ${topK} candidates considered${capNote}):\n`);
   console.log(["Symbol", "Weight", "veAERO", "Expected $/epoch"].map((h) => h.padEnd(18)).join(""));
   for (const a of allocation) {
     console.log(
@@ -425,7 +449,7 @@ Commands:
   pools [--top N] [--min-consistency 0..1] [--json]
       Rank live-gauge pools by current & predicted $/vote, with a consistency score
 
-  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--vote-ready] [--json]
+  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-ready] [--json]
       Recommend a self-dilution-aware allocation. --address reads your live voting
       power on-chain instead of you typing the amount; --vote-ready prints whole
       percentages that sum to 100, ready for Aerodrome's voting UI.

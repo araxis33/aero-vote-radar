@@ -50,7 +50,7 @@ function extractFunction(source: string, name: string): string {
   throw new Error(`unbalanced braces while extracting ${name}() from docs/index.html`);
 }
 
-type SiteAllocate = (input: unknown[], budget: number, steps?: number) => { pool: string; symbol: string; weight: number; veAeroAllocated: number; expectedUsd: number }[];
+type SiteAllocate = (input: unknown[], budget: number, steps?: number, maxWeight?: number) => { pool: string; symbol: string; weight: number; veAeroAllocated: number; expectedUsd: number }[];
 type SitePercents = (allocation: unknown[]) => Map<string, number>;
 type SiteExpected = (allocation: unknown[], budget: number) => number;
 
@@ -147,5 +147,37 @@ for (const { name, candidates, budget } of cases) {
       budget,
     );
     assert.ok(Math.abs(theirs - ours) < 1e-9, `site says $${theirs}, module says $${ours}`);
+  });
+}
+
+/**
+ * The cap is the newest thing both copies have to agree on, and the one most
+ * likely to drift: it is enforced inside the greedy loop, not applied to the
+ * result afterwards, so a port that skips a single line reads as "cap ignored"
+ * rather than as a crash.
+ */
+for (const cap of [0.5, 0.34, 0.25, 0.2]) {
+  test(`docs/index.html honours a ${Math.round(cap * 100)}% cap the same way src/allocator.ts does`, () => {
+    const candidates: AllocationCandidate[] = Array.from({ length: 8 }, (_, i) => ({
+      address: `0x${i}`,
+      symbol: `P${i}`,
+      existingVotes: 200 * (i + 1),
+      expectedUsd: 800 - i * 40,
+    }));
+    const budget = 120_000;
+
+    const ours = allocateAcrossCandidates(candidates, budget, undefined, cap);
+    const theirs = siteModule.allocateAcrossCandidates(candidates, budget, undefined, cap);
+
+    assert.equal(theirs.length, ours.length, "different number of funded pools under the cap");
+    for (let i = 0; i < ours.length; i++) {
+      assert.equal(theirs[i].pool, ours[i].pool, `row ${i}: different pool`);
+      assert.ok(
+        Math.abs(theirs[i].veAeroAllocated - ours[i].veAeroAllocated) < 1e-9,
+        `row ${i} (${ours[i].symbol}): veAERO ${theirs[i].veAeroAllocated} vs ${ours[i].veAeroAllocated}`,
+      );
+      assert.ok(ours[i].weight <= cap + 1e-9, `${ours[i].symbol} breached the cap in src/`);
+      assert.ok(theirs[i].weight <= cap + 1e-9, `${ours[i].symbol} breached the cap on the page`);
+    }
   });
 }
