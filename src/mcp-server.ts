@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -14,7 +15,7 @@ import { computeTrend, isEpochInProgress } from "./trend.js";
  * Resolves a veAERO budget from either an explicit amount or a wallet address,
  * shared by the allocation and backtest tools so both accept the same input.
  */
-async function resolveVeAeroBudget(veAero?: number, address?: string): Promise<number> {
+export async function resolveVeAeroBudget(veAero?: number, address?: string): Promise<number> {
   if (veAero !== undefined && address !== undefined) {
     throw new Error("Pass either veAero or address, not both.");
   }
@@ -204,7 +205,15 @@ async function main() {
   await server.connect(transport);
 }
 
-main().catch((err) => {
-  console.error("aero-vote-radar MCP server failed to start:", err);
-  process.exit(1);
-});
+// Only run the server when this file is executed directly (as the CLI binary
+// or via `npx tsx src/mcp-server.ts`), not when it's imported — e.g. by tests
+// importing `resolveVeAeroBudget`. `server.connect` never resolves for the
+// life of the stdio connection, so importing this module would otherwise hang
+// the importing process forever waiting on stdin.
+const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  main().catch((err) => {
+    console.error("aero-vote-radar MCP server failed to start:", err);
+    process.exit(1);
+  });
+}
