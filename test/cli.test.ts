@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { parsePositiveIntFlag, parseUnitIntervalFlag, poolEfficiencyToJson, veAeroPositionsToJson, resolveBudget } from "../src/cli.js";
 import { EPOCH_SECONDS } from "../src/trend.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
@@ -196,4 +198,43 @@ test("resolveBudget accepts a valid --veaero amount and logs nothing", async () 
   const { result, logged } = await captureStderr(() => resolveBudget(["--veaero", "25000"], "USAGE"));
   assert.equal(result, 25000);
   assert.deepEqual(logged, []);
+});
+
+/**
+ * Runs the CLI as a real child process. Exit codes are the one part of this
+ * program a caller can only observe from outside, and they are what a script
+ * wrapping the tool actually branches on — so this spawns rather than importing.
+ * Only argument-handling paths are exercised here; none of them touch the chain.
+ */
+function runCli(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+  return new Promise((resolvePromise) => {
+    const child = spawn(
+      process.execPath,
+      ["--import", "tsx", fileURLToPath(new URL("../src/cli.ts", import.meta.url)), ...args],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.on("close", (code) => resolvePromise({ code: code ?? 0, stdout, stderr }));
+  });
+}
+
+test("the CLI exits 0 and prints usage when asked for help", async () => {
+  for (const args of [[], ["--help"], ["-h"], ["help"]]) {
+    const { code, stdout } = await runCli(args);
+    assert.equal(code, 0, `\`${args.join(" ")}\` should succeed`);
+    assert.match(stdout, /Commands:/);
+  }
+});
+
+test("the CLI exits non-zero on an unknown command", async () => {
+  // Printing usage and reporting success meant a typo in a script — `poolz` for
+  // `pools` — was indistinguishable from a completed run.
+  const { code, stderr } = await runCli(["poolz"]);
+  assert.equal(code, 1);
+  assert.match(stderr, /Unknown command: poolz/);
+  // Usage still goes out, just on stderr where a failure's output belongs.
+  assert.match(stderr, /Commands:/);
 });

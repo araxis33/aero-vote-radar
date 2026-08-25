@@ -1,7 +1,7 @@
 import { allocateAcrossCandidates, type AllocationCandidate } from "./allocator.js";
 import { epochUsd } from "./efficiency.js";
 import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
-import { getTokenPrices } from "./prices.js";
+import { getTokenPrices, countUnpricedTokens } from "./prices.js";
 import { BACKTEST_EPOCHS, MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
 import { mapWithConcurrency } from "./util.js";
 
@@ -107,29 +107,30 @@ export function runBacktest(
 
   for (let t = 0; t < testEpochs; t++) {
     const candidates: AllocationCandidate[] = [];
-    // Outcome data, kept per candidate so scoring can't accidentally reach for
-    // a different pool's epoch than the one it allocated to.
+    // Outcome data, kept per pool so scoring can't accidentally reach for a
+    // different pool's epoch than the one it allocated to. Populated for every
+    // pool either strategy could pick, not just the radar's candidates — see
+    // below for why the baseline's reach is deliberately wider.
     const outcomes = new Map<string, { usd: number; votes: number }>();
     let naiveBest: { symbol: string; address: string; valuePerVote: number } | null = null;
 
     for (const h of histories) {
-      // Needs the tested epoch itself plus a full trailing window strictly older
-      // than it; anything shorter would silently shrink the estimate's basis.
-      if (h.usd.length <= t + trendEpochs || h.votes.length <= t + trendEpochs) continue;
-
-      const window = h.usd.slice(t + 1, t + 1 + trendEpochs);
-      const trailingAvgUsd = window.reduce((a, b) => a + b, 0) / window.length;
-      if (trailingAvgUsd < minTrailingUsd) continue;
+      // The baseline decides from one epoch and is scored on the next, so those
+      // two are all it needs. Its eligibility is deliberately checked *before*
+      // any of the radar's own gates below.
+      //
+      // Letting the radar's filters run first would quietly hand the baseline
+      // the radar's judgement: `minTrailingUsd` exists to drop thin, spiky,
+      // one-off-bribe pools, and those are exactly the pools that show the
+      // highest instantaneous $/vote — the mistake this baseline is supposed to
+      // represent. Filtering them out of the comparison too leaves both sides
+      // choosing from one pre-vetted set, and the backtest measures the radar
+      // against a strategy that already thinks like the radar.
+      if (h.usd.length <= t + 1 || h.votes.length <= t + 1) continue;
 
       const knownVotes = h.votes[t + 1];
       if (knownVotes <= 0) continue;
 
-      candidates.push({
-        address: h.address,
-        symbol: h.symbol,
-        existingVotes: knownVotes,
-        expectedUsd: trailingAvgUsd,
-      });
       outcomes.set(h.address, { usd: h.usd[t], votes: h.votes[t] });
 
       // The naive strategy looks only at the most recent *known* epoch's $/vote.
@@ -137,6 +138,23 @@ export function runBacktest(
       if (!naiveBest || latestValuePerVote > naiveBest.valuePerVote) {
         naiveBest = { symbol: h.symbol, address: h.address, valuePerVote: latestValuePerVote };
       }
+
+      // Everything from here down is the radar's own admission criteria: a full
+      // trailing window strictly older than the tested epoch (anything shorter
+      // would silently shrink the estimate's basis), and an average above the
+      // noise floor.
+      if (h.usd.length <= t + trendEpochs || h.votes.length <= t + trendEpochs) continue;
+
+      const window = h.usd.slice(t + 1, t + 1 + trendEpochs);
+      const trailingAvgUsd = window.reduce((a, b) => a + b, 0) / window.length;
+      if (trailingAvgUsd < minTrailingUsd) continue;
+
+      candidates.push({
+        address: h.address,
+        symbol: h.symbol,
+        existingVotes: knownVotes,
+        expectedUsd: trailingAvgUsd,
+      });
     }
 
     if (candidates.length === 0) continue;
@@ -206,6 +224,12 @@ export async function backtestLive(
     ...e.fees.map((f) => f.token),
   ]);
   const prices = await getTokenPrices(allTokens);
+  const unpriced = countUnpricedTokens(prices);
+  if (unpriced > 0) {
+    console.error(
+      `(${unpriced} of ${prices.size} reward token(s) have no USD price and count as $0 — pools paid only in those will look empty)`,
+    );
+  }
 
   const histories: PoolHistory[] = pools.map((pool, i) => ({
     address: pool.address,

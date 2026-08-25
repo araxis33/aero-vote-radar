@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
-import { recommendAllocation, toWholePercentWeights } from "./allocator.js";
+import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
@@ -215,9 +215,18 @@ async function cmdRecommend(args: string[]) {
   const allocation = recommendAllocation(ranked, veaero, topK);
   const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
   const votePercents = toWholePercentWeights(allocation);
+  // What the rounded, actually-castable vote is worth. Not the sum above — see
+  // `expectedUsdForWholePercentVote` for why the two differ in both directions.
+  const votePercentsExpectedUsd = expectedUsdForWholePercentVote(allocation, veaero);
 
   if (hasFlag(args, "json")) {
-    console.log(JSON.stringify({ veAeroBudget: veaero, allocation, votePercents, totalExpectedUsd }, null, 2));
+    console.log(
+      JSON.stringify(
+        { veAeroBudget: veaero, allocation, votePercents, totalExpectedUsd, votePercentsExpectedUsd },
+        null,
+        2,
+      ),
+    );
     return;
   }
 
@@ -239,7 +248,13 @@ async function cmdRecommend(args: string[]) {
     for (const v of votePercents) {
       console.log(`  ${v.percent.toString().padStart(3)}%  ${v.symbol}`);
     }
-    console.log(`\nEnter these directly on aerodrome.finance. Expected next epoch: ${fmtUsd(totalExpectedUsd)}.`);
+    const dropped = allocation.length - votePercents.length;
+    console.log(`\nEnter these directly on aerodrome.finance. Expected next epoch: ${fmtUsd(votePercentsExpectedUsd)}.`);
+    if (dropped > 0) {
+      console.log(
+        `(${dropped} pool${dropped > 1 ? "s" : ""} received a share too small to round up to 1%; those points went to the rows above.)`,
+      );
+    }
     console.log("This tool never touches your wallet or keys.\n");
     return;
   }
@@ -344,6 +359,16 @@ async function cmdMyVeAero(args: string[]) {
   console.log(`\nTotal voting power: ${total.toLocaleString("en-US")} veAERO\n`);
 }
 
+/**
+ * Whether `command` is a request for help rather than a mistake — no arguments
+ * at all, or an explicit help flag. Both print the same text; only the exit code
+ * differs, because a script that runs `aero-vote-radar poolz` and reads $? needs
+ * to be told it typed something wrong.
+ */
+function isHelpRequest(command: string | undefined): boolean {
+  return command === undefined || command === "help" || command === "--help" || command === "-h";
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
@@ -355,8 +380,10 @@ async function main() {
       return cmdBacktest(rest);
     case "my-veaero":
       return cmdMyVeAero(rest);
-    default:
-      console.log(`aero-vote-radar — Aerodrome (Base) veAERO vote-efficiency tool
+    default: {
+      // An unrecognised command exits non-zero: printing usage and reporting
+      // success meant a typo in a script looked exactly like a completed run.
+      const usage = `aero-vote-radar — Aerodrome (Base) veAERO vote-efficiency tool
 
 Commands:
   pools [--top N] [--min-consistency 0..1] [--json]
@@ -375,8 +402,17 @@ Commands:
       Look up an account's veAERO locks and voting power
 
 Pass --json to any command for machine-readable output instead of a table.
+`;
+      if (isHelpRequest(command)) {
+        console.log(usage);
+        return;
+      }
+      console.error(`Unknown command: ${command}
 `);
+      console.error(usage);
+      process.exitCode = 1;
       return;
+    }
   }
 }
 

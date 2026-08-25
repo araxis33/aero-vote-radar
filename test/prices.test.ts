@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { getTokenPrices, toUsd } from "../src/prices.js";
-import { DEFILLAMA_TIMEOUT_MS, PRICE_CACHE_TTL_MS } from "../src/constants.js";
+import { getTokenPrices, toUsd, countUnpricedTokens } from "../src/prices.js";
+import { DEFILLAMA_TIMEOUT_MS, PRICE_CACHE_TTL_MS, PRICE_FAILURE_CACHE_TTL_MS } from "../src/constants.js";
 
 const originalFetch = global.fetch;
 const originalNow = Date.now;
@@ -199,4 +199,82 @@ test("getTokenPrices: a failed batch only zeroes out that batch's tokens, not ot
 
   for (const t of goodTokens) assert.equal(prices.get(t.toLowerCase())?.price, 3, `${t} should be priced from its own batch`);
   for (const t of badTokens) assert.equal(prices.get(t.toLowerCase())?.price, 0, `${t} should fall back to 0`);
+});
+
+test("a $0 fallback expires much sooner than a real price, so one failed batch isn't sticky", async () => {
+  // A real price and the absence of one are different kinds of fact. The $0
+  // written after a failed batch used to share the full price TTL, so a single
+  // timed-out request could value a token at $0 across a whole run of
+  // mcp-server.ts calls — long enough to drop real pools below the trailing
+  // floor and quietly reorder a ranking.
+  let now = 1_000_000;
+  Date.now = () => now;
+
+  let calls = 0;
+  global.fetch = (async () => {
+    calls++;
+    // Fail once, then start answering.
+    if (calls === 1) throw new Error("network failure");
+    return {
+      ok: true,
+      json: async () => ({ coins: { "base:0xttl1": { price: 7, decimals: 18, symbol: "TTL" } } }),
+    };
+  }) as unknown as typeof fetch;
+
+  assert.deepEqual(await getTokenPrices(["0xTTL1"]), new Map([["0xttl1", { price: 0, decimals: 18 }]]));
+  assert.equal(calls, 1);
+
+  // Still inside the failure TTL: served from cache, no refetch.
+  now += PRICE_FAILURE_CACHE_TTL_MS - 1;
+  assert.deepEqual(await getTokenPrices(["0xTTL1"]), new Map([["0xttl1", { price: 0, decimals: 18 }]]));
+  assert.equal(calls, 1);
+
+  // Past it — and well short of the full price TTL, which is what the bug was.
+  now += 2;
+  assert.ok(PRICE_FAILURE_CACHE_TTL_MS < PRICE_CACHE_TTL_MS);
+  assert.deepEqual(await getTokenPrices(["0xTTL1"]), new Map([["0xttl1", { price: 7, decimals: 18 }]]));
+  assert.equal(calls, 2);
+});
+
+test("a successfully looked-up price keeps the full cache TTL", async () => {
+  let now = 5_000_000;
+  Date.now = () => now;
+
+  let calls = 0;
+  global.fetch = (async () => {
+    calls++;
+    return {
+      ok: true,
+      json: async () => ({ coins: { "base:0xttl2": { price: 3, decimals: 18, symbol: "TTL2" } } }),
+    };
+  }) as unknown as typeof fetch;
+
+  await getTokenPrices(["0xTTL2"]);
+  assert.equal(calls, 1);
+
+  // Past the failure TTL but inside the real one: the fix must not have shortened
+  // the lifetime of prices that actually resolved.
+  now += PRICE_FAILURE_CACHE_TTL_MS + 1;
+  await getTokenPrices(["0xTTL2"]);
+  assert.equal(calls, 1);
+
+  now += PRICE_CACHE_TTL_MS;
+  await getTokenPrices(["0xTTL2"]);
+  assert.equal(calls, 2);
+});
+
+test("countUnpricedTokens counts only the tokens that came back without a price", () => {
+  // An unpriced token contributes $0 to every epoch it appears in, which is the
+  // right call — one obscure bribe token must not blow up a pool's whole
+  // calculation. But a pool paid entirely in something DefiLlama doesn't cover
+  // then reads as $0, drops under the trailing floor and disappears from the
+  // ranking silently. This is what lets callers say so out loud.
+  const prices = new Map([
+    ["0x1", { price: 2.5, decimals: 18 }],
+    ["0x2", { price: 0, decimals: 18 }],
+    ["0x3", { price: 0.000001, decimals: 6 }],
+    ["0x4", { price: 0, decimals: 18 }],
+  ]);
+  assert.equal(countUnpricedTokens(prices), 2);
+  assert.equal(countUnpricedTokens(new Map()), 0);
 });

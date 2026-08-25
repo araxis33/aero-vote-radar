@@ -7,7 +7,9 @@ import type { PoolEfficiency } from "./efficiency.js";
 /**
  * The published shape of one pool in the snapshot. This is deliberately a
  * superset of the CLI's `poolEfficiencyToJson`: the static site re-runs the
- * *real* allocator in the browser, and `allocateAcrossCandidates` needs each
+ * allocator in the browser — a hand-port of `src/allocator.ts`, since `docs/`
+ * is served with no build step, held to the real one by `test/site-parity.test.ts`
+ * — and `allocateAcrossCandidates` needs each
  * pool's existing vote weight and its expected epoch value in dollars. The CLI
  * shape carries neither (it publishes the derived per-vote figures instead), so
  * a site built on that shape alone could only re-rank, never allocate.

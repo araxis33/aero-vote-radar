@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { recommendAllocation, toWholePercentWeights } from "../src/allocator.js";
+import {
+  allocateAcrossCandidates,
+  expectedUsdForWholePercentVote,
+  recommendAllocation,
+  toWholePercentWeights,
+} from "../src/allocator.js";
 import type { AllocationResult } from "../src/allocator.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 
@@ -30,7 +35,15 @@ function fixture(overrides: Partial<PoolEfficiency> & { address: string; symbol:
 }
 
 function alloc(symbol: string, weight: number): AllocationResult {
-  return { pool: `0x${symbol}`, symbol, weight, veAeroAllocated: weight * 1000, expectedUsd: 0 };
+  return {
+    pool: `0x${symbol}`,
+    symbol,
+    weight,
+    veAeroAllocated: weight * 1000,
+    expectedUsd: 0,
+    existingVotes: 0,
+    poolExpectedUsd: 0,
+  };
 }
 
 test("zero budget returns no allocation", () => {
@@ -174,4 +187,103 @@ test("only the top K ranked candidates are ever considered", () => {
 
   assert.equal(result.length, 1);
   assert.equal(result[0].pool, "0xA", "candidate beyond topK must be excluded even if it would be more attractive");
+});
+
+test("allocateAcrossCandidates funds a pool nobody else has voted on", () => {
+  // V = 0 is the best case, not the worst: your share is R*x/(0+x) = R, the
+  // whole epoch value. The marginal-value derivative R*V/(V+x)^2 is 0 there, so
+  // before this was special-cased such a pool never received a single step no
+  // matter how large R was — it was silently skipped in favour of any crowded
+  // pool with a sliver of value left.
+  const result = allocateAcrossCandidates(
+    [
+      { address: "0xEMPTY", symbol: "EMPTY", existingVotes: 0, expectedUsd: 500 },
+      { address: "0xCROWDED", symbol: "CROWDED", existingVotes: 1_000_000, expectedUsd: 100 },
+    ],
+    1000,
+  );
+
+  const empty = result.find((r) => r.symbol === "EMPTY");
+  assert.ok(empty, "the unvoted pool must receive an allocation");
+  assert.ok(empty.veAeroAllocated > 0);
+  // Holding all of the votes means collecting all of the value.
+  assert.ok(Math.abs(empty.expectedUsd - 500) < 1e-6);
+});
+
+test("allocateAcrossCandidates gives an unvoted pool one slice, not the whole budget", () => {
+  // The entire gain lands with the first slice — R*x/x is R whatever x is — so
+  // piling more budget in adds nothing. The rest must stay available for pools
+  // that can still pay for it.
+  const result = allocateAcrossCandidates(
+    [
+      { address: "0xEMPTY", symbol: "EMPTY", existingVotes: 0, expectedUsd: 500 },
+      { address: "0xREAL", symbol: "REAL", existingVotes: 1000, expectedUsd: 400 },
+    ],
+    1000,
+    400,
+  );
+
+  const empty = result.find((r) => r.symbol === "EMPTY");
+  const real = result.find((r) => r.symbol === "REAL");
+  assert.ok(empty && real);
+  // One step of a 1,000 veAERO budget over 400 steps.
+  assert.ok(Math.abs(empty.veAeroAllocated - 2.5) < 1e-9);
+  assert.ok(real.veAeroAllocated > empty.veAeroAllocated);
+});
+
+test("expectedUsdForWholePercentVote scores the rounded vote, not the continuous allocation", () => {
+  // One pool, so the whole budget lands there and rounding changes nothing:
+  // 100% of 1,000 veAERO against 1,000 existing votes collects half of $200.
+  const allocation = allocateAcrossCandidates(
+    [{ address: "0xA", symbol: "A", existingVotes: 1000, expectedUsd: 200 }],
+    1000,
+  );
+  assert.ok(Math.abs(expectedUsdForWholePercentVote(allocation, 1000) - 100) < 1e-6);
+});
+
+test("expectedUsdForWholePercentVote counts the veAERO that dropped rows hand back", () => {
+  // Fifteen pools on very different scales: several round to 0% and their
+  // points are redistributed to the survivors, so those survivors end up with
+  // more veAERO than the allocator penciled in. Summing `expectedUsd` over the
+  // kept rows would miss that and understate the vote; summing over every row
+  // would claim value from pools the user is told not to vote for.
+  const candidates = Array.from({ length: 15 }, (_, i) => ({
+    address: `0x${i}`,
+    symbol: `P${i}`,
+    existingVotes: 10 ** (1 + (i % 5)),
+    expectedUsd: 50 * (i + 1),
+  }));
+  const budget = 1_000_000;
+  const allocation = allocateAcrossCandidates(candidates, budget);
+  const percents = toWholePercentWeights(allocation);
+
+  assert.ok(percents.length < allocation.length, "this case must actually drop rows");
+
+  const forVote = expectedUsdForWholePercentVote(allocation, budget);
+  const keptRowsOnly = allocation
+    .filter((a) => percents.some((p) => p.pool === a.pool))
+    .reduce((sum, a) => sum + a.expectedUsd, 0);
+
+  // Strictly more than the kept rows at their original sizes, because the
+  // redistributed points buy real extra share in those same pools.
+  assert.ok(forVote > keptRowsOnly, `${forVote} should exceed ${keptRowsOnly}`);
+
+  // Recomputed independently from the percentages themselves.
+  const expected = percents.reduce((sum, p) => {
+    const row = allocation.find((a) => a.pool === p.pool)!;
+    const votes = (p.percent / 100) * budget;
+    return sum + (row.poolExpectedUsd * votes) / (row.existingVotes + votes);
+  }, 0);
+  assert.ok(Math.abs(forVote - expected) < 1e-9);
+});
+
+test("expectedUsdForWholePercentVote returns 0 for an empty allocation or a bad budget", () => {
+  assert.equal(expectedUsdForWholePercentVote([], 1000), 0);
+  const allocation = allocateAcrossCandidates(
+    [{ address: "0xA", symbol: "A", existingVotes: 1000, expectedUsd: 200 }],
+    1000,
+  );
+  for (const budget of [0, -1, NaN, Infinity]) {
+    assert.equal(expectedUsdForWholePercentVote(allocation, budget), 0);
+  }
 });

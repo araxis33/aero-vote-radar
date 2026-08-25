@@ -60,10 +60,21 @@ export const PRICE_BATCH_SIZE = 50;
 // cap already used for Base RPC calls in pools.ts/efficiency.ts/backtest.ts.
 export const PRICE_BATCH_CONCURRENCY = 4;
 
-// How long a looked-up (or $0-fallback) price stays valid before it's refetched.
+// How long a successfully looked-up price stays valid before it's refetched.
 // The CLI is a fresh process per invocation so this never matters there, but
 // mcp-server.ts holds one process open for the life of a client connection —
-// without a TTL, prices (and any transient-failure $0 fallback) would be cached
-// forever for that process, silently going stale or permanently mispricing a
-// token that only failed to price once.
+// without a TTL, prices would be cached forever for that process and silently
+// go stale.
 export const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// How long the $0 fallback stays valid — much shorter than a real price, and
+// deliberately so. The two are not the same kind of fact: a real price is
+// information that ages slowly, while a $0 fallback is the absence of one, and
+// it is written both for tokens DefiLlama genuinely doesn't price and for a
+// batch that merely failed to reach it. Caching those together for five minutes
+// meant one timed-out request could value a token at $0 across a whole run of
+// mcp-server.ts calls — enough to drop real pools below MIN_TRAILING_USD and
+// reorder a ranking, with nothing in the output saying why. At 30s a transient
+// failure costs one refetch; a genuinely unpriced token costs a cheap retry per
+// batch, since it is looked up alongside the rest of its batch either way.
+export const PRICE_FAILURE_CACHE_TTL_MS = 30 * 1000;
