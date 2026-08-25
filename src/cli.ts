@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 import { rankPoolsByEfficiency, type PoolEfficiency } from "./efficiency.js";
-import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
+import {
+  recommendAllocation,
+  toWholePercentWeights,
+  expectedUsdForWholePercentVote,
+  unallocatedVeAero,
+} from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
-import { computeTrend, isEpochInProgress } from "./trend.js";
+import { computeTrend, epochEndOf, formatDuration, isEpochInProgress } from "./trend.js";
 
 function fmtUsd(n: number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -147,9 +152,9 @@ async function cmdPools(args: string[]) {
 }
 
 const RECOMMEND_USAGE =
-  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--vote-ready] [--json]";
+  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-ready] [--json]";
 
-const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS})`;
+const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
 /**
  * Resolves the veAERO budget from either an explicit `--veaero` amount or, with
@@ -196,11 +201,29 @@ export async function resolveBudget(args: string[], usage: string): Promise<numb
   return veaero;
 }
 
+/**
+ * One line saying how long this recommendation stays actionable.
+ *
+ * A vote only counts toward the epoch it is cast in, so a ranking is advice
+ * with a deadline attached — and the deadline was previously stated nowhere.
+ * Exported for testing, and takes its clock as an argument so the test can pin
+ * one instead of racing the real one.
+ */
+export function epochDeadlineLine(now: Date = new Date()): string {
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endsAt = epochEndOf(nowSec);
+  const stamp = `${new Date(endsAt * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  return `Voting for this epoch closes in ${formatDuration(endsAt - nowSec)} (${stamp}) — a vote cast after that counts toward the next epoch.`;
+}
+
 async function cmdRecommend(args: string[]) {
   const topK = parsePositiveIntFlag(args, "top", 15);
   const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
-  if (topK === undefined || minConsistency === undefined) {
-    console.error(`${RECOMMEND_USAGE}\nK must be a positive integer, min-consistency a number from 0 to 1.`);
+  const maxWeight = parseUnitIntervalFlag(args, "max-weight", 1);
+  if (topK === undefined || minConsistency === undefined || maxWeight === undefined || maxWeight === 0) {
+    console.error(
+      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1.`,
+    );
     process.exitCode = 1;
     return;
   }
@@ -212,7 +235,22 @@ async function cmdRecommend(args: string[]) {
   }
 
   const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
-  const allocation = recommendAllocation(ranked, veaero, topK);
+  const allocation = recommendAllocation(ranked, veaero, topK, undefined, maxWeight);
+
+  // A cap too tight for the candidate set leaves part of the budget unplaced,
+  // and every downstream figure would then describe a vote that spends less
+  // than the user has. Refusing here is the only honest option: printing the
+  // rows anyway means toWholePercentWeights scales them back to 100% and hands
+  // back exactly the concentration --max-weight was asked to prevent.
+  const unplaced = unallocatedVeAero(allocation, veaero);
+  if (unplaced > 0) {
+    const pct = Math.round((unplaced / veaero) * 100);
+    console.error(
+      `--max-weight ${maxWeight} is too tight for the ${allocation.length} pool(s) that qualified: ${pct}% of your veAERO has nowhere to go. Raise --max-weight, raise --top, or lower --min-consistency.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
   const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
   const votePercents = toWholePercentWeights(allocation);
   // What the rounded, actually-castable vote is worth. Not the sum above — see
@@ -222,7 +260,7 @@ async function cmdRecommend(args: string[]) {
   if (hasFlag(args, "json")) {
     console.log(
       JSON.stringify(
-        { veAeroBudget: veaero, allocation, votePercents, totalExpectedUsd, votePercentsExpectedUsd },
+        { veAeroBudget: veaero, maxWeight, allocation, votePercents, totalExpectedUsd, votePercentsExpectedUsd },
         null,
         2,
       ),
@@ -255,11 +293,13 @@ async function cmdRecommend(args: string[]) {
         `(${dropped} pool${dropped > 1 ? "s" : ""} received a share too small to round up to 1%; those points went to the rows above.)`,
       );
     }
+    console.log(epochDeadlineLine());
     console.log("This tool never touches your wallet or keys.\n");
     return;
   }
 
-  console.log(`\nRecommended allocation for ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO (top ${topK} candidates considered):\n`);
+  const capNote = maxWeight < 1 ? `, no pool above ${Math.round(maxWeight * 100)}%` : "";
+  console.log(`\nRecommended allocation for ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO (top ${topK} candidates considered${capNote}):\n`);
   console.log(["Symbol", "Weight", "veAERO", "Expected $/epoch"].map((h) => h.padEnd(18)).join(""));
   for (const a of allocation) {
     console.log(
@@ -272,13 +312,15 @@ async function cmdRecommend(args: string[]) {
     );
   }
   console.log(`\nTotal expected value next epoch (heuristic, trailing-average based): ${fmtUsd(totalExpectedUsd)}`);
+  console.log(epochDeadlineLine());
   console.log("Pass --vote-ready for whole percentages you can type straight into Aerodrome's voting UI.");
   console.log("You vote this yourself on aerodrome.finance — this tool never touches your wallet or keys.\n");
 }
 
 async function cmdBacktest(args: string[]) {
   const epochs = parsePositiveIntFlag(args, "epochs", BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS);
-  if (epochs === undefined) {
+  const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
+  if (epochs === undefined || minConsistency === undefined) {
     console.error(BACKTEST_USAGE);
     process.exitCode = 1;
     return;
@@ -290,7 +332,7 @@ async function cmdBacktest(args: string[]) {
     return;
   }
 
-  const report = await backtestLive(veaero, epochs);
+  const report = await backtestLive(veaero, epochs, undefined, minConsistency);
 
   if (hasFlag(args, "json")) {
     console.log(JSON.stringify(report, null, 2));
@@ -298,11 +340,19 @@ async function cmdBacktest(args: string[]) {
   }
 
   if (report.epochsTested === 0) {
-    console.log("\nNot enough epoch history to backtest — no epoch had a qualifying candidate pool.\n");
+    // Same distinction `recommend` draws: "there is no history" and "your filter
+    // rejected all of it" call for different next moves, and one message for
+    // both sends you looking for a data problem that isn't there.
+    console.log(
+      minConsistency > 0
+        ? `\nNo epoch had a candidate pool passing --min-consistency ${minConsistency} — try a lower value.\n`
+        : "\nNot enough epoch history to backtest — no epoch had a qualifying candidate pool.\n",
+    );
     return;
   }
 
-  console.log(`\nBacktest over the last ${report.epochsTested} epoch(s) with ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO:\n`);
+  const filterNote = minConsistency > 0 ? ` (only pools with consistency ≥ ${minConsistency})` : "";
+  console.log(`\nBacktest over the last ${report.epochsTested} epoch(s) with ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO${filterNote}:\n`);
   console.log(["EpochsAgo", "Radar $", "Naive $", "Naive picked"].map((h) => h.padEnd(18)).join(""));
   for (const e of report.epochs) {
     console.log(
@@ -318,6 +368,16 @@ async function cmdBacktest(args: string[]) {
   const uplift = report.upliftPct === null ? "n/a (baseline earned $0)" : `${(report.upliftPct * 100).toFixed(1)}%`;
   console.log(`\nTotal: radar ${fmtUsd(report.radarTotalUsd)} vs naive ${fmtUsd(report.naiveTotalUsd)} — uplift ${uplift}`);
   console.log(`Radar earned more in ${report.epochsWonByRadar} of ${report.epochsTested} epoch(s).`);
+
+  if (minConsistency > 0) {
+    // Worth stating plainly: a filter that leaves two pools to choose between
+    // has changed the strategy far more than the uplift figure alone suggests.
+    const excluded = report.epochs.reduce((a, e) => a + e.candidatesExcludedByConsistency, 0);
+    const kept = report.epochs.reduce((a, e) => a + e.candidatesConsidered, 0);
+    console.log(
+      `The filter dropped ${excluded} pool-epoch(s) and left ${kept} to allocate across. The naive baseline is deliberately left unfiltered, so this uplift is comparable with an unfiltered run.`,
+    );
+  }
   console.log("\nEpochsAgo 0 is the most recently completed epoch. 'Naive' = put everything in the pool with the");
   console.log("highest $/vote at the time. Decisions use only data available before each epoch resolved, but this");
   console.log("assumes your votes wouldn't have moved anyone else's, and only sees pools whose gauge is still alive.\n");
@@ -389,14 +449,16 @@ Commands:
   pools [--top N] [--min-consistency 0..1] [--json]
       Rank live-gauge pools by current & predicted $/vote, with a consistency score
 
-  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--vote-ready] [--json]
+  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-ready] [--json]
       Recommend a self-dilution-aware allocation. --address reads your live voting
       power on-chain instead of you typing the amount; --vote-ready prints whole
       percentages that sum to 100, ready for Aerodrome's voting UI.
 
-  backtest (--veaero N | --address 0x...) [--epochs N] [--json]
+  backtest (--veaero N | --address 0x...) [--epochs N] [--min-consistency 0..1] [--json]
       Replay past epochs (up to ${MAX_BACKTEST_EPOCHS}) and compare this tool's allocation against the
-      naive "vote for the highest current $/vote" strategy.
+      naive "vote for the highest current $/vote" strategy. Pass the same
+      --min-consistency you vote with, so the backtest tests the strategy you
+      actually run; the naive baseline stays unfiltered either way.
 
   my-veaero <address> [--json]
       Look up an account's veAERO locks and voting power

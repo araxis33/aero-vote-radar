@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeTrend, epochStartOf, isEpochInProgress, EPOCH_SECONDS } from "../src/trend.js";
+import {
+  computeTrend,
+  epochEndOf,
+  epochStartOf,
+  formatDuration,
+  isEpochInProgress,
+  EPOCH_SECONDS,
+} from "../src/trend.js";
 
 test("epoch boundaries land on Thursday 00:00 UTC", () => {
   // 2026-08-17T07:15:08Z (a Monday) sits inside the epoch that opened 2026-08-13.
@@ -92,4 +99,31 @@ test("only the older half is floored, so a collapse to near-nothing still report
 
 test("the baseline floor is overridable for callers with a different threshold", () => {
   assert.equal(computeTrend([5.75, 5.75, 0.02, 0.02], false, 0.01).momentum, 286.5);
+});
+
+test("epochEndOf lands on the Thursday 00:00 UTC that closes the epoch", () => {
+  // Mid-epoch: Saturday 2026-08-22 12:00 UTC closes on Thursday 2026-08-27.
+  const midEpoch = Math.floor(Date.UTC(2026, 7, 22, 12, 0, 0) / 1000);
+  const end = epochEndOf(midEpoch);
+  const endDate = new Date(end * 1000);
+
+  assert.equal(endDate.getUTCDay(), 4, "epochs must close on a Thursday");
+  assert.equal(endDate.toISOString(), "2026-08-27T00:00:00.000Z");
+  assert.ok(end > midEpoch);
+});
+
+test("epochEndOf treats a timestamp exactly on the boundary as the start of the new epoch", () => {
+  // A vote at the instant of the flip belongs to the epoch beginning there, so
+  // it has a full week left, not zero seconds.
+  const boundary = Math.floor(Date.UTC(2026, 7, 27, 0, 0, 0) / 1000);
+  assert.equal(epochEndOf(boundary) - boundary, 604800);
+});
+
+test("formatDuration shows the two coarsest units, and never a negative one", () => {
+  assert.equal(formatDuration(2 * 86400 + 4 * 3600 + 30 * 60), "2d 4h");
+  assert.equal(formatDuration(4 * 3600 + 12 * 60), "4h 12m");
+  assert.equal(formatDuration(9 * 60 + 59), "9m");
+  assert.equal(formatDuration(0), "0m");
+  assert.equal(formatDuration(-500), "0m");
+  assert.equal(formatDuration(NaN), "0m");
 });

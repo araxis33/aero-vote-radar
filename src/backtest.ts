@@ -1,5 +1,5 @@
 import { allocateAcrossCandidates, type AllocationCandidate } from "./allocator.js";
-import { epochUsd } from "./efficiency.js";
+import { computeConsistency, epochUsd } from "./efficiency.js";
 import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
 import { getTokenPrices, countUnpricedTokens } from "./prices.js";
 import { BACKTEST_EPOCHS, MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
@@ -18,7 +18,16 @@ export interface PoolHistory {
 export interface BacktestEpochResult {
   /** 0 = the most recently completed epoch, 1 = the one before it, and so on. */
   epochsAgo: number;
+  /** How many pools the allocator actually got to choose between, after every filter. */
   candidatesConsidered: number;
+  /**
+   * How many pools cleared the trailing-value floor but were dropped by
+   * `minConsistency`. Zero when no consistency filter was applied. Reported
+   * because "the radar earned less this epoch" and "the filter left it three
+   * pools to work with" are different findings, and averaging them together
+   * is how a filter gets blamed for a bad week it had nothing to do with.
+   */
+  candidatesExcludedByConsistency: number;
   /** What this tool's allocation would actually have earned that epoch. */
   radarUsd: number;
   /** What "put everything in the highest current $/vote pool" would have earned. */
@@ -28,6 +37,13 @@ export interface BacktestEpochResult {
 
 export interface BacktestReport {
   veAeroBudget: number;
+  /**
+   * The consistency floor that was applied, echoed back so a report read on its
+   * own says which strategy it tested. A backtest of the unfiltered strategy is
+   * a different claim from a backtest of the filtered one, and the numbers alone
+   * do not say which you are looking at.
+   */
+  minConsistency: number;
   epochsTested: number;
   radarTotalUsd: number;
   naiveTotalUsd: number;
@@ -42,6 +58,13 @@ export interface BacktestOptions {
   trendEpochs?: number;
   topK?: number;
   minTrailingUsd?: number;
+  /**
+   * Same 0..1 consistency floor that `pools` and `recommend` accept. Without it
+   * the backtest could only ever test the unfiltered strategy, while the vote
+   * actually being cast came from a filtered one — so the one number meant to
+   * justify the tool described a strategy nobody was running.
+   */
+  minConsistency?: number;
 }
 
 /**
@@ -89,10 +112,12 @@ export function runBacktest(
     trendEpochs = TREND_EPOCHS,
     topK = 15,
     minTrailingUsd = MIN_TRAILING_USD,
+    minConsistency = 0,
   } = opts;
 
   const empty: BacktestReport = {
     veAeroBudget,
+    minConsistency,
     epochsTested: 0,
     radarTotalUsd: 0,
     naiveTotalUsd: 0,
@@ -113,6 +138,7 @@ export function runBacktest(
     // below for why the baseline's reach is deliberately wider.
     const outcomes = new Map<string, { usd: number; votes: number }>();
     let naiveBest: { symbol: string; address: string; valuePerVote: number } | null = null;
+    let excludedByConsistency = 0;
 
     for (const h of histories) {
       // The baseline decides from one epoch and is scored on the next, so those
@@ -149,6 +175,17 @@ export function runBacktest(
       const trailingAvgUsd = window.reduce((a, b) => a + b, 0) / window.length;
       if (trailingAvgUsd < minTrailingUsd) continue;
 
+      // Consistency as it stood *then*, measured over the same trailing window
+      // the estimate came from. Recomputing it here rather than reusing today's
+      // figure is the whole point: today's consistency has seen the epoch being
+      // tested, and feeding that back into the decision would turn the backtest
+      // into a hindsight fit — the exact failure the rest of this loop avoids.
+      const { consistency } = computeConsistency(window);
+      if (consistency < minConsistency) {
+        excludedByConsistency++;
+        continue;
+      }
+
       candidates.push({
         address: h.address,
         symbol: h.symbol,
@@ -179,6 +216,7 @@ export function runBacktest(
     epochs.push({
       epochsAgo: t,
       candidatesConsidered: candidates.length,
+      candidatesExcludedByConsistency: excludedByConsistency,
       radarUsd,
       naiveUsd,
       naiveSymbol: naiveBest?.symbol ?? null,
@@ -190,6 +228,7 @@ export function runBacktest(
 
   return {
     veAeroBudget,
+    minConsistency,
     epochsTested: epochs.length,
     radarTotalUsd,
     naiveTotalUsd,
@@ -204,6 +243,7 @@ export async function backtestLive(
   veAeroBudget: number,
   testEpochs = BACKTEST_EPOCHS,
   trendEpochs = TREND_EPOCHS,
+  minConsistency = 0,
 ): Promise<BacktestReport> {
   const pools = await fetchActivePools();
   const depth = testEpochs + trendEpochs + 1;
@@ -238,5 +278,5 @@ export async function backtestLive(
     votes: epochsByPool[i].map((e) => Number(e.votes) / 10 ** VE_DECIMALS),
   }));
 
-  return runBacktest(histories, veAeroBudget, { testEpochs, trendEpochs });
+  return runBacktest(histories, veAeroBudget, { testEpochs, trendEpochs, minConsistency });
 }

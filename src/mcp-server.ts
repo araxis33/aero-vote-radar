@@ -5,7 +5,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { createRequire } from "node:module";
 import { rankPoolsByEfficiency } from "./efficiency.js";
-import { recommendAllocation, toWholePercentWeights, expectedUsdForWholePercentVote } from "./allocator.js";
+import {
+  recommendAllocation,
+  toWholePercentWeights,
+  expectedUsdForWholePercentVote,
+  unallocatedVeAero,
+} from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
@@ -133,12 +138,30 @@ server.registerTool(
         .max(1)
         .optional()
         .describe("Only allocate to pools whose consistency score is at least this (0..1), filtering out pools whose apparent value is one one-off bribe."),
+      maxWeight: z
+        .number()
+        .gt(0)
+        .max(1)
+        .optional()
+        .describe(
+          "Cap on any single pool's share of the vote (0..1, default 1 = uncapped). The unconstrained optimum is often one pool at 100%, which is correct arithmetic and more concentration than many voters want. Too tight a cap for the candidate set leaves part of the budget unplaceable and the call fails rather than silently renormalising past the cap.",
+        ),
     },
   },
-  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0 }) => {
+  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0, maxWeight = 1 }) => {
     const budget = await resolveVeAeroBudget(veAero, address);
     const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
-    const allocation = recommendAllocation(ranked, budget, topCandidates);
+    const allocation = recommendAllocation(ranked, budget, topCandidates, undefined, maxWeight);
+
+    // Same guard the CLI applies: toWholePercentWeights normalises by the
+    // weights it is handed, so publishing a part-spent allocation would restore
+    // the concentration the cap was asked to prevent.
+    const unplaced = unallocatedVeAero(allocation, budget);
+    if (unplaced > 0) {
+      throw new Error(
+        `maxWeight ${maxWeight} is too tight for the ${allocation.length} pool(s) that qualified: ${Math.round((unplaced / budget) * 100)}% of the veAERO has nowhere to go. Raise maxWeight, raise topCandidates, or lower minConsistency.`,
+      );
+    }
     const totalExpectedUsd = allocation.reduce((a, b) => a + b.expectedUsd, 0);
     const votePercents = toWholePercentWeights(allocation);
     const votePercentsExpectedUsd = expectedUsdForWholePercentVote(allocation, budget);
@@ -180,11 +203,19 @@ server.registerTool(
         .optional()
         .describe("Base wallet address to read live voting power from, instead of stating an amount."),
       epochs: z.number().int().positive().max(MAX_BACKTEST_EPOCHS).optional().describe(`How many past epochs to replay (default ${BACKTEST_EPOCHS}, max ${MAX_BACKTEST_EPOCHS})`),
+      minConsistency: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe(
+          "Only allocate to pools whose consistency — measured over the trailing window as it stood before each tested epoch, never today's — was at least this (0..1). Use it to backtest the same filtered strategy you would pass to the allocation tool; without it the report describes the unfiltered strategy instead. The naive baseline stays unfiltered either way, so uplift figures remain comparable.",
+        ),
     },
   },
-  withErrorHandling(async ({ veAero, address, epochs = BACKTEST_EPOCHS }) => {
+  withErrorHandling(async ({ veAero, address, epochs = BACKTEST_EPOCHS, minConsistency = 0 }) => {
     const budget = await resolveVeAeroBudget(veAero, address);
-    const report = await backtestLive(budget, epochs);
+    const report = await backtestLive(budget, epochs, undefined, minConsistency);
 
     return {
       content: [{ type: "text", text: JSON.stringify(report, null, 2) }],

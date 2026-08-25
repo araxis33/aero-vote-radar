@@ -102,3 +102,26 @@ test("buildSnapshot on an empty ranking yields no pools and a zero epoch", () =>
   assert.equal(snap.poolCount, 0);
   assert.equal(snap.latestEpochTs, 0);
 });
+
+test("the snapshot publishes when the epoch it describes stops being actionable", () => {
+  // Scanned Saturday 2026-08-22 12:00 UTC, so the vote it recommends has to be
+  // cast before Thursday 2026-08-27 00:00 UTC to count.
+  const generatedAt = new Date(Date.UTC(2026, 7, 22, 12, 0, 0));
+  const snapshot = buildSnapshot([ranked({ latestEpochTs: 1_786_320_000 })], generatedAt);
+
+  assert.equal(new Date(snapshot.epochEndsAt * 1000).toISOString(), "2026-08-27T00:00:00.000Z");
+  assert.ok(snapshot.epochEndsAt > Math.floor(generatedAt.getTime() / 1000));
+});
+
+test("epochEndsAt follows the scan clock, not a pool's stale latestEpochTs", () => {
+  // A pool whose rewards contract has not been touched in weeks reports an old
+  // epoch. Deriving the deadline from that would tell a visitor that voting
+  // closed long ago, when the epoch they can actually vote in is the current one.
+  const generatedAt = new Date(Date.UTC(2026, 7, 22, 12, 0, 0));
+  const staleEpochTs = Math.floor(Date.UTC(2026, 6, 2, 0, 0, 0) / 1000);
+
+  const snapshot = buildSnapshot([ranked({ latestEpochTs: staleEpochTs })], generatedAt);
+
+  assert.equal(snapshot.latestEpochTs, staleEpochTs);
+  assert.equal(new Date(snapshot.epochEndsAt * 1000).toISOString(), "2026-08-27T00:00:00.000Z");
+});

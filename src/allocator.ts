@@ -1,5 +1,27 @@
 import type { PoolEfficiency } from "./efficiency.js";
 
+/**
+ * Aerodrome's voting UI accepts whole percentages, so a vote is cast on a
+ * 1%-of-your-balance lattice whatever the maths would have preferred. Running
+ * the greedy allocator in exactly 100 steps makes each step one castable
+ * percentage point, which is why this is the granularity and not a resolution
+ * knob to be turned up.
+ *
+ * Finer steps do not buy accuracy here, they lose it. At 400 steps the
+ * allocator hands out quarter-points it cannot vote, and `toWholePercentWeights`
+ * then rounds them away: on a 1,000,000 veAERO run against live data the
+ * allocator spread the budget across 15 pools of which 9 came back under 0.5%
+ * and were dropped, so the table printed an expected total that no castable
+ * vote could earn.
+ *
+ * Nothing is given up by quantising. Each pool's return R*x/(V+x) is concave in
+ * x, and for a separable sum of concave functions, handing out identical
+ * indivisible units to the best marginal each time is exactly optimal for that
+ * lattice — not an approximation of the continuous answer, but the best answer
+ * to the question actually being asked.
+ */
+export const WHOLE_PERCENT_STEPS = 100;
+
 export interface AllocationResult {
   pool: string;
   symbol: string;
@@ -103,6 +125,24 @@ export function expectedUsdForWholePercentVote(
 }
 
 /**
+ * veAERO the allocator could not place — always 0 without a `maxWeight` cap,
+ * and positive when the cap times the number of candidates cannot absorb the
+ * whole budget (five pools capped at 15% can hold 75% of it).
+ *
+ * This has to be surfaced rather than swallowed, because `toWholePercentWeights`
+ * normalises by the weights it is given: hand it a 75%-spent allocation and it
+ * scales the rows back up to 100%, quietly restoring the concentration the cap
+ * was asked to prevent. Callers check this first.
+ */
+export function unallocatedVeAero(allocation: AllocationResult[], veAeroBudget: number): number {
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return 0;
+  const spent = allocation.reduce((a, b) => a + b.veAeroAllocated, 0);
+  const left = veAeroBudget - spent;
+  // Floating-point dust from summing 100 slices is not a shortfall.
+  return left > veAeroBudget * 1e-9 ? left : 0;
+}
+
+/**
  * The minimal shape the allocator actually needs. Stated as its own type so
  * callers that aren't holding a full `PoolEfficiency` — notably the backtester,
  * which reconstructs each historical epoch's view of the world — can run the
@@ -117,6 +157,8 @@ export interface AllocationCandidate {
 
 interface Candidate extends AllocationCandidate {
   allocated: number;
+  /** Steps taken, kept alongside `allocated` so a cap can be enforced exactly on the lattice. */
+  units: number;
 }
 
 /**
@@ -136,7 +178,8 @@ export function recommendAllocation(
   ranked: PoolEfficiency[],
   veAeroBudget: number,
   topK = 15,
-  steps = 400,
+  steps = WHOLE_PERCENT_STEPS,
+  maxWeight = 1,
 ): AllocationResult[] {
   return allocateAcrossCandidates(
     ranked.slice(0, topK).map((c) => ({
@@ -147,6 +190,7 @@ export function recommendAllocation(
     })),
     veAeroBudget,
     steps,
+    maxWeight,
   );
 }
 
@@ -181,22 +225,34 @@ function marginalValuePerVeAero(c: Candidate, stepSize: number): number {
 export function allocateAcrossCandidates(
   input: AllocationCandidate[],
   veAeroBudget: number,
-  steps = 400,
+  steps = WHOLE_PERCENT_STEPS,
+  maxWeight = 1,
 ): AllocationResult[] {
   // Reject non-finite budgets (e.g. a caller passing Infinity/NaN through) rather
   // than letting `stepSize` become Infinity/NaN and poisoning every allocation
   // below with NaN weights and expected-USD values.
   if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return [];
 
-  const candidates: Candidate[] = input.map((c) => ({ ...c, allocated: 0 }));
+  const candidates: Candidate[] = input.map((c) => ({ ...c, allocated: 0, units: 0 }));
 
   const stepSize = veAeroBudget / steps;
+  // The cap counted in steps rather than in veAERO, so it is exact on the same
+  // lattice the allocation lives on. A cap below one whole step would silently
+  // mean "allocate nothing", so it floors to at least one.
+  const maxUnits =
+    Number.isFinite(maxWeight) && maxWeight > 0 && maxWeight < 1
+      ? Math.max(1, Math.floor(maxWeight * steps))
+      : steps;
 
   for (let s = 0; s < steps; s++) {
     let bestIndex = -1;
     let bestMarginal = 0;
 
     for (let i = 0; i < candidates.length; i++) {
+      // A pool already at the cap is out of the running entirely, not merely
+      // ranked lower: the point of the cap is that the next-best pool gets the
+      // step even when the capped one still has the higher marginal.
+      if (candidates[i].units >= maxUnits) continue;
       const marginal = marginalValuePerVeAero(candidates[i], stepSize);
       if (marginal > bestMarginal) {
         bestMarginal = marginal;
@@ -204,8 +260,14 @@ export function allocateAcrossCandidates(
       }
     }
 
-    if (bestIndex === -1) break; // no candidate has any positive expected value left
+    // Either nothing has positive expected value left, or every candidate that
+    // does has hit the cap. The second case leaves part of the budget unspent,
+    // which callers must notice rather than paper over — see
+    // `unallocatedVeAero`, and the guard in the CLI that refuses to print a
+    // vote that would be renormalised back past the cap.
+    if (bestIndex === -1) break;
     candidates[bestIndex].allocated += stepSize;
+    candidates[bestIndex].units++;
   }
 
   return candidates
