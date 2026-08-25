@@ -684,11 +684,34 @@ const el = {
   statPerVote: document.getElementById("statPerVote"),
 };
 
+// Epoch arithmetic, matching epochEndOf/formatDuration in src/trend.ts. Computed
+// from the visitor's own clock rather than read from snapshot.epochEndsAt: the
+// snapshot can be up to six hours old, and a countdown is the one number on this
+// page that must never be stale.
+const EPOCH_SECONDS = 604800;
+
+function epochEndOf(unixSeconds) {
+  return Math.floor(unixSeconds / EPOCH_SECONDS) * EPOCH_SECONDS + EPOCH_SECONDS;
+}
+
+function formatDuration(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0m";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return days + "d " + hours + "h";
+  if (hours > 0) return hours + "h " + minutes + "m";
+  return minutes + "m";
+}
+
 function renderMeta() {
   const scanned = new Date(snapshot.generatedAt);
   const ageHours = (Date.now() - scanned.getTime()) / 3600000;
   const age = ageHours < 1 ? "just now" : ageHours < 24 ? Math.round(ageHours) + "h ago" : Math.round(ageHours / 24) + "d ago";
   const stale = ageHours > 12; // the job runs every 6h; well past that means it's stuck
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const remaining = epochEndOf(nowSec) - nowSec;
 
   el.meta.innerHTML = "";
   const dot = document.createElement("span");
@@ -696,9 +719,17 @@ function renderMeta() {
   const text = document.createElement("span");
   text.innerHTML =
     "<strong>" + snapshot.poolCount + "</strong> live-gauge pools · scanned <strong>" + age +
-    "</strong> · epoch of " + new Date(snapshot.latestEpochTs * 1000).toISOString().slice(0, 10);
+    "</strong> · epoch of " + new Date(snapshot.latestEpochTs * 1000).toISOString().slice(0, 10) +
+    " · voting closes in <strong>" + formatDuration(remaining) + "</strong>";
   el.meta.append(dot, text);
 }
+
+// The countdown is the only part of the page that changes on its own. Once a
+// minute is enough for a figure whose finest unit is minutes, and it keeps the
+// page honest if someone leaves the tab open across the Thursday boundary.
+setInterval(function () {
+  if (snapshot) renderMeta();
+}, 60000);
 
 /** One line in the movers panel: name, its history, and the size of the move. */
 function moverRow(p) {

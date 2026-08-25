@@ -2,7 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { parsePositiveIntFlag, parseUnitIntervalFlag, poolEfficiencyToJson, veAeroPositionsToJson, resolveBudget } from "../src/cli.js";
+import {
+  epochDeadlineLine,
+  parsePositiveIntFlag,
+  parseUnitIntervalFlag,
+  poolEfficiencyToJson,
+  resolveBudget,
+  veAeroPositionsToJson,
+} from "../src/cli.js";
 import { EPOCH_SECONDS } from "../src/trend.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 import type { VeNftSummary } from "../src/veAero.js";
@@ -237,4 +244,20 @@ test("the CLI exits non-zero on an unknown command", async () => {
   assert.match(stderr, /Unknown command: poolz/);
   // Usage still goes out, just on stderr where a failure's output belongs.
   assert.match(stderr, /Commands:/);
+});
+
+test("epochDeadlineLine states the deadline in both remaining time and UTC", () => {
+  // Saturday 2026-08-22 12:00 UTC — four days and twelve hours before the flip.
+  const line = epochDeadlineLine(new Date(Date.UTC(2026, 7, 22, 12, 0, 0)));
+
+  assert.match(line, /closes in 4d 12h/);
+  assert.match(line, /2026-08-27 00:00 UTC/);
+  assert.match(line, /counts toward the next epoch/);
+});
+
+test("epochDeadlineLine does not report a negative countdown at the boundary", () => {
+  // The instant of the flip belongs to the epoch opening there, so a full week
+  // remains rather than zero or a negative figure.
+  const line = epochDeadlineLine(new Date(Date.UTC(2026, 7, 27, 0, 0, 0)));
+  assert.match(line, /closes in 7d 0h/);
 });

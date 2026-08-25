@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { rankPoolsByEfficiency } from "./efficiency.js";
-import { computeTrend, isEpochInProgress } from "./trend.js";
+import { computeTrend, epochEndOf, isEpochInProgress } from "./trend.js";
 import type { PoolEfficiency } from "./efficiency.js";
 
 /**
@@ -50,6 +50,15 @@ export interface Snapshot {
   generatedAt: string;
   /** Unix seconds of the most recent epoch seen across all pools. */
   latestEpochTs: number;
+  /**
+   * Unix seconds at which the epoch running when this scan happened flips — the
+   * deadline for a vote to count toward it. Published because a snapshot is a
+   * recommendation with an expiry, and anything reading the JSON on its own had
+   * no way to tell whether it was still actionable. Derived from `generatedAt`
+   * rather than from `latestEpochTs`, which can lag on pools whose rewards
+   * contract has not been touched this week.
+   */
+  epochEndsAt: number;
   poolCount: number;
   pools: SnapshotPool[];
 }
@@ -98,6 +107,7 @@ export function buildSnapshot(ranked: PoolEfficiency[], generatedAt: Date): Snap
   return {
     generatedAt: generatedAt.toISOString(),
     latestEpochTs: ranked.reduce((max, p) => Math.max(max, p.latestEpochTs), 0),
+    epochEndsAt: epochEndOf(Math.floor(generatedAt.getTime() / 1000)),
     poolCount: pools.length,
     pools,
   };

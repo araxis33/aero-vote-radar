@@ -5,7 +5,7 @@ import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
-import { computeTrend, isEpochInProgress } from "./trend.js";
+import { computeTrend, epochEndOf, formatDuration, isEpochInProgress } from "./trend.js";
 
 function fmtUsd(n: number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -196,6 +196,21 @@ export async function resolveBudget(args: string[], usage: string): Promise<numb
   return veaero;
 }
 
+/**
+ * One line saying how long this recommendation stays actionable.
+ *
+ * A vote only counts toward the epoch it is cast in, so a ranking is advice
+ * with a deadline attached — and the deadline was previously stated nowhere.
+ * Exported for testing, and takes its clock as an argument so the test can pin
+ * one instead of racing the real one.
+ */
+export function epochDeadlineLine(now: Date = new Date()): string {
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const endsAt = epochEndOf(nowSec);
+  const stamp = `${new Date(endsAt * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  return `Voting for this epoch closes in ${formatDuration(endsAt - nowSec)} (${stamp}) — a vote cast after that counts toward the next epoch.`;
+}
+
 async function cmdRecommend(args: string[]) {
   const topK = parsePositiveIntFlag(args, "top", 15);
   const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
@@ -255,6 +270,7 @@ async function cmdRecommend(args: string[]) {
         `(${dropped} pool${dropped > 1 ? "s" : ""} received a share too small to round up to 1%; those points went to the rows above.)`,
       );
     }
+    console.log(epochDeadlineLine());
     console.log("This tool never touches your wallet or keys.\n");
     return;
   }
@@ -272,6 +288,7 @@ async function cmdRecommend(args: string[]) {
     );
   }
   console.log(`\nTotal expected value next epoch (heuristic, trailing-average based): ${fmtUsd(totalExpectedUsd)}`);
+  console.log(epochDeadlineLine());
   console.log("Pass --vote-ready for whole percentages you can type straight into Aerodrome's voting UI.");
   console.log("You vote this yourself on aerodrome.finance — this tool never touches your wallet or keys.\n");
 }

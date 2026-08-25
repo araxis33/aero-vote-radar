@@ -23,6 +23,40 @@ export function epochStartOf(unixSeconds: number): number {
 }
 
 /**
+ * When the epoch containing `unixSeconds` flips — which is also the deadline
+ * for a vote to count toward it. A recommendation is only actionable while the
+ * epoch it was computed for is still open, and "Thursday 00:00 UTC" is not
+ * something most people can turn into "how long have I got" at a glance.
+ *
+ * The boundary belongs to the epoch starting there, so this returns the first
+ * instant of the next epoch rather than the last instant of this one.
+ */
+export function epochEndOf(unixSeconds: number): number {
+  return epochStartOf(unixSeconds) + EPOCH_SECONDS;
+}
+
+/**
+ * Seconds rendered as `2d 4h`, `4h 12m` or `9m` — the coarsest two units only.
+ *
+ * Deliberately not accurate to the second. This describes a weekly deadline
+ * derived from block timestamps, and a countdown ticking off single seconds
+ * would imply a precision the underlying boundary does not have. Non-positive
+ * input reads as `0m` rather than as a negative duration, because the caller
+ * that hits that case is past the deadline, not owed time.
+ */
+export function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0m";
+
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+/**
  * Whether a pool's newest epoch is the one still running.
  *
  * This matters more than it looks. `RewardsSugar.epochsByAddress` returns the
