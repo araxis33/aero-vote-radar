@@ -368,13 +368,18 @@ async function cmdBacktest(args: string[]) {
 
   const filterNote = minConsistency > 0 ? ` (only pools with consistency ≥ ${minConsistency})` : "";
   console.log(`\nBacktest over the last ${report.epochsTested} epoch(s) with ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO${filterNote}:\n`);
-  console.log(["EpochsAgo", "Radar $", "Naive $", "Naive picked"].map((h) => h.padEnd(18)).join(""));
+  console.log(
+    ["EpochsAgo", "Radar $ (typical)", "Radar $ (current)", "Naive $", "Naive picked"]
+      .map((h) => h.padEnd(20))
+      .join(""),
+  );
   for (const e of report.epochs) {
     console.log(
       [
-        String(e.epochsAgo).padEnd(18),
-        fmtUsd(e.radarUsd).padEnd(18),
-        fmtUsd(e.naiveUsd).padEnd(18),
+        String(e.epochsAgo).padEnd(20),
+        fmtUsd(e.radarTypicalUsd).padEnd(20),
+        fmtUsd(e.radarUsd).padEnd(20),
+        fmtUsd(e.naiveUsd).padEnd(20),
         e.naiveSymbol ?? "-",
       ].join(""),
     );
@@ -383,6 +388,19 @@ async function cmdBacktest(args: string[]) {
   const uplift = report.upliftPct === null ? "n/a (baseline earned $0)" : `${(report.upliftPct * 100).toFixed(1)}%`;
   console.log(`\nTotal: radar ${fmtUsd(report.radarTotalUsd)} vs naive ${fmtUsd(report.naiveTotalUsd)} — uplift ${uplift}`);
   console.log(`Radar earned more in ${report.epochsWonByRadar} of ${report.epochsTested} epoch(s).`);
+
+  // What the default vote basis is worth, which is the only reason it is the
+  // default. Printed as its own line rather than folded into the uplift above,
+  // because it answers a different question: not "does the radar beat naive
+  // APR-chasing" but "does judging pools on the weight they settle at beat
+  // judging them on the weight they are showing".
+  const basisDelta =
+    report.typicalVsCurrentPct === null
+      ? "n/a (the current-weight basis earned $0)"
+      : `${report.typicalVsCurrentPct >= 0 ? "+" : ""}${(report.typicalVsCurrentPct * 100).toFixed(1)}%`;
+  console.log(
+    `Vote basis: typical ${fmtUsd(report.radarTypicalTotalUsd)} vs current ${fmtUsd(report.radarTotalUsd)} — ${basisDelta}, ahead in ${report.epochsWonByTypical} of ${report.epochsTested} epoch(s).`,
+  );
 
   if (minConsistency > 0) {
     // Worth stating plainly: a filter that leaves two pools to choose between
