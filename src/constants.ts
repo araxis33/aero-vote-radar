@@ -37,6 +37,15 @@ export const MAX_BACKTEST_EPOCHS = 20;
 // percentage wildly without representing a meaningful voting opportunity.
 export const MIN_TRAILING_USD = 10;
 
+// Floor, in veAERO, below which a pool's vote weight is too small to form a
+// ratio against. `refillRatio` divides a pool's typical settled weight by its
+// current one, and both sides of that division need to be a real number of
+// votes: measured on live data, an unfloored version topped the "will be
+// refilled" list with a pool holding 1,364 votes against a history of zero,
+// reporting a 2,577x refill that described nothing. Same reasoning as
+// MIN_TRAILING_USD, applied to the denominator instead of the numerator.
+export const MIN_VOTE_BASELINE = 1000;
+
 export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";
 
 // Bounds how long a single DefiLlama batch request can hang before it's treated
