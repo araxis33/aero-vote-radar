@@ -6,6 +6,7 @@ import {
   epochDeadlineLine,
   parsePositiveIntFlag,
   parseUnitIntervalFlag,
+  parseVoteBasisFlag,
   poolEfficiencyToJson,
   resolveBudget,
   veAeroPositionsToJson,
@@ -262,4 +263,14 @@ test("epochDeadlineLine does not report a negative countdown at the boundary", (
   // remains rather than zero or a negative figure.
   const line = epochDeadlineLine(new Date(Date.UTC(2026, 7, 27, 0, 0, 0)));
   assert.match(line, /closes in 7d 0h/);
+});
+
+test("parseVoteBasisFlag accepts both bases and rejects anything else", () => {
+  assert.equal(parseVoteBasisFlag([]), "typical");
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "current"]), "current");
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "typical"]), "typical");
+  // A typo must print usage rather than quietly allocating on the other basis.
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "Current"]), undefined);
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "median"]), undefined);
+  assert.equal(parseVoteBasisFlag(["--vote-basis"]), undefined);
 });

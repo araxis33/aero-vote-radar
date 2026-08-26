@@ -1,4 +1,6 @@
 import type { PoolEfficiency } from "./efficiency.js";
+import { computeVoteStability, expectedDilutedVotes } from "./dilution.js";
+import { isEpochInProgress } from "./trend.js";
 
 /**
  * Aerodrome's voting UI accepts whole percentages, so a vote is cast on a
@@ -174,24 +176,81 @@ interface Candidate extends AllocationCandidate {
  * decreases as you add more of your own votes — this is the self-dilution effect
  * naive "just vote where APR is highest" optimizers ignore.
  */
+/**
+ * Which vote weight to divide a pool's incentives by.
+ *
+ * `"typical"` judges each pool against the larger of the weight it carries now
+ * and the weight it usually settles at, which is the honest denominator when
+ * votes carry over between epochs and are largely rewritten in the hours before
+ * one closes. `"current"` trusts the live weight, which is what this function
+ * did before the option existed.
+ */
+export type VoteBasis = "typical" | "current";
+
+/**
+ * `asOfUnixSeconds` decides whether each pool's newest epoch counts as finished,
+ * which is what keeps the still-running week out of the typical-weight figure.
+ * It is a parameter rather than a call to the clock so the result is
+ * reproducible and testable, matching how `toSnapshotPool` takes `generatedAt`.
+ */
 export function recommendAllocation(
   ranked: PoolEfficiency[],
   veAeroBudget: number,
   topK = 15,
   steps = WHOLE_PERCENT_STEPS,
   maxWeight = 1,
+  voteBasis: VoteBasis = "typical",
+  asOfUnixSeconds: number = Math.floor(Date.now() / 1000),
 ): AllocationResult[] {
+  const withVotes = ranked.map((c) => ({
+    pool: c,
+    votes: votesToDivideBy(c, voteBasis, asOfUnixSeconds),
+  }));
+
+  // Shortlisted by the rate implied by the chosen basis rather than by the
+  // order the caller happened to pass. Under "current" this reproduces the
+  // conventional ranking (`rankPoolsByEfficiency` sorts by exactly this), so
+  // nothing moves; under "typical" the incoming order ranks a quantity that is
+  // no longer the one being allocated on, and slicing topK from it would
+  // shortlist pools the caller is not being shown.
+  //
+  // A pool nobody has voted on sorts first, matching `marginalValuePerVeAero`'s
+  // view that V = 0 is the best case and not the worst — but only when it has
+  // something to pay, so a dead pool cannot consume a topK slot.
+  const rate = (x: (typeof withVotes)[number]): number => {
+    if (x.pool.trailingAvgUsd <= 0) return 0;
+    return x.votes > 0 ? x.pool.trailingAvgUsd / x.votes : Number.POSITIVE_INFINITY;
+  };
+  withVotes.sort((a, b) => rate(b) - rate(a));
+
   return allocateAcrossCandidates(
-    ranked.slice(0, topK).map((c) => ({
-      address: c.pool.address,
-      symbol: c.pool.symbol,
-      existingVotes: c.currentVotesVeAero,
-      expectedUsd: c.trailingAvgUsd,
+    withVotes.slice(0, topK).map(({ pool, votes }) => ({
+      address: pool.pool.address,
+      symbol: pool.pool.symbol,
+      existingVotes: votes,
+      expectedUsd: pool.trailingAvgUsd,
     })),
     veAeroBudget,
     steps,
     maxWeight,
   );
+}
+
+/** The vote weight one pool should be judged against under the chosen basis. */
+export function votesToDivideBy(
+  pool: PoolEfficiency,
+  voteBasis: VoteBasis,
+  asOfUnixSeconds: number,
+): number {
+  if (voteBasis === "current") return pool.currentVotesVeAero;
+
+  const partial = isEpochInProgress(pool.latestEpochTs, asOfUnixSeconds);
+  const { expectedVotes } = computeVoteStability(
+    pool.epochVotesSeries,
+    partial,
+    pool.currentVotesVeAero,
+  );
+  return expectedDilutedVotes(pool.currentVotesVeAero, expectedVotes);
 }
 
 /**

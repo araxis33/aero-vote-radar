@@ -146,12 +146,18 @@ server.registerTool(
         .describe(
           "Cap on any single pool's share of the vote (0..1, default 1 = uncapped). The unconstrained optimum is often one pool at 100%, which is correct arithmetic and more concentration than many voters want. Too tight a cap for the candidate set leaves part of the budget unplaceable and the call fails rather than silently renormalising past the cap.",
         ),
+      voteBasis: z
+        .enum(["typical", "current"])
+        .optional()
+        .describe(
+          "Which vote weight to judge each pool against (default 'typical'). Votes carry over between epochs and are largely rewritten in the hours before one closes, so a pool's live weight is often well below the weight it settles at — 'typical' divides by the larger of the two, which is the figure that survives the weight coming back. 'current' trusts the live weight and reproduces the older behaviour.",
+        ),
     },
   },
-  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0, maxWeight = 1 }) => {
+  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0, maxWeight = 1, voteBasis = "typical" }) => {
     const budget = await resolveVeAeroBudget(veAero, address);
     const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
-    const allocation = recommendAllocation(ranked, budget, topCandidates, undefined, maxWeight);
+    const allocation = recommendAllocation(ranked, budget, topCandidates, undefined, maxWeight, voteBasis);
 
     // Same guard the CLI applies: toWholePercentWeights normalises by the
     // weights it is handed, so publishing a part-spent allocation would restore
