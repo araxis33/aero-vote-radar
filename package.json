@@ -15,12 +15,21 @@
   "bugs": {
     "url": "https://github.com/araxis33/aero-vote-radar/issues"
   },
-  "keywords": ["aerodrome", "base", "mcp", "veaero", "defi", "ai-agent"],
+  "keywords": [
+    "aerodrome",
+    "base",
+    "mcp",
+    "veaero",
+    "defi",
+    "ai-agent"
+  ],
   "bin": {
     "aero-vote-radar": "./dist/cli.js",
     "aero-vote-radar-mcp": "./dist/mcp-server.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "prepare": "npm run build",
     "build": "tsc",
@@ -28,7 +37,8 @@
     "cli": "tsx src/cli.ts",
     "mcp": "tsx src/mcp-server.ts",
     "snapshot": "tsx src/snapshot-cli.ts",
-    "test": "node --import tsx --test test/**/*.test.ts"
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "predict-check": "tsx src/predict-cli.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

@@ -96,6 +96,48 @@ npm run snapshot -- some/other.json   # or somewhere else
 
 **Verified parity:** for 25,000 veAERO with no consistency filter, the page and `npm run cli -- recommend --veaero 25000 --vote-ready` produce the same weights (76/20/2/1/1) and the same expected total, to the cent.
 
+## Checking the vote basis yourself
+
+```bash
+npm run predict-check                 # walks the committed snapshot history
+npm run predict-check some/dir        # or a directory of snapshot JSON files
+```
+
+This is the measurement that decides `--vote-basis`, kept as a command rather
+than as a number in this README, because the reason the tool once shipped the
+wrong default was that measuring it looked like an afternoon's work. It is one
+command.
+
+It works by exploiting something the backtest cannot reach. Replaying a closed
+epoch offers no mid-week vote tally, so `previous` and `current` become the same
+number there and the backtest is blind to the difference. But every scan ever
+committed to `docs/data/snapshot.json` recorded the live tally at that moment,
+six-hourly — so a scan taken inside an epoch that has since settled **is** a real
+mid-week vantage point with the answer now known. Each basis is scored against
+what those epochs actually settled at, with the trailing window it would have
+had at the time, and the same `MIN_TRAILING_USD` gate the rankings use, so the
+result describes the pools the tool would really vote into.
+
+Output at the time of writing — 5,142 observations, 104 pools, epochs of
+2026-08-06 and 2026-08-13:
+
+| basis | error | bias | closest on |
+|---|---|---|---|
+| `previous` | 17% | none | 2,728 |
+| `current` | 18% | none | 1,568 |
+| `typical` | 26% | +4% | 846 |
+
+and on pools under 10k votes, 29% / 35% / **71%** respectively, the last of them
+running +24% high. Error is the median absolute miss on a log scale, because
+payout depends on weight multiplicatively; bias is reported separately because a
+predictor can be no noisier than another and still be systematically high, and
+the allocator divides by it, so the bias reaches every pool it prices.
+
+Two things the numbers do not carry: observations within one pool are correlated
+(the same pool appears at every scan time), so this is fewer independent points
+than 5,142; and only epochs with snapshot coverage can be scored, which today
+means the history since 2026-08-07.
+
 ## Install
 
 Requires Node.js 18.18 or newer (the test suite's `node --import tsx` invocation depends on the `--import` flag, added in 18.18).
