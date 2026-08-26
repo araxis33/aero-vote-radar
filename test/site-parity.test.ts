@@ -10,6 +10,7 @@ import {
   type AllocationCandidate,
 } from "../src/allocator.js";
 import { epochEndOf, formatDuration } from "../src/trend.js";
+import { expectedDilutedVotes } from "../src/dilution.js";
 
 /**
  * The static site cannot import the TypeScript allocator: `docs/` is served by
@@ -60,11 +61,13 @@ const siteModule = new Function(`
   ${extractFunction(siteSource, "allocateAcrossCandidates")}
   ${extractFunction(siteSource, "toWholePercentWeights")}
   ${extractFunction(siteSource, "expectedUsdForWholePercentVote")}
-  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote };
+  ${extractFunction(siteSource, "votesToExpect")}
+  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote, votesToExpect };
 `)() as {
   allocateAcrossCandidates: SiteAllocate;
   toWholePercentWeights: SitePercents;
   expectedUsdForWholePercentVote: SiteExpected;
+  votesToExpect: (pool: { votesVeAero: number; expectedVotes: number | null }) => number;
 };
 
 /** Candidate sets chosen to exercise the branches the two copies could disagree on. */
@@ -236,5 +239,30 @@ test("docs/index.html's formatDuration matches src/trend.ts across a range of du
   const samples = [-100, 0, 1, 59, 60, 61, 3599, 3600, 3660, 86_399, 86_400, 86_400 * 2 + 3661, NaN, Infinity];
   for (const s of samples) {
     assert.equal(siteEpochModule.formatDuration(s), formatDuration(s), `formatDuration(${s})`);
+  }
+});
+
+/**
+ * The page picks the allocator's denominator itself, so `votesToExpect` is a
+ * second hand-port sitting on the same drift risk as the allocator. It decides
+ * which pools the suggestion funds, so a copy that quietly disagreed with
+ * `expectedDilutedVotes` would change real vote weights.
+ */
+test("docs/index.html's votesToExpect matches src/dilution.ts", () => {
+  const cases: { votesVeAero: number; expectedVotes: number | null }[] = [
+    { votesVeAero: 452_000, expectedVotes: 11_600_000 }, // between votes: expect the refill
+    { votesVeAero: 9_000, expectedVotes: 3_000 }, // already above its usual weight
+    { votesVeAero: 5_000, expectedVotes: 5_000 }, // steady
+    { votesVeAero: 1_234, expectedVotes: null }, // no usable history
+    { votesVeAero: 0, expectedVotes: 4_000 }, // nobody has voted yet this epoch
+    { votesVeAero: 0, expectedVotes: null },
+  ];
+
+  for (const c of cases) {
+    assert.equal(
+      siteModule.votesToExpect(c),
+      expectedDilutedVotes(c.votesVeAero, c.expectedVotes),
+      `votesToExpect disagreed for ${JSON.stringify(c)}`,
+    );
   }
 });

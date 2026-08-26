@@ -239,6 +239,13 @@
       </select>
     </div>
     <div class="field">
+      <label for="votebasis">Vote weight to expect</label>
+      <select id="votebasis">
+        <option value="expected" selected>Typical — assume late votes return</option>
+        <option value="current">Right now — trust the live weight</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="maxweight">Max per pool</label>
       <select id="maxweight">
         <option value="1" selected>No cap</option>
@@ -272,7 +279,7 @@
 <div class="scroll cards">
   <table>
     <thead>
-      <tr><th>Pool</th><th>Vote %</th><th>veAERO</th><th>Expected $</th><th>Pool votes now</th><th>Consistency</th></tr>
+      <tr><th>Pool</th><th>Vote %</th><th>veAERO</th><th>Expected $</th><th>Pool votes assumed</th><th>Consistency</th></tr>
     </thead>
     <tbody id="allocBody"></tbody>
   </table>
@@ -294,12 +301,24 @@
   </div>
 </div>
 
+<h2>What the whole pot is paying</h2>
+<p class="h2note">Every pool’s incentives divided by every pool’s votes, epoch by epoch. Picking a better pool cannot fix a shrinking pot, so this is the one number the ranking above structurally cannot tell you.</p>
+<div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Epoch (opens)</th><th>Bribes + fees</th><th>Votes cast</th><th>$ per veAERO</th><th>Vs. the oldest epoch shown</th></tr>
+    </thead>
+    <tbody id="yieldBody"></tbody>
+  </table>
+</div>
+<div class="note" id="yieldNote"></div>
+
 <h2>All ranked pools</h2>
 <p class="h2note">Every live-gauge pool that clears a minimum trailing value, sorted by predicted dollars per vote.</p>
 <div class="scroll">
   <table>
     <thead>
-      <tr><th>Pool</th><th>History</th><th>Trend</th><th>Predicted $/vote</th><th>Current $/vote</th><th>Edge</th><th>Trailing avg</th><th>Votes</th><th>Consistency</th><th>Epochs</th></tr>
+      <tr><th>Pool</th><th>History</th><th>Trend</th><th>Predicted $/vote</th><th>If weight returns</th><th>Refill</th><th>Current $/vote</th><th>Edge</th><th>Trailing avg</th><th>Votes</th><th>Consistency</th><th>Epochs</th></tr>
     </thead>
     <tbody id="rankBody"></tbody>
   </table>
@@ -516,6 +535,40 @@ const num = (n, d) => n.toLocaleString("en-US", { maximumFractionDigits: d === u
 const pctChange = (n) => (n >= 0 ? "+" : "") + Math.round(n * 100).toLocaleString("en-US") + "%";
 const consistencyClass = (c) => (c >= 0.6 ? "c-good" : c >= 0.45 ? "c-warn" : "c-bad");
 
+/**
+ * The vote weight a pool should be judged against — the larger of what it
+ * carries now and what it typically settles at. Mirrors expectedDilutedVotes
+ * in src/dilution.ts; test/site-parity.test.ts holds the two together.
+ *
+ * Taking the larger side is conservative in both directions: a pool sitting
+ * below its usual weight will most likely be refilled before the epoch closes,
+ * and one sitting above it is already carrying that weight.
+ */
+function votesToExpect(p) {
+  if (typeof p.expectedVotes !== "number") return p.votesVeAero;
+  return Math.max(p.votesVeAero, p.expectedVotes);
+}
+
+/** How loudly to flag a pool whose live weight is well below its usual one. */
+const refillClass = (r) => (r >= 3 ? "c-bad" : r >= 1.5 ? "c-warn" : "c-good");
+
+function refillCell(p) {
+  const td = document.createElement("td");
+  td.className = "num";
+  if (typeof p.refillRatio !== "number") {
+    td.textContent = "—";
+    td.title = "Too little vote history, or too few votes to form a ratio against.";
+    return td;
+  }
+  const r = p.refillRatio;
+  td.classList.add(refillClass(r));
+  td.textContent = r >= 1 ? "x" + r.toFixed(1) : "x" + r.toFixed(2);
+  td.title = r >= 1
+    ? "This pool usually settles at " + r.toFixed(1) + "x the weight it is showing right now, so the predicted figure beside it is optimistic by roughly that much."
+    : "This pool is currently carrying more weight than it usually settles at.";
+  return td;
+}
+
 // --- history chart ----------------------------------------------------------
 
 const SPARK_W = 78;
@@ -691,6 +744,9 @@ const el = {
   topk: document.getElementById("topk"),
   mincons: document.getElementById("mincons"),
   maxweight: document.getElementById("maxweight"),
+  votebasis: document.getElementById("votebasis"),
+  yieldBody: document.getElementById("yieldBody"),
+  yieldNote: document.getElementById("yieldNote"),
   allocBody: document.getElementById("allocBody"),
   rankBody: document.getElementById("rankBody"),
   moversUp: document.getElementById("moversUp"),
@@ -811,14 +867,71 @@ function renderMovers() {
   el.moversDown.replaceChildren(...rows(down, "Nothing is fading by more than 10% right now."));
 }
 
+/**
+ * The protocol-wide yield table.
+ *
+ * The epoch still running is shown but marked, for the same reason its bar is
+ * dashed everywhere else on this page: a scan taken mid-week has only counted
+ * part of that week, so comparing it against finished epochs reads as a
+ * collapse that has not happened. The percentage column therefore compares
+ * finished epochs only.
+ */
+function renderEpochYields() {
+  const rows = Array.isArray(snapshot.epochYields) ? snapshot.epochYields : [];
+  if (rows.length === 0) {
+    el.yieldNote.textContent = "This snapshot predates the protocol-wide yield series.";
+    return;
+  }
+
+  const finished = rows.filter((y) => !y.partial);
+  const baseline = finished.length > 0 ? finished[finished.length - 1].usdPerVote : 0;
+
+  const frag = document.createDocumentFragment();
+  for (const y of rows) {
+    const tr = document.createElement("tr");
+    const when = new Date(y.ts * 1000).toISOString().slice(0, 10);
+    tr.appendChild(cell(y.partial ? when + " (running)" : when));
+    tr.appendChild(cell(usd(y.totalUsd), "num"));
+    tr.appendChild(cell(num(y.totalVotes), "num"));
+    tr.appendChild(cell(y.usdPerVote.toFixed(5), "num"));
+
+    if (y.partial || baseline <= 0) {
+      tr.appendChild(cell("—", "num"));
+    } else {
+      const change = y.usdPerVote / baseline - 1;
+      const td = cell(pctChange(change), "num " + (change >= 0 ? "c-good" : "c-bad"));
+      tr.appendChild(td);
+    }
+    frag.appendChild(tr);
+  }
+  el.yieldBody.replaceChildren(frag);
+
+  if (finished.length >= 2) {
+    const newest = finished[0].usdPerVote;
+    const change = baseline > 0 ? newest / baseline - 1 : 0;
+    el.yieldNote.textContent =
+      "Across the " + finished.length + " finished epochs in this snapshot, a veAERO vote went from $" +
+      baseline.toFixed(5) + " to $" + newest.toFixed(5) + " (" + pctChange(change) +
+      "). Reward tokens are valued at today's prices even for older epochs, and only pools with a live gauge today are counted — both push the older figures down, so a decline shown here is a floor on the real one.";
+  }
+}
+
 function renderRanking() {
   const frag = document.createDocumentFragment();
-  for (const p of snapshot.pools) {
+  // Sorted by whichever per-vote figure the reader has asked to be shown, so
+  // the table and the allocation below it never disagree about what is best.
+  const useTypicalVotes = el.votebasis.value !== "current";
+  const rate = (p) =>
+    useTypicalVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;
+  const ordered = [...snapshot.pools].sort((a, b) => rate(b) - rate(a));
+  for (const p of ordered) {
     const tr = document.createElement("tr");
     tr.appendChild(poolCell(p.symbol, p.pool));
     tr.appendChild(historyCell(p));
     tr.appendChild(momentumCell(p));
     tr.appendChild(cell(p.predictedValuePerVote.toFixed(6), "num"));
+    tr.appendChild(cell((p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote).toFixed(6), "num"));
+    tr.appendChild(refillCell(p));
     tr.appendChild(cell(p.currentValuePerVote.toFixed(6), "num"));
     tr.appendChild(cell(pctChange(p.predictiveEdge), "num"));
     tr.appendChild(cell(usd(p.trailingAvgUsd), "num"));
@@ -844,6 +957,7 @@ function renderAllocation() {
   const topK = Math.max(1, Math.min(60, Number(el.topk.value) || 15));
   const minConsistency = Number(el.mincons.value);
   const maxWeight = Number(el.maxweight.value) || 1;
+  const useTypicalVotes = el.votebasis.value !== "current";
 
   el.allocNote.hidden = true;
 
@@ -852,7 +966,11 @@ function renderAllocation() {
     return;
   }
 
-  const eligible = snapshot.pools.filter((p) => p.consistency >= minConsistency);
+  const rate = (p) =>
+    useTypicalVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;
+  const eligible = snapshot.pools
+    .filter((p) => p.consistency >= minConsistency)
+    .sort((a, b) => rate(b) - rate(a));
   if (eligible.length === 0) {
     clearAllocation("No pool clears that consistency threshold in the current snapshot. Try a lower one.");
     return;
@@ -861,7 +979,8 @@ function renderAllocation() {
   const allocation = allocateAcrossCandidates(
     eligible.slice(0, topK).map((p) => ({
       address: p.pool, symbol: p.symbol, consistency: p.consistency,
-      existingVotes: p.votesVeAero, expectedUsd: p.trailingAvgUsd,
+      existingVotes: useTypicalVotes ? votesToExpect(p) : p.votesVeAero,
+      expectedUsd: p.trailingAvgUsd,
     })),
     budget,
     undefined,
@@ -900,7 +1019,7 @@ function renderAllocation() {
     tr.appendChild(cell(pct + "%", "num pct", "Vote %"));
     tr.appendChild(cell(num(a.veAeroAllocated), "num", "veAERO"));
     tr.appendChild(cell(usd(a.expectedUsd), "num", "Expected $"));
-    tr.appendChild(cell(num(a.existingVotes), "num", "Pool votes now"));
+    tr.appendChild(cell(num(a.existingVotes), "num", "Pool votes assumed"));
     tr.appendChild(cell(a.consistency.toFixed(2), "num " + consistencyClass(a.consistency), "Consistency"));
     frag.appendChild(tr);
   }
@@ -985,6 +1104,14 @@ for (const control of [el.veaero, el.topk, el.mincons, el.maxweight]) {
   control.addEventListener("input", renderAllocation);
   control.addEventListener("change", renderAllocation);
 }
+// The vote basis reorders the full ranking as well as the allocation, so that
+// the table and the suggestion below it never disagree about what ranks best.
+for (const event of ["input", "change"]) {
+  el.votebasis.addEventListener(event, () => {
+    renderRanking();
+    renderAllocation();
+  });
+}
 el.lookup.addEventListener("click", doLookup);
 el.addr.addEventListener("keydown", (e) => { if (e.key === "Enter") doLookup(); });
 el.copyBtn.addEventListener("click", copyWeights);
@@ -996,6 +1123,7 @@ fetch("data/snapshot.json", { cache: "no-cache" })
     snapshot = data;
     renderMeta();
     renderMovers();
+    renderEpochYields();
     renderRanking();
     renderAllocation();
   })
