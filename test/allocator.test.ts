@@ -26,6 +26,7 @@ function fixture(overrides: Partial<PoolEfficiency> & { address: string; symbol:
     trailingAvgUsd: 0,
     epochsObserved: 6,
     epochUsdSeries: [100, 110, 120, 130, 120, 140],
+    epochVotesSeries: [0, 0, 0, 0, 0, 0],
     currentValuePerVote: 0,
     predictedValuePerVote: 0,
     predictiveEdge: 0,
@@ -177,17 +178,46 @@ test("toWholePercentWeights: a real recommendAllocation result always totals 100
   assert.ok(percents.every((p) => Number.isInteger(p.percent) && p.percent > 0));
 });
 
-test("only the top K ranked candidates are ever considered", () => {
-  // recommendAllocation trusts the caller's ranking order and just slices the
-  // first topK — so the array order here *is* the rank order (best pool first).
+test("topK is a hard bound on how many pools can be funded", () => {
   const ranked = [
-    fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 50 }),
-    fixture({ address: "0xLOW", symbol: "LOW", currentVotesVeAero: 10, trailingAvgUsd: 1000 }), // would be very attractive, but ranked below the cutoff
+    fixture({ address: "0xA", symbol: "A", currentVotesVeAero: 1000, trailingAvgUsd: 500 }),
+    fixture({ address: "0xB", symbol: "B", currentVotesVeAero: 1000, trailingAvgUsd: 400 }),
+    fixture({ address: "0xC", symbol: "C", currentVotesVeAero: 1000, trailingAvgUsd: 300 }),
   ];
-  const result = recommendAllocation(ranked, 1000, /* topK */ 1);
+  const result = recommendAllocation(ranked, 50_000, /* topK */ 2);
 
-  assert.equal(result.length, 1);
-  assert.equal(result[0].pool, "0xA", "candidate beyond topK must be excluded even if it would be more attractive");
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map((r) => r.pool).sort(), ["0xA", "0xB"]);
+});
+
+test("the shortlist follows the basis being allocated on, not the order passed in", () => {
+  // recommendAllocation used to slice topK straight off the caller's array,
+  // which was only ever correct because that order happened to match the metric
+  // it allocates on. Under the typical basis it does not: a pool sitting far
+  // below the weight it usually settles at ranks high on current votes and low
+  // on the weight it will actually be diluted by. Shortlisting by the incoming
+  // order would hand the budget to a pool the caller is not being shown.
+  const between = fixture({
+    address: "0xBETWEEN",
+    symbol: "BETWEEN",
+    currentVotesVeAero: 1_000, // looks like $1.00/vote right now...
+    trailingAvgUsd: 1_000,
+    epochVotesSeries: [1_000, 100_000, 100_000, 100_000], // ...but usually carries 100x that
+  });
+  const steady = fixture({
+    address: "0xSTEADY",
+    symbol: "STEADY",
+    currentVotesVeAero: 10_000,
+    trailingAvgUsd: 500, // a real $0.05/vote, and it stays that way
+    epochVotesSeries: [10_000, 10_000, 10_000, 10_000],
+  });
+
+  // Passed in the order the current-vote ranking would produce: BETWEEN first.
+  const typical = recommendAllocation([between, steady], 1_000, 1, undefined, 1, "typical", 0);
+  assert.equal(typical[0].pool, "0xSTEADY", "the pool that survives its weight returning is shortlisted");
+
+  const current = recommendAllocation([between, steady], 1_000, 1, undefined, 1, "current", 0);
+  assert.equal(current[0].pool, "0xBETWEEN", "the old behaviour is still available");
 });
 
 test("allocateAcrossCandidates funds a pool nobody else has voted on", () => {

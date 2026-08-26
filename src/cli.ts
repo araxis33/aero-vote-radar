@@ -5,6 +5,7 @@ import {
   toWholePercentWeights,
   expectedUsdForWholePercentVote,
   unallocatedVeAero,
+  type VoteBasis,
 } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
@@ -109,6 +110,19 @@ export function parseUnitIntervalFlag(args: string[], name: string, fallback: nu
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : undefined;
 }
 
+/**
+ * Parses `--vote-basis`, which decides whether a pool is judged against the
+ * weight it carries right now or the weight it usually settles at. Follows the
+ * same "undefined means print usage" contract as the flags above, so a typo
+ * prints help rather than silently falling back to a different strategy than
+ * the one asked for.
+ */
+export function parseVoteBasisFlag(args: string[], fallback: VoteBasis = "typical"): VoteBasis | undefined {
+  const raw = getFlag(args, "vote-basis");
+  if (raw === undefined) return hasFlag(args, "vote-basis") ? undefined : fallback;
+  return raw === "typical" || raw === "current" ? raw : undefined;
+}
+
 async function cmdPools(args: string[]) {
   const top = parsePositiveIntFlag(args, "top", 20);
   const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
@@ -152,7 +166,7 @@ async function cmdPools(args: string[]) {
 }
 
 const RECOMMEND_USAGE =
-  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-ready] [--json]";
+  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis typical|current] [--vote-ready] [--json]";
 
 const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
@@ -220,9 +234,10 @@ async function cmdRecommend(args: string[]) {
   const topK = parsePositiveIntFlag(args, "top", 15);
   const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
   const maxWeight = parseUnitIntervalFlag(args, "max-weight", 1);
-  if (topK === undefined || minConsistency === undefined || maxWeight === undefined || maxWeight === 0) {
+  const voteBasis = parseVoteBasisFlag(args);
+  if (topK === undefined || minConsistency === undefined || maxWeight === undefined || maxWeight === 0 || voteBasis === undefined) {
     console.error(
-      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1.`,
+      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1; vote-basis either "typical" or "current".`,
     );
     process.exitCode = 1;
     return;
@@ -235,7 +250,7 @@ async function cmdRecommend(args: string[]) {
   }
 
   const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
-  const allocation = recommendAllocation(ranked, veaero, topK, undefined, maxWeight);
+  const allocation = recommendAllocation(ranked, veaero, topK, undefined, maxWeight, voteBasis);
 
   // A cap too tight for the candidate set leaves part of the budget unplaced,
   // and every downstream figure would then describe a vote that spends less

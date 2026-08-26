@@ -1,7 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { rankPoolsByEfficiency } from "./efficiency.js";
-import { computeTrend, epochEndOf, isEpochInProgress } from "./trend.js";
+import { computeTrend, epochEndOf, isEpochInProgress, EPOCH_SECONDS } from "./trend.js";
+import { computeVoteStability, expectedDilutedVotes } from "./dilution.js";
 import type { PoolEfficiency } from "./efficiency.js";
 
 /**
@@ -43,6 +44,48 @@ export interface SnapshotPool {
   currentEpochPartial: boolean;
   /** Recent completed epochs' average over the older ones', minus 1. Null when there is no honest basis for it — see `computeTrend`. */
   momentum: number | null;
+  /** Per-epoch settled vote weight, most recent first — the denominator's history, matching `epochUsd` for the numerator. */
+  epochVotes: number[];
+  /** The weight this pool typically settles at (median of completed epochs), or null with too little history. See `computeVoteStability`. */
+  expectedVotes: number | null;
+  /** `expectedVotes / votesVeAero`. Above 1 means the per-vote figures here are optimistic by roughly this factor. Null when not comparable. */
+  refillRatio: number | null;
+  /** 1 / (1 + coefficient of variation) of the completed epochs' vote weights. Low = a denominator that jumps around. */
+  voteStability: number;
+  /**
+   * `trailingAvgUsd` divided by the *larger* of the current and typical weights
+   * — the per-vote figure that survives the pool being refilled before the epoch
+   * closes. Published alongside `predictedValuePerVote` rather than replacing it
+   * so the gap between the two is visible rather than quietly applied.
+   */
+  dilutionAdjustedValuePerVote: number;
+}
+
+/**
+ * Protocol-wide voter yield for one epoch: every pool's incentives added up over
+ * every pool's votes added up.
+ *
+ * This answers a question the per-pool ranking structurally cannot. The rest of
+ * the snapshot is about choosing *between* pools, and a ranking looks exactly
+ * the same whether the pot it is dividing is growing or collapsing. Measured
+ * across this scan's own history the pot fell far faster than the vote weight
+ * did, which is a different problem from dilution and one that picking a better
+ * pool cannot fix — so it is published rather than left for the reader to
+ * reconstruct from 300 pools' worth of series.
+ */
+export interface EpochYield {
+  /** Unix seconds of the epoch's start (Thursday 00:00 UTC). */
+  ts: number;
+  /** Every pool's bribes + fees for that epoch, in USD. */
+  totalUsd: number;
+  /** Every pool's settled vote weight for that epoch, in veAERO. */
+  totalVotes: number;
+  /** `totalUsd / totalVotes` — what one veAERO earned that epoch, across the whole protocol. */
+  usdPerVote: number;
+  /** How many pools contributed an entry for this epoch. */
+  pools: number;
+  /** True for the epoch still running, whose totals are a part-week and not comparable to the finished ones. */
+  partial: boolean;
 }
 
 export interface Snapshot {
@@ -61,6 +104,8 @@ export interface Snapshot {
   epochEndsAt: number;
   poolCount: number;
   pools: SnapshotPool[];
+  /** Protocol-wide voter yield per epoch, newest first — see `buildEpochYields`. */
+  epochYields: EpochYield[];
 }
 
 /**
@@ -72,6 +117,12 @@ export interface Snapshot {
 export function toSnapshotPool(p: PoolEfficiency, generatedAt: Date): SnapshotPool {
   const currentEpochPartial = isEpochInProgress(p.latestEpochTs, Math.floor(generatedAt.getTime() / 1000));
   const { momentum } = computeTrend(p.epochUsdSeries, currentEpochPartial);
+  const { expectedVotes, refillRatio, voteStability } = computeVoteStability(
+    p.epochVotesSeries,
+    currentEpochPartial,
+    p.currentVotesVeAero,
+  );
+  const dilutedVotes = expectedDilutedVotes(p.currentVotesVeAero, expectedVotes);
 
   return {
     symbol: p.pool.symbol,
@@ -89,7 +140,59 @@ export function toSnapshotPool(p: PoolEfficiency, generatedAt: Date): SnapshotPo
     epochUsd: p.epochUsdSeries,
     currentEpochPartial,
     momentum,
+    epochVotes: p.epochVotesSeries,
+    expectedVotes,
+    refillRatio,
+    voteStability,
+    dilutionAdjustedValuePerVote: dilutedVotes > 0 ? p.trailingAvgUsd / dilutedVotes : 0,
   };
+}
+
+/**
+ * Aggregates every pool's per-epoch series into one protocol-wide yield figure
+ * per epoch, newest first.
+ *
+ * Pools are summed rather than averaged: the question is what the whole pot paid
+ * per unit of whole vote weight, and averaging per-pool rates would weight a
+ * 2,000-vote pool the same as a 60,000,000-vote one. Epochs are keyed by
+ * timestamp rather than by position in each pool's array, because pools do not
+ * all carry the same history depth and index 3 is a different week for different
+ * pools.
+ *
+ * Two limits are worth stating rather than hiding: reward tokens are valued at
+ * today's prices even for old epochs (that is what the price source returns),
+ * and only pools with a live gauge today are in the scan at all. Both push the
+ * older figures *down*, so a decline measured this way is a floor on the real
+ * one, not an exaggeration of it.
+ */
+export function buildEpochYields(ranked: PoolEfficiency[], generatedAt: Date): EpochYield[] {
+  const asOf = Math.floor(generatedAt.getTime() / 1000);
+  const byTs = new Map<number, { totalUsd: number; totalVotes: number; pools: number }>();
+
+  for (const p of ranked) {
+    const depth = Math.min(p.epochUsdSeries.length, p.epochVotesSeries.length);
+    for (let i = 0; i < depth; i++) {
+      // The series are most-recent-first and one week apart, so each entry's
+      // epoch follows from the pool's own latest epoch rather than from a clock.
+      const ts = p.latestEpochTs - i * EPOCH_SECONDS;
+      const acc = byTs.get(ts) ?? { totalUsd: 0, totalVotes: 0, pools: 0 };
+      acc.totalUsd += p.epochUsdSeries[i];
+      acc.totalVotes += p.epochVotesSeries[i];
+      acc.pools += 1;
+      byTs.set(ts, acc);
+    }
+  }
+
+  return [...byTs.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([ts, a]) => ({
+      ts,
+      totalUsd: a.totalUsd,
+      totalVotes: a.totalVotes,
+      usdPerVote: a.totalVotes > 0 ? a.totalUsd / a.totalVotes : 0,
+      pools: a.pools,
+      partial: isEpochInProgress(ts, asOf),
+    }));
 }
 
 /**
@@ -110,6 +213,7 @@ export function buildSnapshot(ranked: PoolEfficiency[], generatedAt: Date): Snap
     epochEndsAt: epochEndOf(Math.floor(generatedAt.getTime() / 1000)),
     poolCount: pools.length,
     pools,
+    epochYields: buildEpochYields(ranked, generatedAt),
   };
 }
 

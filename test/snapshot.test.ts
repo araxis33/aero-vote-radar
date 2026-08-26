@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, toSnapshotPool } from "../src/snapshot.js";
+import { buildEpochYields, buildSnapshot, toSnapshotPool } from "../src/snapshot.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 
 function ranked(overrides: Partial<PoolEfficiency> & { symbol?: string }): PoolEfficiency {
@@ -20,6 +20,7 @@ function ranked(overrides: Partial<PoolEfficiency> & { symbol?: string }): PoolE
     trailingAvgUsd: 120,
     epochsObserved: 6,
     epochUsdSeries: [100, 110, 120, 130, 120, 140],
+    epochVotesSeries: [500, 500, 500, 500, 500, 500],
     currentValuePerVote: 0.2,
     predictedValuePerVote: 0.24,
     predictiveEdge: 0.2,
@@ -124,4 +125,122 @@ test("epochEndsAt follows the scan clock, not a pool's stale latestEpochTs", () 
 
   assert.equal(snapshot.latestEpochTs, staleEpochTs);
   assert.equal(new Date(snapshot.epochEndsAt * 1000).toISOString(), "2026-08-27T00:00:00.000Z");
+});
+
+test("toSnapshotPool carries the vote-weight history and what it implies", () => {
+  // 5,000 votes now against 40,000 in each completed epoch: the pool is between
+  // votes, and its per-vote figure is optimistic by 8x until the weight returns.
+  const p = toSnapshotPool(
+    ranked({
+      currentVotesVeAero: 5_000,
+      trailingAvgUsd: 120,
+      epochVotesSeries: [5_000, 40_000, 40_000, 40_000, 40_000],
+      latestEpochTs: 1_786_579_200,
+    }),
+    new Date("2026-08-17T00:00:00Z"),
+  );
+
+  assert.deepEqual(p.epochVotes, [5_000, 40_000, 40_000, 40_000, 40_000]);
+  assert.equal(p.expectedVotes, 40_000);
+  assert.equal(p.refillRatio, 8);
+  assert.equal(p.voteStability, 1);
+  // The headline figure divides by 5,000; the honest one divides by 40,000.
+  assert.equal(p.predictedValuePerVote, 0.24);
+  assert.equal(p.dilutionAdjustedValuePerVote, 120 / 40_000);
+});
+
+test("dilutionAdjustedValuePerVote matches the headline figure when the weight is already there", () => {
+  // A pool carrying more than its usual weight is diluted by what is actually
+  // present, so reaching for the lower historical median would flatter it.
+  const p = toSnapshotPool(
+    ranked({
+      currentVotesVeAero: 9_000,
+      trailingAvgUsd: 90,
+      epochVotesSeries: [9_000, 3_000, 3_000, 3_000],
+      latestEpochTs: 1_786_579_200,
+    }),
+    new Date("2026-08-17T00:00:00Z"),
+  );
+
+  assert.equal(p.dilutionAdjustedValuePerVote, 90 / 9_000);
+  assert.ok((p.refillRatio as number) < 1);
+});
+
+test("a pool with no usable vote history is neither penalised nor given a fictional baseline", () => {
+  const p = toSnapshotPool(
+    ranked({
+      currentVotesVeAero: 5_000,
+      trailingAvgUsd: 120,
+      predictedValuePerVote: 120 / 5_000, // keep the fixture self-consistent
+      epochVotesSeries: [5_000, 6_000],
+      latestEpochTs: 1_786_579_200,
+    }),
+    new Date("2026-08-17T00:00:00Z"),
+  );
+
+  assert.equal(p.expectedVotes, null);
+  assert.equal(p.refillRatio, null);
+  assert.equal(p.dilutionAdjustedValuePerVote, p.predictedValuePerVote);
+});
+
+test("buildEpochYields sums the pot over the weight, keyed by epoch rather than by position", () => {
+  // Two pools with different history depths. Index 1 is the same week for both
+  // only because their latestEpochTs agree; the third pool's does not.
+  const week = 604_800;
+  const ts = 1_786_579_200;
+  const yields = buildEpochYields(
+    [
+      ranked({ symbol: "A", latestEpochTs: ts, epochUsdSeries: [10, 20], epochVotesSeries: [100, 200] }),
+      ranked({ symbol: "B", latestEpochTs: ts, epochUsdSeries: [30, 60], epochVotesSeries: [300, 600] }),
+      ranked({ symbol: "C", latestEpochTs: ts - week, epochUsdSeries: [7], epochVotesSeries: [700] }),
+    ],
+    new Date("2026-08-17T00:00:00Z"),
+  );
+
+  // A and B each carry two epochs (ts and ts-week); C carries one, dated ts-week.
+  // So there are exactly two buckets, and C lands in the older one.
+  assert.deepEqual(
+    yields.map((y) => y.ts),
+    [ts, ts - week],
+  );
+
+  const current = yields[0];
+  assert.equal(current.totalUsd, 40);
+  assert.equal(current.totalVotes, 400);
+  assert.equal(current.usdPerVote, 0.1);
+  assert.equal(current.pools, 2);
+
+  // C's only epoch lands in the middle bucket because it is keyed by date.
+  const middle = yields[1];
+  assert.equal(middle.pools, 3);
+  assert.equal(middle.totalUsd, 20 + 60 + 7);
+  assert.equal(middle.totalVotes, 200 + 600 + 700);
+});
+
+test("buildEpochYields flags the running epoch, whose totals are a part-week", () => {
+  const ts = 1_786_579_200; // opened 2026-08-13
+  const yields = buildEpochYields(
+    [ranked({ latestEpochTs: ts, epochUsdSeries: [5, 100], epochVotesSeries: [50, 50] })],
+    new Date("2026-08-17T00:00:00Z"),
+  );
+
+  assert.equal(yields[0].partial, true);
+  assert.equal(yields[1].partial, false);
+});
+
+test("buildEpochYields reports zero rather than dividing by an epoch with no votes", () => {
+  const yields = buildEpochYields(
+    [ranked({ latestEpochTs: 1_786_579_200, epochUsdSeries: [10], epochVotesSeries: [0] })],
+    new Date("2026-08-17T00:00:00Z"),
+  );
+  assert.equal(yields[0].usdPerVote, 0);
+});
+
+test("buildSnapshot publishes the protocol-wide yield series alongside the pools", () => {
+  const snap = buildSnapshot(
+    [ranked({ latestEpochTs: 1_786_579_200, epochUsdSeries: [10, 20], epochVotesSeries: [100, 100] })],
+    new Date("2026-08-17T00:00:00Z"),
+  );
+  assert.equal(snap.epochYields.length, 2);
+  assert.equal(snap.epochYields[1].usdPerVote, 0.2);
 });

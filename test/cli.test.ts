@@ -6,6 +6,7 @@ import {
   epochDeadlineLine,
   parsePositiveIntFlag,
   parseUnitIntervalFlag,
+  parseVoteBasisFlag,
   poolEfficiencyToJson,
   resolveBudget,
   veAeroPositionsToJson,
@@ -99,6 +100,7 @@ test("poolEfficiencyToJson includes epochsObserved and the consistency fields, m
     trailingAvgUsd: 4,
     epochsObserved: 3,
     epochUsdSeries: [5, 4, 3],
+    epochVotesSeries: [10, 10, 10],
     currentValuePerVote: 0.5,
     predictedValuePerVote: 0.4,
     predictiveEdge: -0.2,
@@ -131,6 +133,7 @@ test("poolEfficiencyToJson wires momentum from the pool's epoch series and the g
     trailingAvgUsd: 250,
     epochsObserved: 4,
     epochUsdSeries: [400, 400, 100, 100],
+    epochVotesSeries: [10, 10, 10, 10],
     currentValuePerVote: 40,
     predictedValuePerVote: 25,
     predictiveEdge: -0.375,
@@ -260,4 +263,14 @@ test("epochDeadlineLine does not report a negative countdown at the boundary", (
   // remains rather than zero or a negative figure.
   const line = epochDeadlineLine(new Date(Date.UTC(2026, 7, 27, 0, 0, 0)));
   assert.match(line, /closes in 7d 0h/);
+});
+
+test("parseVoteBasisFlag accepts both bases and rejects anything else", () => {
+  assert.equal(parseVoteBasisFlag([]), "typical");
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "current"]), "current");
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "typical"]), "typical");
+  // A typo must print usage rather than quietly allocating on the other basis.
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "Current"]), undefined);
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "median"]), undefined);
+  assert.equal(parseVoteBasisFlag(["--vote-basis"]), undefined);
 });
