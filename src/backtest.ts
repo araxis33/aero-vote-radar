@@ -121,6 +121,13 @@ function realisedUsd(epochValueUsd: number, othersVotes: number, myVotes: number
  *     attractive and have since been killed are invisible (survivorship bias).
  *   - A handful of weekly epochs is a small sample; treat a single-digit uplift
  *     as noise rather than proof.
+ *   - It cannot tell the "previous" and "current" vote bases apart. Live those
+ *     differ — one is last epoch's settled weight, the other the running
+ *     mid-week tally — but a closed epoch's mid-week tally is not recoverable
+ *     from the chain, so here the previous settled weight stands in for both and
+ *     the two bases are literally the same number. Separating them needs a
+ *     mid-week vantage point, which only the snapshot history provides; that is
+ *     what `predict-check` is for.
  */
 export function runBacktest(
   histories: PoolHistory[],

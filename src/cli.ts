@@ -117,10 +117,10 @@ export function parseUnitIntervalFlag(args: string[], name: string, fallback: nu
  * prints help rather than silently falling back to a different strategy than
  * the one asked for.
  */
-export function parseVoteBasisFlag(args: string[], fallback: VoteBasis = "typical"): VoteBasis | undefined {
+export function parseVoteBasisFlag(args: string[], fallback: VoteBasis = "previous"): VoteBasis | undefined {
   const raw = getFlag(args, "vote-basis");
   if (raw === undefined) return hasFlag(args, "vote-basis") ? undefined : fallback;
-  return raw === "typical" || raw === "current" ? raw : undefined;
+  return raw === "previous" || raw === "current" || raw === "typical" ? raw : undefined;
 }
 
 async function cmdPools(args: string[]) {
@@ -166,7 +166,7 @@ async function cmdPools(args: string[]) {
 }
 
 const RECOMMEND_USAGE =
-  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis typical|current] [--vote-ready] [--json]";
+  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--json]";
 
 const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
@@ -237,7 +237,7 @@ async function cmdRecommend(args: string[]) {
   const voteBasis = parseVoteBasisFlag(args);
   if (topK === undefined || minConsistency === undefined || maxWeight === undefined || maxWeight === 0 || voteBasis === undefined) {
     console.error(
-      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1; vote-basis either "typical" or "current".`,
+      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1; vote-basis one of "previous", "current" or "typical".`,
     );
     process.exitCode = 1;
     return;

@@ -149,9 +149,12 @@ test("toSnapshotPool carries the vote-weight history and what it implies", () =>
   assert.equal(p.dilutionAdjustedValuePerVote, 120 / 40_000);
 });
 
-test("dilutionAdjustedValuePerVote matches the headline figure when the weight is already there", () => {
-  // A pool carrying more than its usual weight is diluted by what is actually
-  // present, so reaching for the lower historical median would flatter it.
+test("a pool carrying more than last epoch is allowed to report the lower weight", () => {
+  // The defect in the basis this replaced: it took the maximum of the live tally
+  // and the pool's usual weight, so it could only ever raise the denominator.
+  // Measured against what epochs actually settled at, that upward bias made it
+  // the worst of the three predictors — so a tally sitting above last epoch's
+  // weight must not pin the estimate to itself.
   const p = toSnapshotPool(
     ranked({
       currentVotesVeAero: 9_000,
@@ -162,23 +165,25 @@ test("dilutionAdjustedValuePerVote matches the headline figure when the weight i
     new Date("2026-08-17T00:00:00Z"),
   );
 
-  assert.equal(p.dilutionAdjustedValuePerVote, 90 / 9_000);
+  assert.equal(p.dilutionAdjustedValuePerVote, 90 / 3_000);
   assert.ok((p.refillRatio as number) < 1);
 });
 
-test("a pool with no usable vote history is neither penalised nor given a fictional baseline", () => {
+test("a pool with no previous epoch falls back to the weight it actually carries", () => {
+  // A brand-new pool: nothing behind the running tally to read. It is priced on
+  // what it has rather than excluded or handed an invented baseline.
   const p = toSnapshotPool(
     ranked({
       currentVotesVeAero: 5_000,
       trailingAvgUsd: 120,
       predictedValuePerVote: 120 / 5_000, // keep the fixture self-consistent
-      epochVotesSeries: [5_000, 6_000],
+      epochVotesSeries: [5_000],
       latestEpochTs: 1_786_579_200,
     }),
     new Date("2026-08-17T00:00:00Z"),
   );
 
-  assert.equal(p.expectedVotes, null);
+  assert.equal(p.expectedVotes, null); // one epoch cannot demonstrate a typical weight
   assert.equal(p.refillRatio, null);
   assert.equal(p.dilutionAdjustedValuePerVote, p.predictedValuePerVote);
 });

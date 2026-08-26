@@ -1,5 +1,5 @@
 import type { PoolEfficiency } from "./efficiency.js";
-import { computeVoteStability, expectedDilutedVotes } from "./dilution.js";
+import { computeVoteStability, expectedDilutedVotes, previousSettledVotes } from "./dilution.js";
 import { isEpochInProgress } from "./trend.js";
 
 /**
@@ -177,15 +177,17 @@ interface Candidate extends AllocationCandidate {
  * naive "just vote where APR is highest" optimizers ignore.
  */
 /**
- * Which vote weight to divide a pool's incentives by.
+ * Which vote weight to divide a pool's incentives by. Every one of these is a
+ * prediction of the weight the epoch will settle at, and they were chosen by
+ * measuring that prediction rather than by argument — see `previousSettledVotes`.
  *
- * `"typical"` judges each pool against the larger of the weight it carries now
- * and the weight it usually settles at, which is the honest denominator when
- * votes carry over between epochs and are largely rewritten in the hours before
- * one closes. `"current"` trusts the live weight, which is what this function
- * did before the option existed.
+ * `"previous"` (default) uses the weight the pool settled at last epoch: the
+ * most accurate of the three and unbiased. `"current"` trusts the live mid-week
+ * tally — slightly worse, and what this function did before the option existed.
+ * `"typical"` takes the larger of the live tally and the pool's usual weight;
+ * it measured clearly worst and is kept only so the finding stays reproducible.
  */
-export type VoteBasis = "typical" | "current";
+export type VoteBasis = "previous" | "current" | "typical";
 
 /**
  * `asOfUnixSeconds` decides whether each pool's newest epoch counts as finished,
@@ -199,7 +201,7 @@ export function recommendAllocation(
   topK = 15,
   steps = WHOLE_PERCENT_STEPS,
   maxWeight = 1,
-  voteBasis: VoteBasis = "typical",
+  voteBasis: VoteBasis = "previous",
   asOfUnixSeconds: number = Math.floor(Date.now() / 1000),
 ): AllocationResult[] {
   const withVotes = ranked.map((c) => ({
@@ -210,9 +212,9 @@ export function recommendAllocation(
   // Shortlisted by the rate implied by the chosen basis rather than by the
   // order the caller happened to pass. Under "current" this reproduces the
   // conventional ranking (`rankPoolsByEfficiency` sorts by exactly this), so
-  // nothing moves; under "typical" the incoming order ranks a quantity that is
-  // no longer the one being allocated on, and slicing topK from it would
-  // shortlist pools the caller is not being shown.
+  // nothing moves; under any other basis the incoming order ranks a quantity
+  // that is no longer the one being allocated on, and slicing topK from it
+  // would shortlist pools the caller is not being shown.
   //
   // A pool nobody has voted on sorts first, matching `marginalValuePerVeAero`'s
   // view that V = 0 is the best case and not the worst — but only when it has
@@ -245,6 +247,10 @@ export function votesToDivideBy(
   if (voteBasis === "current") return pool.currentVotesVeAero;
 
   const partial = isEpochInProgress(pool.latestEpochTs, asOfUnixSeconds);
+  if (voteBasis === "previous") {
+    return previousSettledVotes(pool.epochVotesSeries, partial, pool.currentVotesVeAero);
+  }
+
   const { expectedVotes } = computeVoteStability(
     pool.epochVotesSeries,
     partial,

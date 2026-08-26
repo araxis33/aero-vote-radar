@@ -147,14 +147,14 @@ server.registerTool(
           "Cap on any single pool's share of the vote (0..1, default 1 = uncapped). The unconstrained optimum is often one pool at 100%, which is correct arithmetic and more concentration than many voters want. Too tight a cap for the candidate set leaves part of the budget unplaceable and the call fails rather than silently renormalising past the cap.",
         ),
       voteBasis: z
-        .enum(["typical", "current"])
+        .enum(["previous", "current", "typical"])
         .optional()
         .describe(
-          "Which vote weight to judge each pool against (default 'typical'). Votes carry over between epochs and are largely rewritten in the hours before one closes, so a pool's live weight is often well below the weight it settles at — 'typical' divides by the larger of the two, which is the figure that survives the weight coming back. 'current' trusts the live weight and reproduces the older behaviour.",
+          "Which vote weight to judge each pool against (default 'previous'). Each option is a prediction of the weight the epoch will settle at, chosen by measuring that prediction: 'previous' uses last epoch's settled weight (most accurate, unbiased), 'current' the live mid-week tally (slightly worse), 'typical' the larger of the tally and the pool's usual weight (measured clearly worst; kept only for reproducibility).",
         ),
     },
   },
-  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0, maxWeight = 1, voteBasis = "typical" }) => {
+  withErrorHandling(async ({ veAero, address, topCandidates = 15, minConsistency = 0, maxWeight = 1, voteBasis = "previous" }) => {
     const budget = await resolveVeAeroBudget(veAero, address);
     const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
     const allocation = recommendAllocation(ranked, budget, topCandidates, undefined, maxWeight, voteBasis);
