@@ -28,6 +28,19 @@ export interface PoolEfficiency {
    * on-chain fetch, since these values are computed here anyway.
    */
   epochUsdSeries: number[];
+  /**
+   * Each observed epoch's settled vote weight in veAERO, most recent first —
+   * the denominator's own history, alongside `epochUsdSeries` for the numerator.
+   *
+   * Kept for the same reason and at the same zero cost: `fetchPoolEpochs`
+   * already returns `votes` for every epoch and only entry 0 was ever read, so
+   * the rest was being thrown away. Publishing it is what makes it possible to
+   * ask whether a pool's *current* weight is representative of the weight it
+   * usually settles at — see `computeVoteStability` in `dilution.ts`. Without
+   * the series there is no way to tell a pool that genuinely carries few votes
+   * from one that is merely between votes.
+   */
+  epochVotesSeries: number[];
   /** Coefficient of variation of the observed epochs' USD values. 0 = identical every epoch; 1 = std dev as large as the mean. */
   volatility: number;
   /** 1 / (1 + volatility), so 1 = perfectly steady and lower = spikier. See `computeConsistency`. */
@@ -111,6 +124,7 @@ export function computePoolEfficiency(
     trailingAvgUsd,
     epochsObserved: epochs.length,
     epochUsdSeries: usdValues,
+    epochVotesSeries: epochs.map((e) => Number(e.votes) / 10 ** VE_DECIMALS),
     currentValuePerVote,
     predictedValuePerVote,
     predictiveEdge,
