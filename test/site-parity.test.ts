@@ -9,6 +9,7 @@ import {
   expectedUsdForWholePercentVote,
   type AllocationCandidate,
 } from "../src/allocator.js";
+import { epochEndOf, formatDuration } from "../src/trend.js";
 
 /**
  * The static site cannot import the TypeScript allocator: `docs/` is served by
@@ -181,3 +182,59 @@ for (const cap of [0.5, 0.34, 0.25, 0.2]) {
     }
   });
 }
+
+// The allocator isn't the only hand-port on the page: the vote-deadline
+// countdown (`epochEndOf`/`formatDuration`, right by the code comment "matching
+// epochEndOf/formatDuration in src/trend.ts") is copied the same way, for the
+// same reason — `docs/` has no build step, so it cannot import `src/trend.ts`
+// directly. Nothing checked that copy against the real one, which is exactly
+// the silent-drift risk this file's docstring already describes for the
+// allocator: a fix landed in `trend.ts` (say, a rounding correction to
+// `formatDuration`) would leave the page quietly showing a different countdown
+// to the one thing on this page that must never be stale, with every other
+// test still green.
+
+/**
+ * `epochEndOf` on the page closes over the page's own `const EPOCH_SECONDS`
+ * rather than taking it as a parameter, so extracting the function alone
+ * leaves it referencing a name that doesn't exist in the sandboxed `Function`
+ * scope. Pulled out the same brace/line-matching way as `extractFunction`,
+ * rather than hardcoded here, so a changed value on the page is what this
+ * test actually exercises.
+ */
+function extractConst(source: string, name: string): string {
+  const match = source.match(new RegExp(`const ${name} = [^;]+;`));
+  assert.notEqual(match, null, `docs/index.html no longer declares const ${name}`);
+  return match![0];
+}
+
+const siteEpochModule = new Function(`
+  ${extractConst(siteSource, "EPOCH_SECONDS")}
+  ${extractFunction(siteSource, "epochEndOf")}
+  ${extractFunction(siteSource, "formatDuration")}
+  return { epochEndOf, formatDuration };
+`)() as {
+  epochEndOf: (unixSeconds: number) => number;
+  formatDuration: (seconds: number) => string;
+};
+
+test("docs/index.html's epochEndOf matches src/trend.ts across a range of timestamps", () => {
+  const samples = [
+    0,
+    1, // one second into the Unix epoch, itself a Thursday
+    1_786_579_200, // a real Thursday 00:00 UTC boundary
+    1_786_579_200 - 1, // the second before a boundary
+    1_786_579_200 + 1, // the second after a boundary
+    1_756_195_200, // an arbitrary "now" mid-epoch
+  ];
+  for (const s of samples) {
+    assert.equal(siteEpochModule.epochEndOf(s), epochEndOf(s), `epochEndOf(${s})`);
+  }
+});
+
+test("docs/index.html's formatDuration matches src/trend.ts across a range of durations", () => {
+  const samples = [-100, 0, 1, 59, 60, 61, 3599, 3600, 3660, 86_399, 86_400, 86_400 * 2 + 3661, NaN, Infinity];
+  for (const s of samples) {
+    assert.equal(siteEpochModule.formatDuration(s), formatDuration(s), `formatDuration(${s})`);
+  }
+});
