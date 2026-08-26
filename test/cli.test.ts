@@ -265,11 +265,12 @@ test("epochDeadlineLine does not report a negative countdown at the boundary", (
   assert.match(line, /closes in 7d 0h/);
 });
 
-test("parseVoteBasisFlag accepts both bases and rejects anything else", () => {
-  assert.equal(parseVoteBasisFlag([]), "typical");
+test("parseVoteBasisFlag accepts every basis and rejects anything else", () => {
+  assert.equal(parseVoteBasisFlag([]), "previous");
+  assert.equal(parseVoteBasisFlag(["--vote-basis", "previous"]), "previous");
   assert.equal(parseVoteBasisFlag(["--vote-basis", "current"]), "current");
   assert.equal(parseVoteBasisFlag(["--vote-basis", "typical"]), "typical");
-  // A typo must print usage rather than quietly allocating on the other basis.
+  // A typo must print usage rather than quietly allocating on a different basis.
   assert.equal(parseVoteBasisFlag(["--vote-basis", "Current"]), undefined);
   assert.equal(parseVoteBasisFlag(["--vote-basis", "median"]), undefined);
   assert.equal(parseVoteBasisFlag(["--vote-basis"]), undefined);

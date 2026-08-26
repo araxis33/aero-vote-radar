@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { rankPoolsByEfficiency } from "./efficiency.js";
 import { computeTrend, epochEndOf, isEpochInProgress, EPOCH_SECONDS } from "./trend.js";
-import { computeVoteStability, expectedDilutedVotes } from "./dilution.js";
+import { computeVoteStability, previousSettledVotes } from "./dilution.js";
 import type { PoolEfficiency } from "./efficiency.js";
 
 /**
@@ -53,10 +53,12 @@ export interface SnapshotPool {
   /** 1 / (1 + coefficient of variation) of the completed epochs' vote weights. Low = a denominator that jumps around. */
   voteStability: number;
   /**
-   * `trailingAvgUsd` divided by the *larger* of the current and typical weights
-   * — the per-vote figure that survives the pool being refilled before the epoch
-   * closes. Published alongside `predictedValuePerVote` rather than replacing it
-   * so the gap between the two is visible rather than quietly applied.
+   * `trailingAvgUsd` divided by the weight the pool settled at last epoch — the
+   * most accurate available prediction of the weight this epoch will settle at,
+   * and what the allocator divides by. Published alongside
+   * `predictedValuePerVote` (which divides by the live mid-week tally) rather
+   * than replacing it, so the gap between the two is visible rather than
+   * quietly applied.
    */
   dilutionAdjustedValuePerVote: number;
 }
@@ -122,7 +124,7 @@ export function toSnapshotPool(p: PoolEfficiency, generatedAt: Date): SnapshotPo
     currentEpochPartial,
     p.currentVotesVeAero,
   );
-  const dilutedVotes = expectedDilutedVotes(p.currentVotesVeAero, expectedVotes);
+  const dilutedVotes = previousSettledVotes(p.epochVotesSeries, currentEpochPartial, p.currentVotesVeAero);
 
   return {
     symbol: p.pool.symbol,

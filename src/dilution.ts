@@ -112,21 +112,68 @@ export function computeVoteStability(
 }
 
 /**
- * The vote weight a recommendation should actually divide by: the larger of
- * what the pool carries now and what it typically settles at.
+ * The larger of what a pool carries now and what it typically settles at.
  *
- * Taking the maximum rather than the typical weight is deliberate, and it is
- * conservative in *both* directions. A pool sitting below its usual weight will
- * most likely be refilled before the epoch closes, so the current figure would
- * flatter it. A pool sitting above its usual weight is already carrying that
- * weight, and you will be diluted by what is actually there — reaching for the
- * lower historical median in that case would flatter it too. The larger figure
- * is the one that cannot be wrong in the voter's favour.
+ * MEASURED WORSE THAN BOTH ALTERNATIVES — kept so the finding stays reproducible
+ * and `--vote-basis typical` can still be run, but it is no longer the default
+ * and should not be made one again without new evidence.
  *
- * Falls back to the current weight whenever there is no usable history, so a
- * brand-new pool is neither penalised nor given a fictional baseline.
+ * The reasoning that produced it sounded right: a pool below its usual weight
+ * will probably be refilled before the epoch closes, one above it is already
+ * carrying what will dilute you, so the larger figure "cannot be wrong in the
+ * voter's favour". The flaw is that `Math.max` is one-sided. It can only raise
+ * an estimate, never lower one, so an upward bias is built into it by
+ * construction — and an estimator's bias is not a safety margin, it is an error
+ * that the allocator then spreads across every pool it prices.
+ *
+ * Measured from real mid-week vantage points (this repo's six-hourly snapshot
+ * history, over two settled epochs, 5,142 observations), predicting the weight
+ * each epoch actually settled at:
+ *
+ *   live running tally            18% median error, no bias
+ *   max(tally, typical) — this    26% median error, +4% bias
+ *   previous settled weight       17% median error, no bias
+ *
+ * and on pools under 10k votes, where it was supposed to help most, it was the
+ * worst by a wide margin: 71% error against 35% and 29%. The vivid case that
+ * motivated it (a pool showing 452k votes against a typical 11.6M) was real, but
+ * rare — and a rule that fixes a rare tail by inflating every ordinary pool
+ * loses more than it saves. See `previousSettledVotes` for what replaced it.
  */
 export function expectedDilutedVotes(currentVotes: number, expectedVotes: number | null): number {
   if (expectedVotes === null || !Number.isFinite(expectedVotes)) return currentVotes;
   return Math.max(currentVotes, expectedVotes);
+}
+
+/**
+ * The weight the pool settled at in the previous epoch — the default basis, and
+ * the best predictor of the weight the epoch being voted on will settle at.
+ *
+ * Why a figure from last week beats the live tally sitting right there: votes
+ * carry over, so an epoch's final weight is mostly last week's weight with
+ * re-votes applied. The mid-week tally is that same number part-way through
+ * being rewritten — it has shed the holders who have already moved on and not
+ * yet gained the ones who vote late, so mid-week it reads low. Last week's
+ * settled figure skips the half-finished state entirely.
+ *
+ * The margin over the live tally is small overall (17% vs 18% median error) but
+ * it is consistent, it is unbiased, it is the closest of the three predictors
+ * on 2,728 of 5,142 observations against 1,568, and on thin pools — under 10k
+ * votes, where the tally swings hardest — it is clearly ahead (29% vs 35%).
+ *
+ * `epochVotes` is most-recent-first. When entry 0 is the epoch still running,
+ * the previous settled epoch is entry 1; when the series is all settled (a
+ * backtest replaying a closed epoch) it is entry 0. Falls back to the current
+ * tally when there is no previous epoch to read, so a brand-new pool is priced
+ * on what it actually has rather than excluded.
+ */
+export function previousSettledVotes(
+  epochVotes: number[],
+  currentEpochPartial: boolean,
+  currentVotes: number,
+): number {
+  const index = currentEpochPartial ? 1 : 0;
+  const previous = epochVotes[index];
+  if (previous === undefined || !Number.isFinite(previous) || previous <= 0) return currentVotes;
+  return previous;
 }

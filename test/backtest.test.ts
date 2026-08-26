@@ -240,3 +240,70 @@ test("a consistency floor nothing clears leaves no epoch tested rather than a fl
   assert.equal(report.upliftPct, null);
   assert.equal(report.minConsistency, 0.95);
 });
+
+test("the typical-weight basis avoids a pool that is merely between votes", () => {
+  // TRAP pays the same $500 every epoch and normally carries 100,000 votes, but
+  // the most recent settled epoch caught it at 2,000 — and it settles back at
+  // 100,000 in the epoch under test. Judged on that last figure it looks like
+  // $0.25/vote; judged on what it usually carries, $0.005.
+  //
+  // Index 0 is the epoch being tested, so the decision may only read index 1 and
+  // older. Written most-recent-first:
+  //   usd:   [500(tested), 500, 500, 500, 500]
+  //   votes: [100_000(tested), 2_000, 100_000, 100_000, 100_000]
+  const trap = history(
+    "TRAP",
+    [500, 500, 500, 500, 500],
+    [100_000, 2_000, 100_000, 100_000, 100_000],
+  );
+  // A dependable alternative: fewer dollars, but the weight is what it looks like.
+  const solid = steady("SOLID", 300, 10_000, 5);
+
+  const report = runBacktest([trap, solid], 10_000, {
+    testEpochs: 1,
+    trendEpochs: 3,
+    minTrailingUsd: 10,
+  });
+
+  assert.equal(report.epochsTested, 1);
+  assert.ok(
+    report.radarTypicalTotalUsd > report.radarTotalUsd,
+    `typical basis (${report.radarTypicalTotalUsd}) should beat current basis (${report.radarTotalUsd}) when a pool is between votes`,
+  );
+  assert.ok((report.typicalVsCurrentPct ?? 0) > 0);
+  assert.equal(report.epochsWonByTypical, 1);
+});
+
+test("the typical-weight basis cannot see the epoch it is tested on", () => {
+  // Same pool twice, differing ONLY in the tested epoch's settled weight. The
+  // decision is taken from index 1 and older, which are identical, so both runs
+  // must allocate identically — any difference in what was *chosen* would mean
+  // the outcome leaked into the decision.
+  //
+  // The realised dollars legitimately differ (you are diluted by what actually
+  // turned up), so the invariant is asserted on the allocation, via a second
+  // pool that must or must not be funded consistently.
+  const shape = (testedVotes: number) =>
+    history("P", [400, 400, 400, 400, 400], [testedVotes, 5_000, 50_000, 50_000, 50_000]);
+  const other = steady("OTHER", 100, 5_000, 5);
+
+  const cheap = runBacktest([shape(1_000), other], 5_000, {
+    testEpochs: 1,
+    trendEpochs: 3,
+    minTrailingUsd: 10,
+  });
+  const crowded = runBacktest([shape(900_000), other], 5_000, {
+    testEpochs: 1,
+    trendEpochs: 3,
+    minTrailingUsd: 10,
+  });
+
+  assert.equal(cheap.epochs[0].candidatesConsidered, crowded.epochs[0].candidatesConsidered);
+  // A lookahead would have made the crowded run avoid P and so earn *more* than
+  // the cheap run's diluted share. It must instead earn less: same choice, worse
+  // outcome, which is exactly what having no foresight looks like.
+  assert.ok(
+    crowded.radarTypicalTotalUsd < cheap.radarTypicalTotalUsd,
+    "the run whose tested epoch filled up must earn less, not dodge the pool",
+  );
+});

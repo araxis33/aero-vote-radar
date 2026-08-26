@@ -241,8 +241,8 @@
     <div class="field">
       <label for="votebasis">Vote weight to expect</label>
       <select id="votebasis">
-        <option value="expected" selected>Typical — assume late votes return</option>
-        <option value="current">Right now — trust the live weight</option>
+        <option value="previous" selected>Last epoch&rsquo;s final weight</option>
+        <option value="current">The live weight right now</option>
       </select>
     </div>
     <div class="field">
@@ -318,7 +318,7 @@
 <div class="scroll">
   <table>
     <thead>
-      <tr><th>Pool</th><th>History</th><th>Trend</th><th>Predicted $/vote</th><th>If weight returns</th><th>Refill</th><th>Current $/vote</th><th>Edge</th><th>Trailing avg</th><th>Votes</th><th>Consistency</th><th>Epochs</th></tr>
+      <tr><th>Pool</th><th>History</th><th>Trend</th><th>Predicted $/vote</th><th>On last epoch&rsquo;s weight</th><th>Refill</th><th>Current $/vote</th><th>Edge</th><th>Trailing avg</th><th>Votes</th><th>Consistency</th><th>Epochs</th></tr>
     </thead>
     <tbody id="rankBody"></tbody>
   </table>
@@ -536,17 +536,22 @@ const pctChange = (n) => (n >= 0 ? "+" : "") + Math.round(n * 100).toLocaleStrin
 const consistencyClass = (c) => (c >= 0.6 ? "c-good" : c >= 0.45 ? "c-warn" : "c-bad");
 
 /**
- * The vote weight a pool should be judged against — the larger of what it
- * carries now and what it typically settles at. Mirrors expectedDilutedVotes
- * in src/dilution.ts; test/site-parity.test.ts holds the two together.
+ * The vote weight a pool should be judged against: the weight it settled at
+ * last epoch. Mirrors previousSettledVotes in src/dilution.ts;
+ * test/site-parity.test.ts holds the two together.
  *
- * Taking the larger side is conservative in both directions: a pool sitting
- * below its usual weight will most likely be refilled before the epoch closes,
- * and one sitting above it is already carrying that weight.
+ * Votes carry over, so an epoch's final weight is mostly last week's with
+ * re-votes applied. The live tally is that same number part-way through being
+ * rewritten, so mid-week it reads low. Measured against what epochs actually
+ * settled at, last week's figure is the more accurate of the two and carries no
+ * bias either way.
  */
 function votesToExpect(p) {
-  if (typeof p.expectedVotes !== "number") return p.votesVeAero;
-  return Math.max(p.votesVeAero, p.expectedVotes);
+  const series = p.epochVotes;
+  if (!Array.isArray(series)) return p.votesVeAero;
+  const previous = series[p.currentEpochPartial ? 1 : 0];
+  if (typeof previous !== "number" || !(previous > 0)) return p.votesVeAero;
+  return previous;
 }
 
 /** How loudly to flag a pool whose live weight is well below its usual one. */
@@ -920,9 +925,9 @@ function renderRanking() {
   const frag = document.createDocumentFragment();
   // Sorted by whichever per-vote figure the reader has asked to be shown, so
   // the table and the allocation below it never disagree about what is best.
-  const useTypicalVotes = el.votebasis.value !== "current";
+  const useSettledVotes = el.votebasis.value !== "current";
   const rate = (p) =>
-    useTypicalVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;
+    useSettledVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;
   const ordered = [...snapshot.pools].sort((a, b) => rate(b) - rate(a));
   for (const p of ordered) {
     const tr = document.createElement("tr");
@@ -957,7 +962,7 @@ function renderAllocation() {
   const topK = Math.max(1, Math.min(60, Number(el.topk.value) || 15));
   const minConsistency = Number(el.mincons.value);
   const maxWeight = Number(el.maxweight.value) || 1;
-  const useTypicalVotes = el.votebasis.value !== "current";
+  const useSettledVotes = el.votebasis.value !== "current";
 
   el.allocNote.hidden = true;
 
@@ -967,7 +972,7 @@ function renderAllocation() {
   }
 
   const rate = (p) =>
-    useTypicalVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;
+    useSettledVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;
   const eligible = snapshot.pools
     .filter((p) => p.consistency >= minConsistency)
     .sort((a, b) => rate(b) - rate(a));
@@ -979,7 +984,7 @@ function renderAllocation() {
   const allocation = allocateAcrossCandidates(
     eligible.slice(0, topK).map((p) => ({
       address: p.pool, symbol: p.symbol, consistency: p.consistency,
-      existingVotes: useTypicalVotes ? votesToExpect(p) : p.votesVeAero,
+      existingVotes: useSettledVotes ? votesToExpect(p) : p.votesVeAero,
       expectedUsd: p.trailingAvgUsd,
     })),
     budget,

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   computeVoteStability,
   expectedDilutedVotes,
+  previousSettledVotes,
   MIN_VOTE_EPOCHS,
 } from "../src/dilution.js";
 
@@ -101,4 +102,31 @@ test("expectedDilutedVotes takes the larger side, so it cannot err in the voter'
 test("expectedDilutedVotes falls back to the current weight when there is no history", () => {
   // A brand-new pool is neither penalised nor handed a fictional baseline.
   assert.equal(expectedDilutedVotes(1_234, null), 1_234);
+});
+
+test("previousSettledVotes reads past the epoch still running", () => {
+  // Mid-week the series is [running tally, last settled, ...], so the figure
+  // wanted is entry 1, not the tally sitting in front of it.
+  assert.equal(previousSettledVotes([452_000, 11_600_000, 9_000_000], true, 452_000), 11_600_000);
+  // A fully settled series (a backtest replaying a closed epoch) starts at the
+  // previous epoch already.
+  assert.equal(previousSettledVotes([7_000, 6_000], false, 5_000), 7_000);
+});
+
+test("previousSettledVotes falls back to what the pool actually carries", () => {
+  // A brand-new pool with no previous epoch is priced on its real weight rather
+  // than excluded or handed a fictional one.
+  assert.equal(previousSettledVotes([1_234], true, 1_234), 1_234);
+  assert.equal(previousSettledVotes([], true, 1_234), 1_234);
+  // A previous epoch that recorded no votes is not a usable denominator either.
+  assert.equal(previousSettledVotes([1_234, 0], true, 1_234), 1_234);
+});
+
+test("previousSettledVotes does not silently inflate, unlike the basis it replaced", () => {
+  // The defect that made expectedDilutedVotes worse than doing nothing: Math.max
+  // can only raise an estimate, so it is biased upward by construction. A pool
+  // carrying more than it used to must be allowed to report the lower figure.
+  const series = [9_000, 3_000, 3_000, 3_000];
+  assert.equal(previousSettledVotes(series, true, 9_000), 3_000);
+  assert.equal(expectedDilutedVotes(9_000, 3_000), 9_000);
 });

@@ -10,7 +10,7 @@ import {
   type AllocationCandidate,
 } from "../src/allocator.js";
 import { epochEndOf, formatDuration } from "../src/trend.js";
-import { expectedDilutedVotes } from "../src/dilution.js";
+import { previousSettledVotes } from "../src/dilution.js";
 
 /**
  * The static site cannot import the TypeScript allocator: `docs/` is served by
@@ -67,7 +67,7 @@ const siteModule = new Function(`
   allocateAcrossCandidates: SiteAllocate;
   toWholePercentWeights: SitePercents;
   expectedUsdForWholePercentVote: SiteExpected;
-  votesToExpect: (pool: { votesVeAero: number; expectedVotes: number | null }) => number;
+  votesToExpect: (pool: { votesVeAero: number; epochVotes?: number[]; currentEpochPartial?: boolean }) => number;
 };
 
 /** Candidate sets chosen to exercise the branches the two copies could disagree on. */
@@ -246,22 +246,26 @@ test("docs/index.html's formatDuration matches src/trend.ts across a range of du
  * The page picks the allocator's denominator itself, so `votesToExpect` is a
  * second hand-port sitting on the same drift risk as the allocator. It decides
  * which pools the suggestion funds, so a copy that quietly disagreed with
- * `expectedDilutedVotes` would change real vote weights.
+ * `previousSettledVotes` would change real vote weights.
  */
 test("docs/index.html's votesToExpect matches src/dilution.ts", () => {
-  const cases: { votesVeAero: number; expectedVotes: number | null }[] = [
-    { votesVeAero: 452_000, expectedVotes: 11_600_000 }, // between votes: expect the refill
-    { votesVeAero: 9_000, expectedVotes: 3_000 }, // already above its usual weight
-    { votesVeAero: 5_000, expectedVotes: 5_000 }, // steady
-    { votesVeAero: 1_234, expectedVotes: null }, // no usable history
-    { votesVeAero: 0, expectedVotes: 4_000 }, // nobody has voted yet this epoch
-    { votesVeAero: 0, expectedVotes: null },
+  const cases: { votesVeAero: number; epochVotes?: number[]; currentEpochPartial?: boolean }[] = [
+    // Mid-week: entry 0 is the running tally, so last epoch's weight is entry 1.
+    { votesVeAero: 452_000, epochVotes: [452_000, 11_600_000, 9_000_000], currentEpochPartial: true },
+    { votesVeAero: 9_000, epochVotes: [9_000, 3_000, 3_000], currentEpochPartial: true },
+    // A settled series: entry 0 already is the previous epoch.
+    { votesVeAero: 5_000, epochVotes: [7_000, 6_000], currentEpochPartial: false },
+    // Nothing to read: fall back to what the pool actually carries.
+    { votesVeAero: 1_234, epochVotes: [1_234], currentEpochPartial: true },
+    { votesVeAero: 1_234, epochVotes: [1_234, 0], currentEpochPartial: true },
+    { votesVeAero: 1_234 },
+    { votesVeAero: 0, epochVotes: [0, 4_000], currentEpochPartial: true },
   ];
 
   for (const c of cases) {
     assert.equal(
       siteModule.votesToExpect(c),
-      expectedDilutedVotes(c.votesVeAero, c.expectedVotes),
+      previousSettledVotes(c.epochVotes ?? [], c.currentEpochPartial ?? true, c.votesVeAero),
       `votesToExpect disagreed for ${JSON.stringify(c)}`,
     );
   }

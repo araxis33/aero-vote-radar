@@ -117,10 +117,10 @@ export function parseUnitIntervalFlag(args: string[], name: string, fallback: nu
  * prints help rather than silently falling back to a different strategy than
  * the one asked for.
  */
-export function parseVoteBasisFlag(args: string[], fallback: VoteBasis = "typical"): VoteBasis | undefined {
+export function parseVoteBasisFlag(args: string[], fallback: VoteBasis = "previous"): VoteBasis | undefined {
   const raw = getFlag(args, "vote-basis");
   if (raw === undefined) return hasFlag(args, "vote-basis") ? undefined : fallback;
-  return raw === "typical" || raw === "current" ? raw : undefined;
+  return raw === "previous" || raw === "current" || raw === "typical" ? raw : undefined;
 }
 
 async function cmdPools(args: string[]) {
@@ -166,7 +166,7 @@ async function cmdPools(args: string[]) {
 }
 
 const RECOMMEND_USAGE =
-  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis typical|current] [--vote-ready] [--json]";
+  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--json]";
 
 const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
@@ -237,7 +237,7 @@ async function cmdRecommend(args: string[]) {
   const voteBasis = parseVoteBasisFlag(args);
   if (topK === undefined || minConsistency === undefined || maxWeight === undefined || maxWeight === 0 || voteBasis === undefined) {
     console.error(
-      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1; vote-basis either "typical" or "current".`,
+      `${RECOMMEND_USAGE}\nK must be a positive integer; min-consistency a number from 0 to 1; max-weight a number above 0 and up to 1; vote-basis one of "previous", "current" or "typical".`,
     );
     process.exitCode = 1;
     return;
@@ -368,13 +368,18 @@ async function cmdBacktest(args: string[]) {
 
   const filterNote = minConsistency > 0 ? ` (only pools with consistency ≥ ${minConsistency})` : "";
   console.log(`\nBacktest over the last ${report.epochsTested} epoch(s) with ${veaero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO${filterNote}:\n`);
-  console.log(["EpochsAgo", "Radar $", "Naive $", "Naive picked"].map((h) => h.padEnd(18)).join(""));
+  console.log(
+    ["EpochsAgo", "Radar $ (typical)", "Radar $ (current)", "Naive $", "Naive picked"]
+      .map((h) => h.padEnd(20))
+      .join(""),
+  );
   for (const e of report.epochs) {
     console.log(
       [
-        String(e.epochsAgo).padEnd(18),
-        fmtUsd(e.radarUsd).padEnd(18),
-        fmtUsd(e.naiveUsd).padEnd(18),
+        String(e.epochsAgo).padEnd(20),
+        fmtUsd(e.radarTypicalUsd).padEnd(20),
+        fmtUsd(e.radarUsd).padEnd(20),
+        fmtUsd(e.naiveUsd).padEnd(20),
         e.naiveSymbol ?? "-",
       ].join(""),
     );
@@ -383,6 +388,19 @@ async function cmdBacktest(args: string[]) {
   const uplift = report.upliftPct === null ? "n/a (baseline earned $0)" : `${(report.upliftPct * 100).toFixed(1)}%`;
   console.log(`\nTotal: radar ${fmtUsd(report.radarTotalUsd)} vs naive ${fmtUsd(report.naiveTotalUsd)} — uplift ${uplift}`);
   console.log(`Radar earned more in ${report.epochsWonByRadar} of ${report.epochsTested} epoch(s).`);
+
+  // What the default vote basis is worth, which is the only reason it is the
+  // default. Printed as its own line rather than folded into the uplift above,
+  // because it answers a different question: not "does the radar beat naive
+  // APR-chasing" but "does judging pools on the weight they settle at beat
+  // judging them on the weight they are showing".
+  const basisDelta =
+    report.typicalVsCurrentPct === null
+      ? "n/a (the current-weight basis earned $0)"
+      : `${report.typicalVsCurrentPct >= 0 ? "+" : ""}${(report.typicalVsCurrentPct * 100).toFixed(1)}%`;
+  console.log(
+    `Vote basis: typical ${fmtUsd(report.radarTypicalTotalUsd)} vs current ${fmtUsd(report.radarTotalUsd)} — ${basisDelta}, ahead in ${report.epochsWonByTypical} of ${report.epochsTested} epoch(s).`,
+  );
 
   if (minConsistency > 0) {
     // Worth stating plainly: a filter that leaves two pools to choose between
