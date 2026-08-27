@@ -32,6 +32,8 @@ function fixture(overrides: Partial<PoolEfficiency> & { address: string; symbol:
     predictiveEdge: 0,
     volatility: 0,
     consistency: 1,
+    latestEpochBribes: [],
+    latestEpochFees: [],
     ...overrides,
   };
 }

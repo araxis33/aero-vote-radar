@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { rankPoolsByEfficiency } from "./efficiency.js";
 import { computeTrend, epochEndOf, isEpochInProgress, EPOCH_SECONDS } from "./trend.js";
 import { computeVoteStability, previousSettledVotes } from "./dilution.js";
-import type { PoolEfficiency } from "./efficiency.js";
+import type { PoolEfficiency, RewardAmount } from "./efficiency.js";
 
 /**
  * The published shape of one pool in the snapshot. This is deliberately a
@@ -61,6 +61,37 @@ export interface SnapshotPool {
    * quietly applied.
    */
   dilutionAdjustedValuePerVote: number;
+  /**
+   * What `latestEpochUsd` is made of, before it became a dollar figure:
+   * `[token address, raw amount]` pairs, bribes and fees kept apart. Prices and
+   * decimals for every address here live once at the snapshot's root, in
+   * `rewardTokens`.
+   *
+   * Published because every USD figure in this file is priced at the instant of
+   * the scan, so subtracting one snapshot's `latestEpochUsd` from the next
+   * measures new rewards *and* the repricing of the old ones together. Amounts
+   * don't reprice. With them, the difference between two snapshots becomes an
+   * answerable question rather than a noisy one — see `latestEpochBribes` in
+   * `efficiency.ts` for what that noise measured out at.
+   */
+  latestEpochBribes: [string, string][];
+  latestEpochFees: [string, string][];
+}
+
+/**
+ * One reward token as of the scan: how it was valued, recorded once at the root
+ * instead of on every pool that pays it.
+ *
+ * The point of publishing the price alongside the amount is that the two can be
+ * separated afterwards. Any later reader can rebuild the USD figure exactly as
+ * this scan saw it, or revalue the same amounts at a different price — which is
+ * what telling accrual apart from a token's price move requires.
+ */
+export interface SnapshotRewardToken {
+  address: string;
+  decimals: number;
+  /** USD price used by this scan. Zero means the price source had none, and the token counted as $0 in every total here. */
+  priceUsd: number;
 }
 
 /**
@@ -108,6 +139,12 @@ export interface Snapshot {
   pools: SnapshotPool[];
   /** Protocol-wide voter yield per epoch, newest first — see `buildEpochYields`. */
   epochYields: EpochYield[];
+  /**
+   * Every reward token referenced by any pool's `latestEpochBribes` or
+   * `latestEpochFees`, with the price and decimals this scan valued it at.
+   * Sorted by address so consecutive commits diff cleanly.
+   */
+  rewardTokens: SnapshotRewardToken[];
 }
 
 /**
@@ -147,7 +184,44 @@ export function toSnapshotPool(p: PoolEfficiency, generatedAt: Date): SnapshotPo
     refillRatio,
     voteStability,
     dilutionAdjustedValuePerVote: dilutedVotes > 0 ? p.trailingAvgUsd / dilutedVotes : 0,
+    latestEpochBribes: toAmountPairs(p.latestEpochBribes),
+    latestEpochFees: toAmountPairs(p.latestEpochFees),
   };
+}
+
+/**
+ * Raw amounts as decimal strings, because JSON has no integer type that can hold
+ * them: a reward of 10^24 wei loses its low digits the moment it becomes a
+ * JavaScript number, and the whole reason for publishing amounts is that they
+ * are exact.
+ *
+ * Zero amounts are dropped. They carry no information, and a pool paying one
+ * token out of a gauge listing six of them would otherwise publish five empty
+ * rows on every scan, four times a day, forever.
+ */
+function toAmountPairs(rewards: RewardAmount[]): [string, string][] {
+  return rewards
+    .filter((r) => r.amount > 0n)
+    .map((r) => [r.token.toLowerCase(), r.amount.toString()] as [string, string]);
+}
+
+/**
+ * Collects the distinct reward tokens across every pool in the scan.
+ *
+ * A token can be paid by many pools at once, and its price is a property of the
+ * token rather than of any pool paying it, so it belongs once at the root. The
+ * amounts stay on the pools, where they were earned.
+ */
+export function buildRewardTokens(ranked: PoolEfficiency[]): SnapshotRewardToken[] {
+  const seen = new Map<string, SnapshotRewardToken>();
+  for (const p of ranked) {
+    for (const r of [...p.latestEpochBribes, ...p.latestEpochFees]) {
+      if (r.amount <= 0n) continue;
+      const address = r.token.toLowerCase();
+      if (!seen.has(address)) seen.set(address, { address, decimals: r.decimals, priceUsd: r.priceUsd });
+    }
+  }
+  return [...seen.values()].sort((a, b) => (a.address < b.address ? -1 : a.address > b.address ? 1 : 0));
 }
 
 /**
@@ -216,6 +290,7 @@ export function buildSnapshot(ranked: PoolEfficiency[], generatedAt: Date): Snap
     poolCount: pools.length,
     pools,
     epochYields: buildEpochYields(ranked, generatedAt),
+    rewardTokens: buildRewardTokens(ranked),
   };
 }
 

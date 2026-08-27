@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildEpochYields, buildSnapshot, toSnapshotPool } from "../src/snapshot.js";
+import { buildEpochYields, buildRewardTokens, buildSnapshot, toSnapshotPool } from "../src/snapshot.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
 
 function ranked(overrides: Partial<PoolEfficiency> & { symbol?: string }): PoolEfficiency {
@@ -26,6 +26,8 @@ function ranked(overrides: Partial<PoolEfficiency> & { symbol?: string }): PoolE
     predictiveEdge: 0.2,
     volatility: 0.5,
     consistency: 2 / 3,
+    latestEpochBribes: [],
+    latestEpochFees: [],
     ...rest,
   };
 }
@@ -248,4 +250,78 @@ test("buildSnapshot publishes the protocol-wide yield series alongside the pools
   );
   assert.equal(snap.epochYields.length, 2);
   assert.equal(snap.epochYields[1].usdPerVote, 0.2);
+});
+
+const AT = new Date("2026-08-17T00:00:00Z");
+const USDC = "0xA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48";
+const AERO = "0x940181A94A35A4569E4529A3CDFB74E38FD98631";
+
+test("toSnapshotPool publishes the token amounts behind latestEpochUsd, not just the total", () => {
+  const p = toSnapshotPool(
+    ranked({
+      latestEpochBribes: [{ token: AERO, amount: 5_000_000_000_000_000_000n, decimals: 18, priceUsd: 0.5 }],
+      latestEpochFees: [{ token: USDC, amount: 2_500_000n, decimals: 6, priceUsd: 1 }],
+    }),
+    AT,
+  );
+  assert.deepEqual(p.latestEpochBribes, [[AERO.toLowerCase(), "5000000000000000000"]]);
+  assert.deepEqual(p.latestEpochFees, [[USDC.toLowerCase(), "2500000"]]);
+});
+
+test("the published amounts and prices reconstruct the published USD figure", () => {
+  // The point of publishing the parts is that they add back up to the whole. If
+  // this drifts, a later reader separating accrual from a price move would be
+  // working from numbers that never described this scan.
+  const r = ranked({
+    latestEpochUsd: 5, // 5 AERO at $0.50 plus 2.5 USDC at $1
+    latestEpochBribes: [{ token: AERO, amount: 5_000_000_000_000_000_000n, decimals: 18, priceUsd: 0.5 }],
+    latestEpochFees: [{ token: USDC, amount: 2_500_000n, decimals: 6, priceUsd: 1 }],
+  });
+  const snap = buildSnapshot([r], AT);
+  const priced = new Map(snap.rewardTokens.map((t) => [t.address, t]));
+  const rebuilt = [...snap.pools[0].latestEpochBribes, ...snap.pools[0].latestEpochFees].reduce((sum, [token, amount]) => {
+    const t = priced.get(token)!;
+    return sum + (Number(amount) / 10 ** t.decimals) * t.priceUsd;
+  }, 0);
+  assert.equal(rebuilt, snap.pools[0].latestEpochUsd);
+});
+
+test("toSnapshotPool drops zero amounts rather than publishing empty rows four times a day", () => {
+  const p = toSnapshotPool(
+    ranked({
+      latestEpochFees: [
+        { token: USDC, amount: 0n, decimals: 6, priceUsd: 1 },
+        { token: AERO, amount: 1n, decimals: 18, priceUsd: 0.5 },
+      ],
+    }),
+    AT,
+  );
+  assert.deepEqual(p.latestEpochFees, [[AERO.toLowerCase(), "1"]]);
+});
+
+test("buildRewardTokens records each token once, sorted, with the price the scan valued it at", () => {
+  const bribe = { token: AERO, amount: 1n, decimals: 18, priceUsd: 0.5 };
+  const fee = { token: USDC, amount: 1n, decimals: 6, priceUsd: 1 };
+  const tokens = buildRewardTokens([
+    ranked({ symbol: "A", latestEpochBribes: [bribe], latestEpochFees: [fee] }),
+    ranked({ symbol: "B", latestEpochBribes: [bribe], latestEpochFees: [] }),
+  ]);
+  assert.deepEqual(
+    tokens,
+    [
+      { address: USDC.toLowerCase(), decimals: 6, priceUsd: 1 },
+      { address: AERO.toLowerCase(), decimals: 18, priceUsd: 0.5 },
+    ].sort((a, b) => (a.address < b.address ? -1 : 1)),
+  );
+});
+
+test("an unpriced reward token still gets its amount recorded, so it can be valued later", () => {
+  // A token the price source had nothing for counts as $0 in every total here.
+  // Dropping its amount too would make that scan permanently unrecoverable.
+  const snap = buildSnapshot(
+    [ranked({ latestEpochBribes: [{ token: AERO, amount: 7n, decimals: 18, priceUsd: 0 }], latestEpochFees: [] })],
+    AT,
+  );
+  assert.deepEqual(snap.pools[0].latestEpochBribes, [[AERO.toLowerCase(), "7"]]);
+  assert.equal(snap.rewardTokens[0].priceUsd, 0);
 });

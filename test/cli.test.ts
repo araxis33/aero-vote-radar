@@ -106,6 +106,8 @@ test("poolEfficiencyToJson includes epochsObserved and the consistency fields, m
     predictiveEdge: -0.2,
     volatility: 0.25,
     consistency: 0.8,
+    latestEpochBribes: [],
+    latestEpochFees: [],
   };
 
   // Only 3 epochs observed — below MOMENTUM_MIN_EPOCHS, so momentum is null
@@ -139,6 +141,8 @@ test("poolEfficiencyToJson wires momentum from the pool's epoch series and the g
     predictiveEdge: -0.375,
     volatility: 0.6,
     consistency: 0.625,
+    latestEpochBribes: [],
+    latestEpochFees: [],
   };
 
   // A full epoch after latestEpochTs: that epoch has closed, so all 4 entries
