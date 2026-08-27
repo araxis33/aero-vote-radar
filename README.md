@@ -138,6 +138,45 @@ Two things the numbers do not carry: observations within one pool are correlated
 than 5,142; and only epochs with snapshot coverage can be scored, which today
 means the history since 2026-08-07.
 
+## What a snapshot cannot currently tell you
+
+Every dollar figure here is priced at the instant the scan ran. That is the only
+thing a price source can offer, and it is fine for the question this tool was
+built to answer: which pool, out of the ones on offer right now, pays best per
+vote. It quietly fails at a different question — what did this pool *earn*
+between Tuesday and Thursday — because subtracting one scan's `latestEpochUsd`
+from the next measures newly accrued rewards **and** the repricing of the
+rewards that were already there, added together and no longer separable.
+
+How badly, measured on the committed history rather than guessed at: across the
+snapshots between 2026-08-07 and 2026-08-27, **43% of 48-hour windows come out
+negative**. Not because pools un-earned anything, but because reward tokens moved
+further in two days than two days of incentives accrued. Stretch the window and
+the accrual climbs out from under the noise — negatives fall to 36% at 72 hours,
+31% at 96, 27% at 120 — which is the signature of a real signal buried in price
+movement rather than of no signal at all.
+
+Two consequences worth stating plainly:
+
+- **A short-horizon ranking built on these dollar figures would be mostly noise.**
+  On this history, the rank correlation between a pool's current accrual rate and
+  what it went on to earn over the next 48 hours is approximately zero, and often
+  slightly negative. "Follow the money that is flowing right now" is not, on the
+  evidence here, a strategy.
+- **The fix is data, not modelling.** From 2026-08-28 each snapshot publishes the
+  raw token amounts behind `latestEpochUsd` — `latestEpochBribes` and
+  `latestEpochFees` per pool as `[address, amount]` pairs, with `rewardTokens` at
+  the root carrying each token's decimals and the price this scan used. Amounts
+  do not reprice. With them, a later reader can rebuild the total exactly as the
+  scan saw it, or revalue the same amounts at any other price, and so tell
+  accrual apart from a price move. Bribes are kept separate from fees because
+  they arrive differently: fees trickle in with trading, bribes land in lumps.
+
+None of this changes a figure the tool already published; it adds the parts those
+figures were made of. History before 2026-08-28 has the totals only, so the
+measurement above cannot be redone on it — which is the reason the fields went in
+before the question became urgent rather than after.
+
 ## Install
 
 Requires Node.js 18.18 or newer (the test suite's `node --import tsx` invocation depends on the `--import` flag, added in 18.18).
