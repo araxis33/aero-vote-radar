@@ -482,10 +482,12 @@ Commands:
   pools [--top N] [--min-consistency 0..1] [--json]
       Rank live-gauge pools by current & predicted $/vote, with a consistency score
 
-  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-ready] [--json]
+  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--json]
       Recommend a self-dilution-aware allocation. --address reads your live voting
-      power on-chain instead of you typing the amount; --vote-ready prints whole
-      percentages that sum to 100, ready for Aerodrome's voting UI.
+      power on-chain instead of you typing the amount; --vote-basis picks which
+      vote weight pools are judged against (default: previous, the weight the pool
+      settled at last epoch); --vote-ready prints whole percentages that sum to
+      100, ready for Aerodrome's voting UI.
 
   backtest (--veaero N | --address 0x...) [--epochs N] [--min-consistency 0..1] [--json]
       Replay past epochs (up to ${MAX_BACKTEST_EPOCHS}) and compare this tool's allocation against the

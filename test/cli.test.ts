@@ -236,6 +236,10 @@ test("the CLI exits 0 and prints usage when asked for help", async () => {
     const { code, stdout } = await runCli(args);
     assert.equal(code, 0, `\`${args.join(" ")}\` should succeed`);
     assert.match(stdout, /Commands:/);
+    // --vote-basis is a real, tested recommend flag (see parseVoteBasisFlag
+    // tests below) — the top-level help text previously omitted it entirely,
+    // leaving it undiscoverable short of reading the README or the source.
+    assert.match(stdout, /--vote-basis/);
   }
 });
 
