@@ -312,6 +312,7 @@ src/
   pools.ts         pool discovery (Voter) + epoch history (RewardsSugar)
   efficiency.ts    current & trend-predicted $/vote ranking + consistency scoring + epoch series
   trend.ts         epoch-boundary maths + momentum over completed epochs only
+  dilution.ts      typical settled vote weight, refill ratio, and the previous-epoch vote basis
   allocator.ts     greedy marginal ("water-filling") allocation + whole-percent vote weights
   backtest.ts      replays past epochs to score this strategy against naive APR-chasing
   veAero.ts        VotingEscrow wrapper for a user's voting power
@@ -320,22 +321,27 @@ src/
   mcp-server.ts    MCP stdio server entrypoint
   cli.ts           CLI entrypoint
   snapshot-cli.ts  entrypoint for the scheduled snapshot job
+  predict.ts       pure scoring for which vote-basis predictor is actually most accurate
+  predict-cli.ts   entrypoint for `npm run predict-check`
 docs/              the web app, served by GitHub Pages
   index.html       static page: reads the snapshot, runs the allocator client-side
   data/
     snapshot.json  latest scan, refreshed every 6 hours by CI
 test/
-  allocator.test.ts   unit tests for the greedy marginal-allocation algorithm and percentage rounding
-  backtest.test.ts    unit tests for the backtester, including that it never peeks at the epoch under test
-  efficiency.test.ts  unit tests for per-pool efficiency math (trailing average, $/vote, predictive edge, consistency)
-  trend.test.ts       unit tests for epoch boundaries and momentum, including the part-week exclusion
-  prices.test.ts      unit tests for DefiLlama price lookup, batching, and USD conversion
-  pools.test.ts       unit tests for pool discovery's alive-gauge filter and failed-call skip logic
-  veAero.test.ts      unit tests for the veAERO NFT summary mapping (toVeNftSummary)
-  util.test.ts        unit tests for isValidAddress, mapWithConcurrency, and formatError
-  cli.test.ts         unit tests for CLI flag parsing
-  snapshot.test.ts    unit tests for the published snapshot shape
-  mcp-server.test.ts  unit tests for the MCP tools' veAero/address budget resolution
+  allocator.test.ts    unit tests for the greedy marginal-allocation algorithm and percentage rounding
+  backtest.test.ts     unit tests for the backtester, including that it never peeks at the epoch under test
+  efficiency.test.ts   unit tests for per-pool efficiency math (trailing average, $/vote, predictive edge, consistency)
+  trend.test.ts        unit tests for epoch boundaries and momentum, including the part-week exclusion
+  dilution.test.ts     unit tests for typical settled weight, refill ratio, and the previous-epoch vote basis
+  prices.test.ts       unit tests for DefiLlama price lookup, batching, and USD conversion
+  pools.test.ts        unit tests for pool discovery's alive-gauge filter and failed-call skip logic
+  veAero.test.ts       unit tests for the veAERO NFT summary mapping (toVeNftSummary)
+  util.test.ts         unit tests for isValidAddress, mapWithConcurrency, and formatError
+  cli.test.ts          unit tests for CLI flag parsing
+  snapshot.test.ts     unit tests for the published snapshot shape
+  mcp-server.test.ts   unit tests for the MCP tools' veAero/address budget resolution
+  predict.test.ts      unit tests for predictor scoring (log-scale error, bias, closest-of, pool-size buckets)
+  site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
 ```
 
 ## Testing
