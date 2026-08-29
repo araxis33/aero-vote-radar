@@ -24,7 +24,7 @@ import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
 import { getTokenPrices } from "./prices.js";
 import { epochUsd } from "./efficiency.js";
 import { computeVoteStability, expectedDilutedVotes, previousSettledVotes } from "./dilution.js";
-import { EPOCH_SECONDS } from "./trend.js";
+import { WEEKLY_EPOCH, periodStartOf } from "./trend.js";
 import { mapWithConcurrency } from "./util.js";
 import { MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
 import {
@@ -107,7 +107,7 @@ async function main() {
     settledUsd.set(pool.address.toLowerCase(), usd);
   });
 
-  const currentEpochStart = Math.floor(Date.now() / 1000 / EPOCH_SECONDS) * EPOCH_SECONDS;
+  const currentEpochStart = periodStartOf(Math.floor(Date.now() / 1000));
   const observations: PredictionObservation[] = [];
   const epochsCovered = new Set<number>();
   const poolsSeen = new Set<string>();
@@ -117,7 +117,7 @@ async function main() {
     if (!snap.generatedAt || !Array.isArray(snap.pools)) continue;
     const takenAt = Math.floor(Date.parse(snap.generatedAt) / 1000);
     if (!Number.isFinite(takenAt)) continue;
-    const epochStart = Math.floor(takenAt / EPOCH_SECONDS) * EPOCH_SECONDS;
+    const epochStart = periodStartOf(takenAt);
     // Only epochs whose answer is known. The running one has no answer yet.
     if (epochStart >= currentEpochStart) continue;
 
@@ -136,7 +136,7 @@ async function main() {
       const usdWindow: number[] = [];
       const voteWindow: number[] = [];
       for (let k = 1; k <= TREND_EPOCHS; k++) {
-        const ts = epochStart - k * EPOCH_SECONDS;
+        const ts = epochStart - k * WEEKLY_EPOCH.lengthSeconds;
         const u = usd.get(ts);
         const v = votes.get(ts);
         if (u === undefined || v === undefined) break;

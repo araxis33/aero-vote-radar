@@ -204,6 +204,38 @@ itself wanders, which is precisely why the tool points at
 `backtest --veaero <your amount>` instead of publishing a figure and letting it
 go stale.
 
+## When the weekly epoch stops being the unit
+
+Aerodrome has announced **Predictive Allocation** — continuous, rolling
+allocation in place of the weekly vote — as coming this year, with no date
+committed on [aero.xyz](https://aero.xyz) at the time of writing. Every figure
+in this tool is currently counted over a weekly epoch, so it is worth being
+plain about which part of that is a real assumption and which was an accident of
+arithmetic.
+
+The accident: "epoch" was two facts wearing one word — a length (one week) and
+an alignment (Thursday 00:00 UTC) — and the code got both from a single floor
+operation, because 604,800 seconds divides Unix time evenly and the Unix epoch
+itself began on a Thursday. That trick works for a week and for nothing else: a
+48-hour window offset from Thursday cannot be produced by flooring at all.
+
+So the period is now a named thing rather than a constant of the universe.
+`RewardPeriod` in [`src/trend.ts`](src/trend.ts) carries a length, an anchor and
+a name; `WEEKLY_EPOCH` is the only value in use; and `periodStartOf`,
+`periodEndOf` and `isPeriodInProgress` take one. `epochStartOf`, `epochEndOf`
+and `isEpochInProgress` still exist and still mean exactly what they meant —
+they are now wrappers passing `WEEKLY_EPOCH`, and a test asserts they agree with
+the general functions on every boundary case, because a silent shift of an epoch
+boundary would mis-date every snapshot already committed.
+
+**What this is not.** It is a seam, not support for anything else yet: no other
+period exists, the rankings still compare week-sized buckets, and the rest of
+the codebase still says "epoch" where it means "the stretch we count over".
+Nothing here predicts what Predictive Allocation will actually look like. The
+claim is narrower and checkable — when the shape is known, a different window
+should be a value of `RewardPeriod` rather than a rewrite of the functions that
+use it.
+
 ## What a snapshot cannot currently tell you
 
 Every dollar figure here is priced at the instant the scan ran. That is the only
@@ -381,7 +413,7 @@ src/
   prices.ts        DefiLlama USD price lookup + cache
   pools.ts         pool discovery (Voter) + epoch history (RewardsSugar)
   efficiency.ts    current & trend-predicted $/vote ranking + consistency scoring + epoch series
-  trend.ts         epoch-boundary maths + momentum over completed epochs only
+  trend.ts         reward-period boundaries (RewardPeriod/WEEKLY_EPOCH) + momentum over completed epochs only
   dilution.ts      typical settled vote weight, refill ratio, and the previous-epoch vote basis
   allocator.ts     greedy marginal ("water-filling") allocation + whole-percent vote weights
   backtest.ts      replays past epochs to score this strategy against naive APR-chasing
@@ -420,7 +452,7 @@ test/
 npm test
 ```
 
-Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. `toWholePercentWeights` is tested to always total exactly 100 (six equal weights land on 4x17 + 2x16, not six 17s summing to 102), including on real `recommendAllocation` output. The backtester (`runBacktest`) is tested for the property that matters most in a backtest — **no lookahead**: a pool that pays a $10,000 jackpot in the epoch under test but was worth $0 in every epoch before it must not be picked, and its jackpot must not appear in the result. It's also checked against the dilution maths directly (budget equal to a pool's existing votes earns exactly half the pot), for beating the naive all-in baseline when the budget is large relative to pool votes, and for returning `null` uplift rather than dividing by a zero baseline. `trend.ts` is tested for the property the feature lives or dies on — that a mid-week scan's part-week epoch cannot manufacture a trend: a steady $200/epoch pool caught three days into an epoch worth $60 so far must report level movement, and the *same* series read as fully closed must report a decline. Epoch boundaries are asserted to land on Thursday 00:00 UTC, an odd-length history is checked to drop its middle epoch so both halves weigh equally, and a zero-paying older half is checked to report `null` rather than infinite growth. The pure per-pool efficiency math (`computePoolEfficiency`/`epochUsd`/`computeConsistency` in `efficiency.ts`) is covered the same way — trailing-average computation, the `MIN_TRAILING_USD` cutoff, the zero-votes exclusion, the `predictiveEdge` divide-by-zero guard, and that a $600-then-nothing pool scores far below a steady $100/epoch pool with the same average — plus DefiLlama pricing/batching (`prices.ts`), the veAERO NFT summary mapping (`toVeNftSummary` in `veAero.ts`, including permanent-lock and large-id precision handling), CLI flag parsing (`cli.ts`), the MCP tools' shared `resolveVeAeroBudget` (both-provided and neither-provided rejections, and the plain-amount pass-through — the same branches `cli.ts`'s `resolveBudget` already covers, since both wrap the same veAero/address contract for their respective tools), and the address/concurrency/error-formatting helpers (`util.ts`), all with synthetic inputs and no network access. `formatError` (in `util.ts`) reduces a thrown error to a single clean line — preferring viem's concise `.shortMessage` over its multi-paragraph `.message` — and is shared by both the CLI's top-level error output and every MCP tool handler's error result, so a failed RPC call surfaces the same readable message however the tool is invoked. Pool discovery's own filtering logic — `filterAlivePools` (drop pools whose gauge isn't alive, keeping the paired gauge address aligned) and `resolvePoolInfo` (skip a pool if any of its `symbol`/`token0`/`token1` calls failed, rather than letting one non-standard pool take down the whole scan) — is unit-tested the same way. The remaining on-chain data-fetching code (`fetchActivePools`/`fetchPoolEpochs` in `pools.ts`, `fetchVeAeroPositions` in `veAero.ts`) is exercised live against Base mainnet via the CLI instead — see the real example output above.
+Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. `toWholePercentWeights` is tested to always total exactly 100 (six equal weights land on 4x17 + 2x16, not six 17s summing to 102), including on real `recommendAllocation` output. The backtester (`runBacktest`) is tested for the property that matters most in a backtest — **no lookahead**: a pool that pays a $10,000 jackpot in the epoch under test but was worth $0 in every epoch before it must not be picked, and its jackpot must not appear in the result. It's also checked against the dilution maths directly (budget equal to a pool's existing votes earns exactly half the pot), for beating the naive all-in baseline when the budget is large relative to pool votes, and for returning `null` uplift rather than dividing by a zero baseline. `trend.ts` is tested for the property the feature lives or dies on — that a mid-week scan's part-week epoch cannot manufacture a trend: a steady $200/epoch pool caught three days into an epoch worth $60 so far must report level movement, and the *same* series read as fully closed must report a decline. Epoch boundaries are asserted to land on Thursday 00:00 UTC, the weekly period is asserted to reproduce the epoch wrappers exactly while a 48-hour window anchored away from Unix time zero is checked to count its own boundaries, an odd-length history is checked to drop its middle epoch so both halves weigh equally, and a zero-paying older half is checked to report `null` rather than infinite growth. The pure per-pool efficiency math (`computePoolEfficiency`/`epochUsd`/`computeConsistency` in `efficiency.ts`) is covered the same way — trailing-average computation, the `MIN_TRAILING_USD` cutoff, the zero-votes exclusion, the `predictiveEdge` divide-by-zero guard, and that a $600-then-nothing pool scores far below a steady $100/epoch pool with the same average — plus DefiLlama pricing/batching (`prices.ts`), the veAERO NFT summary mapping (`toVeNftSummary` in `veAero.ts`, including permanent-lock and large-id precision handling), CLI flag parsing (`cli.ts`), the MCP tools' shared `resolveVeAeroBudget` (both-provided and neither-provided rejections, and the plain-amount pass-through — the same branches `cli.ts`'s `resolveBudget` already covers, since both wrap the same veAero/address contract for their respective tools), and the address/concurrency/error-formatting helpers (`util.ts`), all with synthetic inputs and no network access. `formatError` (in `util.ts`) reduces a thrown error to a single clean line — preferring viem's concise `.shortMessage` over its multi-paragraph `.message` — and is shared by both the CLI's top-level error output and every MCP tool handler's error result, so a failed RPC call surfaces the same readable message however the tool is invoked. Pool discovery's own filtering logic — `filterAlivePools` (drop pools whose gauge isn't alive, keeping the paired gauge address aligned) and `resolvePoolInfo` (skip a pool if any of its `symbol`/`token0`/`token1` calls failed, rather than letting one non-standard pool take down the whole scan) — is unit-tested the same way. The remaining on-chain data-fetching code (`fetchActivePools`/`fetchPoolEpochs` in `pools.ts`, `fetchVeAeroPositions` in `veAero.ts`) is exercised live against Base mainnet via the CLI instead — see the real example output above.
 
 `voteBasisCaveat` is tested for the property that makes it worth printing at all — that it fires on exactly the side of the measured crossover where the chosen basis is the unfavoured one, and stays silent otherwise — and `site-parity.test.ts` runs the page's copy of it against `src/`'s across a range of budgets and all three bases, so the page cannot go on reassuring a voter the CLI would warn. `wrapText` is checked to break only on spaces, to never add, drop or reorder a word, and to leave a word longer than the width whole rather than cutting an address in half.
 

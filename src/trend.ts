@@ -17,9 +17,76 @@ export const EPOCH_SECONDS = 604_800;
  */
 export const MOMENTUM_MIN_EPOCHS = 4;
 
+/**
+ * The stretch of time a set of rewards is counted over, and the boundary a vote
+ * has to beat to count toward it.
+ *
+ * Everything in this project currently measures in weekly epochs, because that
+ * is what Aerodrome pays on today. But "epoch" is two facts wearing one word: a
+ * length (one week) and an alignment (Thursday 00:00 UTC), and the code got both
+ * for free from a single floor operation. That works only for a period whose
+ * length divides evenly into Unix time from zero, which a week does and, for
+ * instance, a 48-hour window offset from Thursday does not.
+ *
+ * Aerodrome has announced Predictive Allocation — continuous, rolling
+ * allocation in place of the weekly vote — so the period this tool counts over
+ * will stop being a constant of the universe and become a parameter of the
+ * protocol. Naming it now, while the only value it takes is the weekly epoch,
+ * is what turns that from an architecture change into a configuration change:
+ * a different window becomes another `RewardPeriod`, not a rewrite of every
+ * function that says "epoch".
+ *
+ * `anchorSeconds` is any instant at which one period began; boundaries are
+ * counted from there in both directions, so it does not have to be the first
+ * one ever. For the weekly epoch it is 0 — the Unix epoch itself began on a
+ * Thursday, which is why flooring to a 604,800-second boundary lands on
+ * Thursday 00:00 UTC without anyone arranging it.
+ */
+export interface RewardPeriod {
+  /** How long one period lasts, in seconds. */
+  lengthSeconds: number;
+  /** A Unix timestamp at which some period began. Boundaries are counted from here. */
+  anchorSeconds: number;
+  /** What one of these is called in output: "epoch" today, something else later. */
+  name: string;
+}
+
+/** Aerodrome's weekly voting epoch: one week, aligned to Thursday 00:00 UTC. */
+export const WEEKLY_EPOCH: RewardPeriod = {
+  lengthSeconds: EPOCH_SECONDS,
+  anchorSeconds: 0,
+  name: "epoch",
+};
+
+/** Start timestamp of the period that `unixSeconds` falls inside. */
+export function periodStartOf(unixSeconds: number, period: RewardPeriod = WEEKLY_EPOCH): number {
+  const { lengthSeconds, anchorSeconds } = period;
+  const elapsed = unixSeconds - anchorSeconds;
+  return anchorSeconds + Math.floor(elapsed / lengthSeconds) * lengthSeconds;
+}
+
+/**
+ * When the period containing `unixSeconds` flips. The boundary belongs to the
+ * period opening there, so this is the first instant of the next one rather
+ * than the last instant of this one — a vote cast exactly on the boundary gets
+ * a whole period, not zero seconds.
+ */
+export function periodEndOf(unixSeconds: number, period: RewardPeriod = WEEKLY_EPOCH): number {
+  return periodStartOf(unixSeconds, period) + period.lengthSeconds;
+}
+
+/** Whether `latestTs` belongs to the period still running as of `asOfUnixSeconds`. */
+export function isPeriodInProgress(
+  latestTs: number,
+  asOfUnixSeconds: number,
+  period: RewardPeriod = WEEKLY_EPOCH,
+): boolean {
+  return latestTs >= periodStartOf(asOfUnixSeconds, period);
+}
+
 /** Start timestamp of the epoch that `unixSeconds` falls inside. */
 export function epochStartOf(unixSeconds: number): number {
-  return Math.floor(unixSeconds / EPOCH_SECONDS) * EPOCH_SECONDS;
+  return periodStartOf(unixSeconds, WEEKLY_EPOCH);
 }
 
 /**
@@ -32,7 +99,7 @@ export function epochStartOf(unixSeconds: number): number {
  * instant of the next epoch rather than the last instant of this one.
  */
 export function epochEndOf(unixSeconds: number): number {
-  return epochStartOf(unixSeconds) + EPOCH_SECONDS;
+  return periodEndOf(unixSeconds, WEEKLY_EPOCH);
 }
 
 /**
@@ -68,7 +135,7 @@ export function formatDuration(seconds: number): string {
  * this flag tells consumers which bar is not comparable to the others yet.
  */
 export function isEpochInProgress(latestEpochTs: number, asOfUnixSeconds: number): boolean {
-  return latestEpochTs >= epochStartOf(asOfUnixSeconds);
+  return isPeriodInProgress(latestEpochTs, asOfUnixSeconds, WEEKLY_EPOCH);
 }
 
 export interface Trend {

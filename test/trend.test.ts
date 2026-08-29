@@ -6,8 +6,68 @@ import {
   epochStartOf,
   formatDuration,
   isEpochInProgress,
+  isPeriodInProgress,
+  periodEndOf,
+  periodStartOf,
   EPOCH_SECONDS,
+  WEEKLY_EPOCH,
+  type RewardPeriod,
 } from "../src/trend.js";
+
+/**
+ * The seam these exercise is not a feature yet: every caller still passes the
+ * weekly epoch. What has to hold is that naming the period changed nothing for
+ * the week — the old functions are now thin wrappers, and a silent shift of an
+ * epoch boundary would mis-date every snapshot in the published history — and
+ * that a period which is *not* aligned to Unix time zero comes out right, since
+ * that is the whole reason the alignment became a parameter instead of a
+ * consequence of flooring.
+ */
+test("the weekly period reproduces the epoch functions exactly", () => {
+  const samples = [
+    0,
+    1,
+    EPOCH_SECONDS - 1,
+    1_786_579_200, // 2026-08-13T00:00:00Z, a boundary
+    1_786_950_908, // mid-epoch
+    Math.floor(Date.UTC(2026, 7, 27, 0, 0, 0) / 1000),
+  ];
+
+  for (const t of samples) {
+    assert.equal(periodStartOf(t, WEEKLY_EPOCH), epochStartOf(t), `start disagreed at ${t}`);
+    assert.equal(periodEndOf(t, WEEKLY_EPOCH), epochEndOf(t), `end disagreed at ${t}`);
+    assert.equal(periodStartOf(t), epochStartOf(t), "the weekly epoch must be the default period");
+  }
+});
+
+test("a period anchored away from Unix time zero counts boundaries from its own anchor", () => {
+  // A 48-hour window opening at 2026-08-13T09:00:00Z — the shape a continuous
+  // allocation schedule would have, and one that flooring alone cannot produce.
+  const anchor = Math.floor(Date.UTC(2026, 7, 13, 9, 0, 0) / 1000);
+  const window: RewardPeriod = { lengthSeconds: 48 * 3600, anchorSeconds: anchor, name: "window" };
+
+  assert.equal(periodStartOf(anchor, window), anchor, "the anchor itself opens a period");
+  assert.equal(periodStartOf(anchor + 3600, window), anchor);
+  assert.equal(periodStartOf(anchor + 48 * 3600, window), anchor + 48 * 3600);
+  assert.equal(periodEndOf(anchor + 3600, window), anchor + 48 * 3600);
+
+  // Before the anchor is a period like any other, not a negative one.
+  assert.equal(periodStartOf(anchor - 1, window), anchor - 48 * 3600);
+  assert.equal(periodEndOf(anchor - 1, window), anchor);
+
+  // And the alignment is genuinely the window's, not Thursday's.
+  assert.notEqual(periodStartOf(anchor + 3600, window), epochStartOf(anchor + 3600));
+});
+
+test("isPeriodInProgress follows the period it is given, not the week", () => {
+  const anchor = Math.floor(Date.UTC(2026, 7, 13, 9, 0, 0) / 1000);
+  const window: RewardPeriod = { lengthSeconds: 48 * 3600, anchorSeconds: anchor, name: "window" };
+
+  assert.equal(isPeriodInProgress(anchor, anchor + 3600, window), true);
+  assert.equal(isPeriodInProgress(anchor, anchor + 48 * 3600, window), false);
+  // The same two timestamps read against the weekly epoch are still one epoch.
+  assert.equal(isEpochInProgress(anchor, anchor + 48 * 3600), true);
+});
 
 test("epoch boundaries land on Thursday 00:00 UTC", () => {
   // 2026-08-17T07:15:08Z (a Monday) sits inside the epoch that opened 2026-08-13.
