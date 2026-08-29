@@ -1,4 +1,5 @@
-// Minimal ABIs: only the read methods this project actually calls.
+// Minimal ABIs: the read methods this project calls, plus the single write
+// method it encodes calldata for without ever sending (`Voter.vote`).
 // Struct field order transcribed directly from the official Vyper sources
 // (velodrome-finance/sugar, contracts/{LpSugar,RewardsSugar,VeSugar}.vy) —
 // Aerodrome is a fork of Velodrome and shares this tooling/deployment pattern.
@@ -46,6 +47,27 @@ export const VOTER_ABI = [
     stateMutability: "view",
     inputs: [{ type: "address" }],
     outputs: [{ type: "bool" }],
+  },
+  // The one non-view entry in this file, and it is never called from here: it
+  // exists so `encodeFunctionData` can build the bytes of a vote for the owner
+  // of the veNFT to sign in their own wallet. This project holds no keys and
+  // sends no transactions.
+  //
+  // The signature is not transcribed from documentation. Its selector,
+  // 0x7ac09bf7, was checked against the deployed Voter's runtime bytecode on
+  // Base mainnet, where it is present — alongside a control check that a
+  // plausible four-argument variant and an invented function name are both
+  // absent, so "found it in the bytecode" means something.
+  {
+    type: "function",
+    name: "vote",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_tokenId", type: "uint256" },
+      { name: "_poolVote", type: "address[]" },
+      { name: "_weights", type: "uint256[]" },
+    ],
+    outputs: [],
   },
 ] as const;
 

@@ -6,9 +6,11 @@ import {
   recommendAllocation,
   toWholePercentWeights,
   unallocatedVeAero,
+  voteBasisCaveat,
 } from "../src/allocator.js";
 import type { AllocationResult } from "../src/allocator.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
+import { VOTE_BASIS_CROSSOVER_VEAERO } from "../src/constants.js";
 
 function fixture(overrides: Partial<PoolEfficiency> & { address: string; symbol: string }): PoolEfficiency {
   return {
@@ -483,4 +485,42 @@ test("a cap of 1 or above changes nothing", () => {
   const capped = allocateAcrossCandidates(candidates, 10_000, undefined, 1);
 
   assert.deepEqual(capped, plain);
+});
+
+/**
+ * The caveat exists because two honest measurements disagree about the vote
+ * basis and the disagreement depends on position size. What has to hold is that
+ * it appears on exactly the side of the crossover where the chosen basis is the
+ * unfavoured one: a caveat that fires on every run is noise, and one that never
+ * fires is the silence it was written to break.
+ */
+test("voteBasisCaveat warns a small position that the default is the unfavoured basis", () => {
+  for (const basis of ["previous", "current"] as const) {
+    const caveat = voteBasisCaveat(25_000, basis);
+    assert.ok(caveat, `expected a caveat for ${basis} at 25,000 veAERO`);
+    assert.match(caveat, /1,000,000 veAERO/);
+    assert.match(caveat, /"typical"/);
+  }
+});
+
+test("voteBasisCaveat says nothing to a large position using the default basis", () => {
+  assert.equal(voteBasisCaveat(VOTE_BASIS_CROSSOVER_VEAERO, "previous"), null);
+  assert.equal(voteBasisCaveat(5_000_000, "current"), null);
+});
+
+test("voteBasisCaveat warns the other way round when a large position uses typical", () => {
+  const caveat = voteBasisCaveat(2_000_000, "typical");
+  assert.ok(caveat);
+  assert.match(caveat, /favoured the default vote basis/);
+});
+
+test("voteBasisCaveat says nothing to a small position that already chose typical", () => {
+  assert.equal(voteBasisCaveat(25_000, "typical"), null);
+});
+
+test("voteBasisCaveat is silent rather than wrong on a budget that is not a positive number", () => {
+  assert.equal(voteBasisCaveat(0, "previous"), null);
+  assert.equal(voteBasisCaveat(-1, "previous"), null);
+  assert.equal(voteBasisCaveat(Number.NaN, "previous"), null);
+  assert.equal(voteBasisCaveat(Number.POSITIVE_INFINITY, "previous"), null);
 });

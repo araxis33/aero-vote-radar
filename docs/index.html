@@ -285,6 +285,7 @@
   </table>
 </div>
 <div class="note" id="allocNote" hidden></div>
+<div class="note" id="basisNote" hidden></div>
 
 <h2>Which way incentives are moving</h2>
 <p class="h2note">Recent finished epochs against the older ones, per pool. A high average is worth less if it is on the way down.</p>
@@ -554,6 +555,48 @@ function votesToExpect(p) {
   return previous;
 }
 
+/**
+ * The veAERO budget above which the default vote basis is the one the evidence
+ * favours. Mirrors VOTE_BASIS_CROSSOVER_VEAERO in src/constants.ts, which
+ * carries the measurement and the date it was taken.
+ */
+const VOTE_BASIS_CROSSOVER_VEAERO = 1000000;
+
+/**
+ * Whether, at this budget, the basis this allocation was priced on is the one
+ * the evidence supports. Mirrors voteBasisCaveat in src/allocator.ts;
+ * test/site-parity.test.ts holds the two together, so the wording cannot drift
+ * apart between the page and the CLI.
+ *
+ * Returns null when there is nothing to say, which is most of the time — a
+ * caveat shown on every render is a caveat nobody reads. The page offers only
+ * "previous" and "current", but the function keeps the "typical" branch so the
+ * two copies stay literally the same function.
+ */
+function voteBasisCaveat(veAeroBudget, voteBasis) {
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return null;
+
+  const belowCrossover = veAeroBudget < VOTE_BASIS_CROSSOVER_VEAERO;
+
+  if (voteBasis !== "typical" && belowCrossover) {
+    return (
+      "Below ~" + VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO, replaying past epochs has " +
+      "favoured the \"typical\" vote basis over this one: it earned more, despite predicting settled vote " +
+      "weight less accurately. The two measurements disagree, and the gap moves week to week."
+    );
+  }
+
+  if (voteBasis === "typical" && !belowCrossover) {
+    return (
+      "Above ~" + VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO, replaying past epochs has " +
+      "favoured the default vote basis over \"typical\": at this size dilution rather than pool-picking " +
+      "decides the outcome, and \"typical\" over-states every pool's weight by construction."
+    );
+  }
+
+  return null;
+}
+
 /** How loudly to flag a pool whose live weight is well below its usual one. */
 const refillClass = (r) => (r >= 3 ? "c-bad" : r >= 1.5 ? "c-warn" : "c-good");
 
@@ -757,6 +800,7 @@ const el = {
   moversUp: document.getElementById("moversUp"),
   moversDown: document.getElementById("moversDown"),
   allocNote: document.getElementById("allocNote"),
+  basisNote: document.getElementById("basisNote"),
   copyBtn: document.getElementById("copyBtn"),
   statUsd: document.getElementById("statUsd"),
   statPools: document.getElementById("statPools"),
@@ -955,6 +999,22 @@ function clearAllocation(message) {
   el.statUsd.textContent = el.statPools.textContent = el.statPerVote.textContent = "—";
   el.allocNote.textContent = message;
   el.allocNote.hidden = !message;
+  el.basisNote.hidden = true;
+}
+
+/**
+ * Shows the vote-basis caveat under the allocation when this visitor's size sits
+ * on the side of the crossover where the basis they are using is the one the
+ * evidence does not favour — with the way to check it rather than an
+ * instruction, because the two measurements genuinely disagree.
+ */
+function renderBasisNote(budget, voteBasis) {
+  const caveat = voteBasisCaveat(budget, voteBasis);
+  el.basisNote.hidden = caveat === null;
+  if (caveat === null) return;
+  el.basisNote.textContent =
+    caveat +
+    " The repository's backtest command replays both on your own amount: see “Checking the vote basis yourself” in the README.";
 }
 
 function renderAllocation() {
@@ -970,6 +1030,8 @@ function renderAllocation() {
     clearAllocation("Enter how much veAERO you hold — or paste your wallet address above and let the page read it.");
     return;
   }
+
+  renderBasisNote(budget, el.votebasis.value);
 
   const rate = (p) =>
     useSettledVotes ? (p.dilutionAdjustedValuePerVote ?? p.predictedValuePerVote) : p.predictedValuePerVote;

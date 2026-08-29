@@ -7,10 +7,13 @@ import {
   allocateAcrossCandidates,
   toWholePercentWeights,
   expectedUsdForWholePercentVote,
+  voteBasisCaveat,
   type AllocationCandidate,
+  type VoteBasis,
 } from "../src/allocator.js";
 import { epochEndOf, formatDuration } from "../src/trend.js";
 import { previousSettledVotes } from "../src/dilution.js";
+import { VOTE_BASIS_CROSSOVER_VEAERO } from "../src/constants.js";
 
 /**
  * The static site cannot import the TypeScript allocator: `docs/` is served by
@@ -56,18 +59,25 @@ type SiteAllocate = (input: unknown[], budget: number, steps?: number, maxWeight
 type SitePercents = (allocation: unknown[]) => Map<string, number>;
 type SiteExpected = (allocation: unknown[], budget: number) => number;
 
+// `extractConst` is declared further down, next to the epoch-countdown port
+// that first needed it; function declarations hoist, and keeping one copy is
+// worth more than declaring it twice in reading order.
 const siteModule = new Function(`
   ${extractFunction(siteSource, "marginalValuePerVeAero")}
   ${extractFunction(siteSource, "allocateAcrossCandidates")}
   ${extractFunction(siteSource, "toWholePercentWeights")}
   ${extractFunction(siteSource, "expectedUsdForWholePercentVote")}
   ${extractFunction(siteSource, "votesToExpect")}
-  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote, votesToExpect };
+  ${extractConst(siteSource, "VOTE_BASIS_CROSSOVER_VEAERO")}
+  ${extractFunction(siteSource, "voteBasisCaveat")}
+  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote, votesToExpect, voteBasisCaveat, VOTE_BASIS_CROSSOVER_VEAERO };
 `)() as {
   allocateAcrossCandidates: SiteAllocate;
   toWholePercentWeights: SitePercents;
   expectedUsdForWholePercentVote: SiteExpected;
   votesToExpect: (pool: { votesVeAero: number; epochVotes?: number[]; currentEpochPartial?: boolean }) => number;
+  voteBasisCaveat: (veAeroBudget: number, voteBasis: string) => string | null;
+  VOTE_BASIS_CROSSOVER_VEAERO: number;
 };
 
 /** Candidate sets chosen to exercise the branches the two copies could disagree on. */
@@ -268,5 +278,40 @@ test("docs/index.html's votesToExpect matches src/dilution.ts", () => {
       previousSettledVotes(c.epochVotes ?? [], c.currentEpochPartial ?? true, c.votesVeAero),
       `votesToExpect disagreed for ${JSON.stringify(c)}`,
     );
+  }
+});
+
+/**
+ * The caveat is the one place where the page tells a visitor that the number
+ * above it rests on a basis the evidence does not support at their size. If the
+ * two copies drifted, the page could go on reassuring a voter the CLI would
+ * warn — the worst direction for a disagreement to run.
+ */
+test("docs/index.html's vote-basis crossover is the same number as src/constants.ts", () => {
+  assert.equal(siteModule.VOTE_BASIS_CROSSOVER_VEAERO, VOTE_BASIS_CROSSOVER_VEAERO);
+});
+
+test("docs/index.html's voteBasisCaveat matches src/allocator.ts word for word", () => {
+  const budgets = [
+    1,
+    25_000,
+    VOTE_BASIS_CROSSOVER_VEAERO - 1,
+    VOTE_BASIS_CROSSOVER_VEAERO,
+    VOTE_BASIS_CROSSOVER_VEAERO + 1,
+    5_000_000,
+    0,
+    -1,
+    Number.NaN,
+  ];
+  const bases: VoteBasis[] = ["previous", "current", "typical"];
+
+  for (const budget of budgets) {
+    for (const basis of bases) {
+      assert.equal(
+        siteModule.voteBasisCaveat(budget, basis),
+        voteBasisCaveat(budget, basis),
+        `voteBasisCaveat disagreed at ${budget} veAERO on "${basis}"`,
+      );
+    }
   }
 });

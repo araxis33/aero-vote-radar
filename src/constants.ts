@@ -46,6 +46,39 @@ export const MIN_TRAILING_USD = 10;
 // MIN_TRAILING_USD, applied to the denominator instead of the numerator.
 export const MIN_VOTE_BASELINE = 1000;
 
+// The veAERO budget around which the two measurements of the vote basis stop
+// agreeing, and so the size above which the default basis is the one the
+// evidence favours.
+//
+// Two honest measurements point opposite ways and both are kept:
+//
+//   predict-check scores each basis against the weight epochs actually settled
+//   at, from real mid-week vantage points. "previous" wins there: 17% median
+//   error and unbiased, against 26% and +4% high for "typical". That is why it
+//   is the default.
+//
+//   backtest scores dollars instead of weights, replaying closed epochs. There
+//   "typical" earned more at every small and mid budget, and the gap closes as
+//   the budget grows. Measured 2026-08-29 over the last 5 epochs, typical
+//   against the default: +114% at 5,000 veAERO, +99% at 25,000, +51% at
+//   200,000, +6% at 750,000, then -4% at 1,000,000, -24% at 2,000,000 and -41%
+//   at 5,000,000.
+//
+// They are not in conflict about the facts. A median accuracy figure weights
+// every pool equally; an allocator does not — it deliberately picks the pools
+// whose weight looks lowest relative to their incentives, which is exactly the
+// tail where "previous" is wrong and "typical" (max of tally and usual weight)
+// is protective. As the budget grows, dilution rather than pool-picking decides
+// the outcome, the protection turns into over-estimated weight everywhere, and
+// the default pulls ahead.
+//
+// The crossover moves week to week — a run the day before this one put the
+// 1,000,000 figure at -30.7% rather than -4% — so this constant sets the size
+// above which a voter is told nothing and below which they are told to check
+// their own size with `backtest`. It is a threshold for a warning, never for
+// silently switching the basis.
+export const VOTE_BASIS_CROSSOVER_VEAERO = 1_000_000;
+
 export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";
 
 // Bounds how long a single DefiLlama batch request can hang before it's treated

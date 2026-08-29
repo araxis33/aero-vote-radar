@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { rankPoolsByEfficiency } from "./efficiency.js";
-import { computeTrend, epochEndOf, isEpochInProgress, EPOCH_SECONDS } from "./trend.js";
+import { computeTrend, epochEndOf, isEpochInProgress, WEEKLY_EPOCH } from "./trend.js";
 import { computeVoteStability, previousSettledVotes } from "./dilution.js";
 import type { PoolEfficiency, RewardAmount } from "./efficiency.js";
 
@@ -250,7 +250,7 @@ export function buildEpochYields(ranked: PoolEfficiency[], generatedAt: Date): E
     for (let i = 0; i < depth; i++) {
       // The series are most-recent-first and one week apart, so each entry's
       // epoch follows from the pool's own latest epoch rather than from a clock.
-      const ts = p.latestEpochTs - i * EPOCH_SECONDS;
+      const ts = p.latestEpochTs - i * WEEKLY_EPOCH.lengthSeconds;
       const acc = byTs.get(ts) ?? { totalUsd: 0, totalVotes: 0, pools: 0 };
       acc.totalUsd += p.epochUsdSeries[i];
       acc.totalVotes += p.epochVotesSeries[i];
