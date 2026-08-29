@@ -13,6 +13,7 @@ import {
   voteBasisCaveat,
 } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
+import { buildVoteCalldata } from "./calldata.js";
 import { fetchVeAeroPositions } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress } from "./util.js";
@@ -254,6 +255,50 @@ server.registerTool(
 
     return {
       content: [{ type: "text", text: JSON.stringify({ address, totalVeAero, locks: positions }, null, 2) }],
+    };
+  }),
+);
+
+server.registerTool(
+  "prepare_vote_calldata",
+  {
+    title: "Build the unsigned transaction that casts a recommended vote",
+    description:
+      "Turns a vote allocation into the exact bytes Aerodrome's Voter.vote expects, as an unsigned transaction (chainId, to, value, data) for the veNFT owner to review and sign in their own wallet. This server holds no keys, signs nothing and sends nothing — the output is inert until someone signs it. Weights must be whole percentage points totalling 100, which is what `recommend_allocation` returns in `votePercents`; anything else is refused rather than normalised, so the bytes always match the table the user was shown.",
+    inputSchema: {
+      tokenId: z
+        .string()
+        .regex(/^[0-9]+$/, "veNFT id must be a positive whole number")
+        .describe("The veNFT to cast from, as a decimal string. Ids exceed Number.MAX_SAFE_INTEGER, so pass a string. `get_my_veaero` lists an account's locks; a wallet with several has no default — ask which one."),
+      votePercents: z
+        .array(
+          z.object({
+            pool: z.string().refine(isValidAddress, "Must be a 0x-prefixed 40-character hex address"),
+            symbol: z.string(),
+            percent: z.number().int().positive(),
+          }),
+        )
+        .min(1)
+        .describe("The `votePercents` array from `recommend_allocation`, unchanged: pool address, symbol and whole-percent weight, totalling 100."),
+    },
+  },
+  withErrorHandling(async ({ tokenId, votePercents }) => {
+    const tx = buildVoteCalldata(tokenId, votePercents);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              ...tx,
+              note: "Unsigned and unsent. Show the user the pools, the weights and the `to` address, and tell them plainly that signing it in their own wallet is what casts the vote and that only the owner of that veNFT can. Do not describe the vote as cast, submitted or done. `value` is zero: voting moves no funds, but the transaction does commit that veNFT's voting power for the epoch.",
+            },
+            null,
+            2,
+          ),
+        },
+      ],
     };
   }),
 );

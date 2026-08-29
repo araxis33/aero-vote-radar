@@ -9,6 +9,7 @@ import {
   type VoteBasis,
 } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
+import { buildVoteCalldata } from "./calldata.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress, wrapText } from "./util.js";
@@ -167,7 +168,7 @@ async function cmdPools(args: string[]) {
 }
 
 const RECOMMEND_USAGE =
-  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--json]";
+  "Usage: aero-vote-radar recommend (--veaero <amount> | --address <0x...>) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--calldata [--nft <id>]] [--json]";
 
 const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
@@ -217,6 +218,40 @@ export async function resolveBudget(args: string[], usage: string): Promise<numb
 }
 
 /**
+ * Which veNFT a vote should be cast from, given what the user asked for and
+ * what they actually hold.
+ *
+ * Kept pure and separate from the fetch so the awkward part — a wallet with
+ * several locks — is testable without a chain. There is no sensible default
+ * there: locks differ in size and expiry, `Voter.vote` casts from exactly one,
+ * and picking "the biggest" on the user's behalf would be this tool choosing
+ * which of someone's positions to commit for a week. Returns an error string
+ * rather than throwing, since every caller here prints and bails.
+ */
+export function chooseVoteTokenId(
+  nftFlag: string | undefined,
+  positions: VeNftSummary[],
+): { tokenId: string } | { error: string } {
+  if (nftFlag !== undefined) {
+    if (!/^[0-9]+$/.test(nftFlag) || BigInt(nftFlag) <= 0n) {
+      return { error: `--nft must be a positive whole veNFT id, got "${nftFlag}".` };
+    }
+    return { tokenId: nftFlag };
+  }
+
+  if (positions.length === 1) return { tokenId: positions[0].id };
+
+  if (positions.length === 0) {
+    return { error: "--calldata needs a veNFT to vote from: pass --nft <id>, or --address to read your locks." };
+  }
+
+  const ids = positions.map((p) => `#${p.id} (${p.votingPowerVeAero.toLocaleString("en-US", { maximumFractionDigits: 0 })} veAERO)`);
+  return {
+    error: `That wallet holds ${positions.length} locks — a vote is cast from one of them. Pick with --nft <id>: ${ids.join(", ")}.`,
+  };
+}
+
+/**
  * One line saying how long this recommendation stays actionable.
  *
  * A vote only counts toward the epoch it is cast in, so a ranking is advice
@@ -253,6 +288,72 @@ function printVoteBasisCaveat(veAeroBudget: number, voteBasis: VoteBasis): void 
       92,
     ),
   );
+}
+
+/**
+ * Prints the vote as an unsigned transaction, and says plainly what it is.
+ *
+ * The tone here is deliberate. Everywhere else this tool prints advice; this is
+ * the one output someone will paste into a wallet, so it names the contract it
+ * targets, restates the weights beside the blob that encodes them, and says who
+ * signs — which is never this program.
+ */
+async function printVoteCalldata(
+  args: string[],
+  votePercents: ReturnType<typeof toWholePercentWeights>,
+  expectedUsd: number,
+  veAeroBudget: number,
+  voteBasis: VoteBasis,
+): Promise<void> {
+  const address = getFlag(args, "address");
+  // Only fetched when it can actually decide something: with --nft the answer
+  // is already known, and without an address there is nothing to read.
+  const positions =
+    getFlag(args, "nft") === undefined && address !== undefined && isValidAddress(address)
+      ? await fetchVeAeroPositions(address)
+      : [];
+
+  const chosen = chooseVoteTokenId(getFlag(args, "nft"), positions);
+  if ("error" in chosen) {
+    console.error(chosen.error);
+    process.exitCode = 1;
+    return;
+  }
+
+  let tx;
+  try {
+    tx = buildVoteCalldata(chosen.tokenId, votePercents);
+  } catch (err) {
+    console.error(formatError(err));
+    process.exitCode = 1;
+    return;
+  }
+
+  if (hasFlag(args, "json")) {
+    console.log(JSON.stringify(tx, null, 2));
+    return;
+  }
+
+  console.log(`\nUnsigned vote from veNFT #${tx.tokenId} — ${tx.functionSignature} on Base (chain ${tx.chainId}):\n`);
+  for (let i = 0; i < tx.pools.length; i++) {
+    console.log(`  ${tx.weights[i].toString().padStart(3)}%  ${votePercents[i].symbol}  ${tx.pools[i]}`);
+  }
+  console.log(`\n  to:    ${tx.to}   (Voter)`);
+  console.log(`  value: ${tx.value}`);
+  console.log(`  data:  ${tx.data}`);
+  console.log(`\nExpected next epoch: ${fmtUsd(expectedUsd)}.`);
+  console.log(epochDeadlineLine());
+  // The same caveat the other two output modes carry: encoding a vote does not
+  // make the basis it was priced on any better supported.
+  printVoteBasisCaveat(veAeroBudget, voteBasis);
+  console.log();
+  console.log(
+    wrapText(
+      "Nothing here is signed or sent. Paste it into your own wallet, check that `to` is the Voter address above and that the pools and weights match the rows, and sign it yourself — only the owner of that veNFT can.",
+      92,
+    ),
+  );
+  console.log();
 }
 
 async function cmdRecommend(args: string[]) {
@@ -327,6 +428,11 @@ async function cmdRecommend(args: string[]) {
         ? `No live-gauge pool passes --min-consistency ${minConsistency} right now — try a lower value.`
         : "No live-gauge pool with a big enough trailing average is available to allocate to right now.";
     console.log(`\n${reason}\n`);
+    return;
+  }
+
+  if (hasFlag(args, "calldata")) {
+    await printVoteCalldata(args, votePercents, votePercentsExpectedUsd, veaero, voteBasis);
     return;
   }
 
@@ -518,12 +624,14 @@ Commands:
   pools [--top N] [--min-consistency 0..1] [--json]
       Rank live-gauge pools by current & predicted $/vote, with a consistency score
 
-  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--json]
+  recommend (--veaero N | --address 0x...) [--top K] [--min-consistency 0..1] [--max-weight 0..1] [--vote-basis previous|current|typical] [--vote-ready] [--calldata [--nft <id>]] [--json]
       Recommend a self-dilution-aware allocation. --address reads your live voting
       power on-chain instead of you typing the amount; --vote-basis picks which
       vote weight pools are judged against (default: previous, the weight the pool
       settled at last epoch); --vote-ready prints whole percentages that sum to
-      100, ready for Aerodrome's voting UI.
+      100, ready for Aerodrome's voting UI; --calldata prints that same vote as an
+      unsigned Voter.vote transaction to paste into your own wallet, cast from the
+      veNFT given by --nft (or your only lock, if --address found exactly one).
 
   backtest (--veaero N | --address 0x...) [--epochs N] [--min-consistency 0..1] [--json]
       Replay past epochs (up to ${MAX_BACKTEST_EPOCHS}) and compare this tool's allocation against the

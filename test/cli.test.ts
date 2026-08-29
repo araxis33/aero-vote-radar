@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
+  chooseVoteTokenId,
   epochDeadlineLine,
   parsePositiveIntFlag,
   parseUnitIntervalFlag,
@@ -282,4 +283,51 @@ test("parseVoteBasisFlag accepts every basis and rejects anything else", () => {
   assert.equal(parseVoteBasisFlag(["--vote-basis", "Current"]), undefined);
   assert.equal(parseVoteBasisFlag(["--vote-basis", "median"]), undefined);
   assert.equal(parseVoteBasisFlag(["--vote-basis"]), undefined);
+});
+
+/**
+ * A wallet with several locks is the case worth testing: `Voter.vote` casts
+ * from exactly one veNFT, and locks differ in size and expiry, so there is no
+ * default the tool is entitled to pick on someone's behalf.
+ */
+const LOCK = (id: string, votingPowerVeAero: number): VeNftSummary => ({
+  id,
+  votingPowerVeAero,
+  expiresAt: 0,
+  isPermanent: true,
+});
+
+test("chooseVoteTokenId takes --nft whenever it is given", () => {
+  assert.deepEqual(chooseVoteTokenId("17324", []), { tokenId: "17324" });
+  // Even when the wallet's locks would have answered on their own.
+  assert.deepEqual(chooseVoteTokenId("6", [LOCK("17324", 100)]), { tokenId: "6" });
+});
+
+test("chooseVoteTokenId rejects an --nft that is not a positive whole id", () => {
+  for (const bad of ["0", "-4", "17e3", "abc", "", "1.5"]) {
+    const chosen = chooseVoteTokenId(bad, []);
+    assert.ok("error" in chosen, `expected "${bad}" to be rejected`);
+    assert.match(chosen.error, /positive whole veNFT id/);
+  }
+});
+
+test("chooseVoteTokenId uses a single lock without asking", () => {
+  assert.deepEqual(chooseVoteTokenId(undefined, [LOCK("17324", 107_871)]), { tokenId: "17324" });
+});
+
+test("chooseVoteTokenId refuses to pick between several locks, and names them", () => {
+  const chosen = chooseVoteTokenId(undefined, [LOCK("6", 11_362_738), LOCK("17324", 107_871)]);
+
+  assert.ok("error" in chosen);
+  assert.match(chosen.error, /holds 2 locks/);
+  assert.match(chosen.error, /#6/);
+  assert.match(chosen.error, /#17324/);
+  assert.match(chosen.error, /--nft/);
+});
+
+test("chooseVoteTokenId asks for one when there is nothing to read", () => {
+  const chosen = chooseVoteTokenId(undefined, []);
+
+  assert.ok("error" in chosen);
+  assert.match(chosen.error, /--nft <id>/);
 });

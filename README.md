@@ -204,6 +204,68 @@ itself wanders, which is precisely why the tool points at
 `backtest --veaero <your amount>` instead of publishing a figure and letting it
 go stale.
 
+## Casting the vote: unsigned calldata
+
+Everything above ends in a table of percentages that somebody then retypes into
+a web form, one row at a time. That is where an allocation computed to the
+percentage point loses accuracy — to a mistyped digit, or a row skipped because
+the form scrolled.
+
+`--calldata` closes that gap by printing the same vote as the exact bytes
+`Voter.vote` expects:
+
+```bash
+npx tsx src/cli.ts recommend --veaero 25000 --min-consistency 0.5 --calldata --nft 17324
+npx tsx src/cli.ts recommend --address 0xYourAddress --calldata            # single lock: id read for you
+npx tsx src/cli.ts recommend --veaero 25000 --calldata --nft 17324 --json  # for a signer, not a human
+```
+
+```
+Unsigned vote from veNFT #17324 — vote(uint256,address[],uint256[]) on Base (chain 8453):
+
+   60%  vAMM-cbBTC/EDGE  0x594b83709464A83F37aC77E69DDD447a8A33c0EE
+   27%  vAMM-WETH/GHST  0x0DFb9Cb66A18468850d6216fCc691aa20ad1e091
+    6%  vAMM-cbETH/SPECTRA  0xEf70044C0249a07234E07D673606e09b364dC977
+    5%  vAMM-WETH/CHAMP  0x26029Ed89A19B919b5698F10cf776a4f4AEA1529
+    2%  vAMM-WETH/CXT  0x923BeBD9FbCAf0F85251a3d5A11BF5BFAa19942F
+
+  to:    0x16613524e02ad97eDfeF371bC883F2F5d6C480A5   (Voter)
+  value: 0x0
+  data:  0x7ac09bf700000000000000000000000000000000000000000000000000000000000043ac...
+```
+
+**Nothing is signed and nothing is sent.** This project holds no keys, requests
+no wallet connection and makes no `eth_sendTransaction` call — the output is
+inert until its owner signs it, and only the owner of that veNFT can. The pools
+and weights are printed beside the blob on purpose: a hex string is unreadable,
+and a voter should be able to check that the bytes say what they were told they
+say before signing. The MCP server exposes the same thing as
+`prepare_vote_calldata`.
+
+A few details that are deliberate rather than incidental:
+
+- **The function signature was verified, not transcribed.** The selector for
+  `vote(uint256,address[],uint256[])` — `0x7ac09bf7` — is present in the
+  deployed Voter's runtime bytecode on Base, checked alongside a control: a
+  plausible four-argument variant and an invented function name are both absent,
+  so "found it in the bytecode" is evidence rather than a coincidence.
+- **Weights that do not total 100 are refused, not normalised.** `Voter.vote`
+  divides by the sum it is given, so 60/30 would cast a perfectly valid 2:1 vote
+  that nobody was shown. A total other than 100 means a bug upstream, and
+  repairing it silently would break the one guarantee this feature has: the
+  bytes match the table.
+- **A repeated pool is refused** — the contract would sum the two rows into a
+  weight nobody chose — and so is an empty allocation, since `vote` with empty
+  arrays *clears* that NFT's votes for the epoch, which is the opposite of what
+  someone asking for a recommendation wants.
+- **A wallet with several locks is asked, not guessed.** A vote is cast from one
+  veNFT; locks differ in size and expiry, so with more than one the CLI lists
+  them and stops rather than committing a position on its owner's behalf. With
+  exactly one lock, `--address` supplies the id by itself.
+- **veNFT ids are strings all the way through.** They exceed
+  `Number.MAX_SAFE_INTEGER`, so a number would silently round one to a different
+  NFT.
+
 ## When the weekly epoch stops being the unit
 
 Aerodrome has announced **Predictive Allocation** — continuous, rolling
@@ -301,6 +363,7 @@ npx tsx src/cli.ts recommend --veaero 25000
 npx tsx src/cli.ts recommend --address 0xYourAddress --vote-ready
 npx tsx src/cli.ts recommend --veaero 25000 --max-weight 0.25   # no pool above 25% of your vote
 npx tsx src/cli.ts recommend --veaero 25000 --vote-basis current   # judge pools on the live mid-week tally instead of last epoch's settled weight
+npx tsx src/cli.ts recommend --veaero 25000 --calldata --nft 17324   # the same vote as unsigned Voter.vote calldata to sign yourself
 npx tsx src/cli.ts backtest --veaero 25000 --epochs 5
 npx tsx src/cli.ts backtest --veaero 25000 --min-consistency 0.5   # test the filtered strategy you actually vote
 npx tsx src/cli.ts my-veaero 0xYourAddress
@@ -396,6 +459,7 @@ or, after `npm run build` and `npm link` / publishing, point any MCP-capable age
 - **`recommend_allocation`** — given a veAERO amount *or* a wallet `address` to read it from, returns weights, whole-percent vote weights, and expected USD per pool.
 - **`backtest_strategy`** — replays past epochs and compares this strategy against naive APR-chasing.
 - **`get_my_veaero`** — looks up an account's veAERO locks and total voting power.
+- **`prepare_vote_calldata`** — turns a recommendation's `votePercents` into the unsigned `Voter.vote` transaction for the veNFT's owner to sign in their own wallet. Signs nothing, sends nothing.
 
 Example agent prompts:
 
@@ -417,6 +481,7 @@ src/
   dilution.ts      typical settled vote weight, refill ratio, and the previous-epoch vote basis
   allocator.ts     greedy marginal ("water-filling") allocation + whole-percent vote weights
   backtest.ts      replays past epochs to score this strategy against naive APR-chasing
+  calldata.ts      unsigned Voter.vote transaction built from a vote-ready allocation
   veAero.ts        VotingEscrow wrapper for a user's voting power
   util.ts          address/concurrency helpers + shared error-message formatting
   snapshot.ts      builds the JSON snapshot the web app reads
@@ -437,6 +502,7 @@ test/
   dilution.test.ts     unit tests for typical settled weight, refill ratio, and the previous-epoch vote basis
   prices.test.ts       unit tests for DefiLlama price lookup, batching, and USD conversion
   pools.test.ts        unit tests for pool discovery's alive-gauge filter and failed-call skip logic
+  calldata.test.ts     unit tests for the unsigned vote transaction, decoding the bytes back rather than matching a stored hex string
   veAero.test.ts       unit tests for the veAERO NFT summary mapping (toVeNftSummary)
   util.test.ts         unit tests for isValidAddress, mapWithConcurrency, and formatError
   cli.test.ts          unit tests for CLI flag parsing
@@ -454,7 +520,7 @@ npm test
 
 Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. `toWholePercentWeights` is tested to always total exactly 100 (six equal weights land on 4x17 + 2x16, not six 17s summing to 102), including on real `recommendAllocation` output. The backtester (`runBacktest`) is tested for the property that matters most in a backtest — **no lookahead**: a pool that pays a $10,000 jackpot in the epoch under test but was worth $0 in every epoch before it must not be picked, and its jackpot must not appear in the result. It's also checked against the dilution maths directly (budget equal to a pool's existing votes earns exactly half the pot), for beating the naive all-in baseline when the budget is large relative to pool votes, and for returning `null` uplift rather than dividing by a zero baseline. `trend.ts` is tested for the property the feature lives or dies on — that a mid-week scan's part-week epoch cannot manufacture a trend: a steady $200/epoch pool caught three days into an epoch worth $60 so far must report level movement, and the *same* series read as fully closed must report a decline. Epoch boundaries are asserted to land on Thursday 00:00 UTC, the weekly period is asserted to reproduce the epoch wrappers exactly while a 48-hour window anchored away from Unix time zero is checked to count its own boundaries, an odd-length history is checked to drop its middle epoch so both halves weigh equally, and a zero-paying older half is checked to report `null` rather than infinite growth. The pure per-pool efficiency math (`computePoolEfficiency`/`epochUsd`/`computeConsistency` in `efficiency.ts`) is covered the same way — trailing-average computation, the `MIN_TRAILING_USD` cutoff, the zero-votes exclusion, the `predictiveEdge` divide-by-zero guard, and that a $600-then-nothing pool scores far below a steady $100/epoch pool with the same average — plus DefiLlama pricing/batching (`prices.ts`), the veAERO NFT summary mapping (`toVeNftSummary` in `veAero.ts`, including permanent-lock and large-id precision handling), CLI flag parsing (`cli.ts`), the MCP tools' shared `resolveVeAeroBudget` (both-provided and neither-provided rejections, and the plain-amount pass-through — the same branches `cli.ts`'s `resolveBudget` already covers, since both wrap the same veAero/address contract for their respective tools), and the address/concurrency/error-formatting helpers (`util.ts`), all with synthetic inputs and no network access. `formatError` (in `util.ts`) reduces a thrown error to a single clean line — preferring viem's concise `.shortMessage` over its multi-paragraph `.message` — and is shared by both the CLI's top-level error output and every MCP tool handler's error result, so a failed RPC call surfaces the same readable message however the tool is invoked. Pool discovery's own filtering logic — `filterAlivePools` (drop pools whose gauge isn't alive, keeping the paired gauge address aligned) and `resolvePoolInfo` (skip a pool if any of its `symbol`/`token0`/`token1` calls failed, rather than letting one non-standard pool take down the whole scan) — is unit-tested the same way. The remaining on-chain data-fetching code (`fetchActivePools`/`fetchPoolEpochs` in `pools.ts`, `fetchVeAeroPositions` in `veAero.ts`) is exercised live against Base mainnet via the CLI instead — see the real example output above.
 
-`voteBasisCaveat` is tested for the property that makes it worth printing at all — that it fires on exactly the side of the measured crossover where the chosen basis is the unfavoured one, and stays silent otherwise — and `site-parity.test.ts` runs the page's copy of it against `src/`'s across a range of budgets and all three bases, so the page cannot go on reassuring a voter the CLI would warn. `wrapText` is checked to break only on spaces, to never add, drop or reorder a word, and to leave a word longer than the width whole rather than cutting an address in half.
+`voteBasisCaveat` is tested for the property that makes it worth printing at all — that it fires on exactly the side of the measured crossover where the chosen basis is the unfavoured one, and stays silent otherwise — and `site-parity.test.ts` runs the page's copy of it against `src/`'s across a range of budgets and all three bases, so the page cannot go on reassuring a voter the CLI would warn. The unsigned vote transaction (`buildVoteCalldata`) is tested by decoding its own output back with viem rather than by comparing it to a hex string captured from an earlier run — which would only prove the function still does whatever it did last time — covering the token id beyond `Number.MAX_SAFE_INTEGER`, checksummed pool addresses, and every refusal: a weight total other than 100, a repeated pool, a fractional or non-positive weight, an empty allocation (which would clear the NFT's votes rather than cast them) and a malformed id. `chooseVoteTokenId` is tested for the case that has no safe default — a wallet holding several locks, where it names them and stops. `wrapText` is checked to break only on spaces, to never add, drop or reorder a word, and to leave a word longer than the width whole rather than cutting an address in half.
 
 CI (`.github/workflows/ci.yml`) runs the typecheck, build, and test suite on every push.
 
