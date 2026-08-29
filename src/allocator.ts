@@ -1,6 +1,7 @@
 import type { PoolEfficiency } from "./efficiency.js";
 import { computeVoteStability, expectedDilutedVotes, previousSettledVotes } from "./dilution.js";
 import { isEpochInProgress } from "./trend.js";
+import { VOTE_BASIS_CROSSOVER_VEAERO } from "./constants.js";
 
 /**
  * Aerodrome's voting UI accepts whole percentages, so a vote is cast on a
@@ -347,4 +348,52 @@ export function allocateAcrossCandidates(
       poolExpectedUsd: c.expectedUsd,
     }))
     .sort((a, b) => b.veAeroAllocated - a.veAeroAllocated);
+}
+
+/**
+ * Whether, at this budget, the basis the allocation was priced on is the one
+ * the evidence actually supports — and if not, what the other measurement says.
+ *
+ * The default (`previous`) is the most accurate predictor of the weight an
+ * epoch settles at, which is why it is the default; see `previousSettledVotes`.
+ * But accuracy over all pools is not the same question as dollars earned by an
+ * allocator that deliberately picks the pools whose weight looks lowest
+ * relative to their incentives, and on replayed epochs the two answers point
+ * opposite ways below roughly VOTE_BASIS_CROSSOVER_VEAERO — see that constant
+ * for the numbers and the date they were taken.
+ *
+ * A voter is entitled to know which side of that line they are standing on.
+ * They are not told what to do about it: the honest state of the evidence is
+ * that two measurements disagree, and the disagreement moves week to week, so
+ * this hands back a fact and a way to check rather than a recommendation.
+ *
+ * Returns null when the chosen basis is the one the evidence favours at this
+ * size. A caveat printed on every run is a caveat nobody reads.
+ *
+ * `"current"` is grouped with the default deliberately: a replayed epoch has no
+ * mid-week tally, so the backtest scored the two as literally the same column,
+ * and the finding applies to whichever of them a voter chose.
+ */
+export function voteBasisCaveat(veAeroBudget: number, voteBasis: VoteBasis): string | null {
+  if (!Number.isFinite(veAeroBudget) || veAeroBudget <= 0) return null;
+
+  const belowCrossover = veAeroBudget < VOTE_BASIS_CROSSOVER_VEAERO;
+
+  if (voteBasis !== "typical" && belowCrossover) {
+    return (
+      `Below ~${VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US")} veAERO, replaying past epochs has ` +
+      `favoured the "typical" vote basis over this one: it earned more, despite predicting settled vote ` +
+      `weight less accurately. The two measurements disagree, and the gap moves week to week.`
+    );
+  }
+
+  if (voteBasis === "typical" && !belowCrossover) {
+    return (
+      `Above ~${VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US")} veAERO, replaying past epochs has ` +
+      `favoured the default vote basis over "typical": at this size dilution rather than pool-picking ` +
+      `decides the outcome, and "typical" over-states every pool's weight by construction.`
+    );
+  }
+
+  return null;
 }

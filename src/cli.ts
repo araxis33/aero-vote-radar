@@ -5,12 +5,13 @@ import {
   toWholePercentWeights,
   expectedUsdForWholePercentVote,
   unallocatedVeAero,
+  voteBasisCaveat,
   type VoteBasis,
 } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
-import { formatError, isValidAddress } from "./util.js";
+import { formatError, isValidAddress, wrapText } from "./util.js";
 import { computeTrend, epochEndOf, formatDuration, isEpochInProgress } from "./trend.js";
 
 function fmtUsd(n: number): string {
@@ -230,6 +231,30 @@ export function epochDeadlineLine(now: Date = new Date()): string {
   return `Voting for this epoch closes in ${formatDuration(endsAt - nowSec)} (${stamp}) — a vote cast after that counts toward the next epoch.`;
 }
 
+/**
+ * Prints the vote-basis caveat, if this budget has one, together with the
+ * command that settles it for this particular voter rather than in general.
+ *
+ * The caveat itself is deliberately not a recommendation — see
+ * `voteBasisCaveat` — so what is added here is the way to check, not a nudge:
+ * `backtest` prints both bases side by side on the epochs available today, and
+ * that is a number about the reader's own size rather than about the size the
+ * constant was measured at.
+ */
+function printVoteBasisCaveat(veAeroBudget: number, voteBasis: VoteBasis): void {
+  const caveat = voteBasisCaveat(veAeroBudget, voteBasis);
+  if (caveat === null) return;
+
+  const amount = Math.round(veAeroBudget).toString();
+  console.log(`\n${wrapText(caveat, 92)}`);
+  console.log(
+    wrapText(
+      `Check it at your own size: backtest --veaero ${amount} replays past epochs under both, and npm run predict-check scores their accuracy.`,
+      92,
+    ),
+  );
+}
+
 async function cmdRecommend(args: string[]) {
   const topK = parsePositiveIntFlag(args, "top", 15);
   const minConsistency = parseUnitIntervalFlag(args, "min-consistency", 0);
@@ -275,7 +300,16 @@ async function cmdRecommend(args: string[]) {
   if (hasFlag(args, "json")) {
     console.log(
       JSON.stringify(
-        { veAeroBudget: veaero, maxWeight, allocation, votePercents, totalExpectedUsd, votePercentsExpectedUsd },
+        {
+          veAeroBudget: veaero,
+          maxWeight,
+          voteBasis,
+          voteBasisCaveat: voteBasisCaveat(veaero, voteBasis),
+          allocation,
+          votePercents,
+          totalExpectedUsd,
+          votePercentsExpectedUsd,
+        },
         null,
         2,
       ),
@@ -309,7 +343,8 @@ async function cmdRecommend(args: string[]) {
       );
     }
     console.log(epochDeadlineLine());
-    console.log("This tool never touches your wallet or keys.\n");
+    printVoteBasisCaveat(veaero, voteBasis);
+    console.log("\nThis tool never touches your wallet or keys.\n");
     return;
   }
 
@@ -328,7 +363,8 @@ async function cmdRecommend(args: string[]) {
   }
   console.log(`\nTotal expected value next epoch (heuristic, trailing-average based): ${fmtUsd(totalExpectedUsd)}`);
   console.log(epochDeadlineLine());
-  console.log("Pass --vote-ready for whole percentages you can type straight into Aerodrome's voting UI.");
+  printVoteBasisCaveat(veaero, voteBasis);
+  console.log("\nPass --vote-ready for whole percentages you can type straight into Aerodrome's voting UI.");
   console.log("You vote this yourself on aerodrome.finance — this tool never touches your wallet or keys.\n");
 }
 

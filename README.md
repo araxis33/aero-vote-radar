@@ -158,6 +158,52 @@ Two things the numbers do not carry: observations within one pool are correlated
 than 5,142; and only epochs with snapshot coverage can be scored, which today
 means the history since 2026-08-07.
 
+## Where the default basis is not the one the evidence favours
+
+The measurement above scores each basis on how accurately it predicts the weight
+an epoch settles at, and `previous` wins it. That is why it is the default. But
+"most accurate over all pools" and "earns the most money" are different
+questions, and on replayed epochs they come apart — in the voter's own size.
+
+Replaying the last five epochs at a range of budgets against the same live scan
+(2026-08-29), `typical` against the default:
+
+| veAERO | default $ | typical $ | difference |
+|---|---|---|---|
+| 5,000 | 23.77 | 50.83 | **+114%** |
+| 25,000 | 109.47 | 217.49 | **+99%** |
+| 100,000 | 440.07 | 722.91 | +64% |
+| 200,000 | 870.92 | 1,312.56 | +51% |
+| 500,000 | 2,012.20 | 2,480.58 | +23% |
+| 750,000 | 2,919.51 | 3,089.50 | +6% |
+| 1,000,000 | 3,702.07 | 3,552.75 | **-4%** |
+| 2,000,000 | 6,166.97 | 4,703.89 | -24% |
+| 5,000,000 | 10,268.27 | 6,045.21 | **-41%** |
+
+The two findings are not in conflict about the facts. A median accuracy figure
+weights every pool equally; an allocator does not. It deliberately picks the
+pools whose weight looks *lowest* relative to their incentives, which is exactly
+the tail where last epoch's settled weight is wrong and where `typical` — the
+larger of the live tally and the pool's usual weight — is protective. As the
+budget grows, dilution rather than pool-picking decides the outcome, that
+protection turns into an over-estimate on every pool at once, and the default
+pulls ahead. The crossover sits near 1,000,000 veAERO.
+
+**So the tool now says so.** Below that size, `recommend` closes with a line
+saying the basis it just used is the one the backtest does not favour, and the
+web page carries the same note under its allocation; above it, a run using
+`--vote-basis typical` gets the warning pointing the other way. Neither switches
+anything: two honest measurements disagree, and the choice belongs to the person
+whose veAERO it is. `VOTE_BASIS_CROSSOVER_VEAERO` in `src/constants.ts` holds the
+threshold and the reasoning.
+
+**Take the table as a shape, not as numbers.** It moves week to week — the run
+the day before this one put the 1,000,000 figure at -30.7% rather than -4%. The
+direction (typical ahead when small, behind when large) has held; the crossover
+itself wanders, which is precisely why the tool points at
+`backtest --veaero <your amount>` instead of publishing a figure and letting it
+go stale.
+
 ## What a snapshot cannot currently tell you
 
 Every dollar figure here is priced at the instant the scan ran. That is the only
@@ -273,7 +319,7 @@ Vote-ready weights for 11,491,442 veAERO — whole percentages, summing to exact
 Enter these directly on aerodrome.finance. Expected next epoch: $11,013.66.
 ```
 
-(Captured before `recommend` grew its epoch-deadline line — see "A recommendation expires" above — so current output adds two more lines here: `Voting for this epoch closes in ... UTC) — a vote cast after that counts toward the next epoch.` and `This tool never touches your wallet or keys.`)
+(Captured before `recommend` grew its epoch-deadline line — see "A recommendation expires" above — so current output adds the deadline line here, `This tool never touches your wallet or keys.`, and — under 1,000,000 veAERO — the vote-basis caveat described in "[Where the default basis is not the one the evidence favours](#where-the-default-basis-is-not-the-one-the-evidence-favours)".)
 
 ```
 $ npx tsx src/cli.ts backtest --veaero 25000 --epochs 5
@@ -375,6 +421,8 @@ npm test
 ```
 
 Tests cover the allocator (`recommendAllocation`) with synthetic pool data — budget conservation, that a single candidate gets 100% of the allocation, that `topK` is actually respected, and specifically that **self-dilution works**: two pools with identical incentives and existing votes get split roughly evenly under a large budget instead of an APR-only optimizer dumping everything into one. `toWholePercentWeights` is tested to always total exactly 100 (six equal weights land on 4x17 + 2x16, not six 17s summing to 102), including on real `recommendAllocation` output. The backtester (`runBacktest`) is tested for the property that matters most in a backtest — **no lookahead**: a pool that pays a $10,000 jackpot in the epoch under test but was worth $0 in every epoch before it must not be picked, and its jackpot must not appear in the result. It's also checked against the dilution maths directly (budget equal to a pool's existing votes earns exactly half the pot), for beating the naive all-in baseline when the budget is large relative to pool votes, and for returning `null` uplift rather than dividing by a zero baseline. `trend.ts` is tested for the property the feature lives or dies on — that a mid-week scan's part-week epoch cannot manufacture a trend: a steady $200/epoch pool caught three days into an epoch worth $60 so far must report level movement, and the *same* series read as fully closed must report a decline. Epoch boundaries are asserted to land on Thursday 00:00 UTC, an odd-length history is checked to drop its middle epoch so both halves weigh equally, and a zero-paying older half is checked to report `null` rather than infinite growth. The pure per-pool efficiency math (`computePoolEfficiency`/`epochUsd`/`computeConsistency` in `efficiency.ts`) is covered the same way — trailing-average computation, the `MIN_TRAILING_USD` cutoff, the zero-votes exclusion, the `predictiveEdge` divide-by-zero guard, and that a $600-then-nothing pool scores far below a steady $100/epoch pool with the same average — plus DefiLlama pricing/batching (`prices.ts`), the veAERO NFT summary mapping (`toVeNftSummary` in `veAero.ts`, including permanent-lock and large-id precision handling), CLI flag parsing (`cli.ts`), the MCP tools' shared `resolveVeAeroBudget` (both-provided and neither-provided rejections, and the plain-amount pass-through — the same branches `cli.ts`'s `resolveBudget` already covers, since both wrap the same veAero/address contract for their respective tools), and the address/concurrency/error-formatting helpers (`util.ts`), all with synthetic inputs and no network access. `formatError` (in `util.ts`) reduces a thrown error to a single clean line — preferring viem's concise `.shortMessage` over its multi-paragraph `.message` — and is shared by both the CLI's top-level error output and every MCP tool handler's error result, so a failed RPC call surfaces the same readable message however the tool is invoked. Pool discovery's own filtering logic — `filterAlivePools` (drop pools whose gauge isn't alive, keeping the paired gauge address aligned) and `resolvePoolInfo` (skip a pool if any of its `symbol`/`token0`/`token1` calls failed, rather than letting one non-standard pool take down the whole scan) — is unit-tested the same way. The remaining on-chain data-fetching code (`fetchActivePools`/`fetchPoolEpochs` in `pools.ts`, `fetchVeAeroPositions` in `veAero.ts`) is exercised live against Base mainnet via the CLI instead — see the real example output above.
+
+`voteBasisCaveat` is tested for the property that makes it worth printing at all — that it fires on exactly the side of the measured crossover where the chosen basis is the unfavoured one, and stays silent otherwise — and `site-parity.test.ts` runs the page's copy of it against `src/`'s across a range of budgets and all three bases, so the page cannot go on reassuring a voter the CLI would warn. `wrapText` is checked to break only on spaces, to never add, drop or reorder a word, and to leave a word longer than the width whole rather than cutting an address in half.
 
 CI (`.github/workflows/ci.yml`) runs the typecheck, build, and test suite on every push.
 

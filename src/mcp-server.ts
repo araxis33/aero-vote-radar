@@ -10,6 +10,7 @@ import {
   toWholePercentWeights,
   expectedUsdForWholePercentVote,
   unallocatedVeAero,
+  voteBasisCaveat,
 } from "./allocator.js";
 import { backtestLive } from "./backtest.js";
 import { fetchVeAeroPositions } from "./veAero.js";
@@ -184,7 +185,13 @@ server.registerTool(
               votePercentsExpectedUsdNextEpoch: votePercentsExpectedUsd,
               allocation,
               votePercents,
-              note: "Weights and expected $ are a heuristic recommendation based on trailing-epoch trends and current vote snapshots, not a guarantee. `votePercents` are whole percentages summing to exactly 100, ready to enter in Aerodrome's voting UI. Quote `votePercentsExpectedUsdNextEpoch` when telling the user what they would earn: `totalExpectedUsdNextEpoch` belongs to the continuous `allocation`, which includes rows too small to round up to 1% and so cannot be voted as written. You sign and submit the vote yourself.",
+              voteBasis,
+              // Null on most calls, by design: it appears only when this
+              // budget sits on the side of the measured crossover where the
+              // chosen basis is the one the evidence does not favour. An agent
+              // relaying a recommendation should relay this with it.
+              voteBasisCaveat: voteBasisCaveat(budget, voteBasis),
+              note: "Weights and expected $ are a heuristic recommendation based on trailing-epoch trends and current vote snapshots, not a guarantee. `votePercents` are whole percentages summing to exactly 100, ready to enter in Aerodrome's voting UI. Quote `votePercentsExpectedUsdNextEpoch` when telling the user what they would earn: `totalExpectedUsdNextEpoch` belongs to the continuous `allocation`, which includes rows too small to round up to 1% and so cannot be voted as written. If `voteBasisCaveat` is not null, pass it on: at this budget the vote basis used is the one the evidence does not favour, and the user should hear that alongside the numbers it produced. You sign and submit the vote yourself.",
             },
             null,
             2,
