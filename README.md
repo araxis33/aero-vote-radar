@@ -253,12 +253,14 @@ Vote-ready weights for 11,491,442 veAERO — whole percentages, summing to exact
 Enter these directly on aerodrome.finance. Expected next epoch: $11,013.66.
 ```
 
+(Captured before `recommend` grew its epoch-deadline line — see "A recommendation expires" above — so current output adds two more lines here: `Voting for this epoch closes in ... UTC) — a vote cast after that counts toward the next epoch.` and `This tool never touches your wallet or keys.`)
+
 ```
 $ npx tsx src/cli.ts backtest --veaero 25000 --epochs 5
 
 Backtest over the last 5 epoch(s) with 25,000 veAERO:
 
-EpochsAgo         Radar $           Naive $           Naive picked
+EpochsAgo         Radar $ (current) Naive $           Naive picked
 0                 $137.3            $2.7              vAMM-1000X/WETH
 1                 $12.82            $13.32            vAMM-WETH/RWAX
 2                 $16.84            $3.34             vAMM-WETH/AIXCB
@@ -268,6 +270,8 @@ EpochsAgo         Radar $           Naive $           Naive picked
 Total: radar $200.26 vs naive $30.91 — uplift 547.8%
 Radar earned more in 4 of 5 epoch(s).
 ```
+
+This example predates the vote-basis comparison described above: current output also prints a `Radar $ (typical)` column beside `Radar $ (current)`, and a closing `Vote basis: typical ... vs current ... — ...` line — the same comparison `predict-check` measures, applied to whatever epochs this specific run replayed.
 
 Read that with the caveats above in mind: 4-of-5 epochs is encouraging, but one epoch (`0`) supplies most of the total, and five weekly epochs is a small sample. The point of the command is that you can re-run it yourself rather than trust the claim.
 
