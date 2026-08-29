@@ -1,15 +1,33 @@
 # aero-vote-radar
 
+### You hold veAERO. Where does this week's vote go?
+
+Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and get back whole percentages you can paste straight into Aerodrome's voting UI — ranked by what each pool really pays per vote, and priced *after* your own vote dilutes it.
+
 [![CI](https://github.com/araxis33/aero-vote-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/araxis33/aero-vote-radar/actions/workflows/ci.yml)
+[![Live app](https://img.shields.io/badge/live-aero.deftools.xyz-2563eb)](https://aero.deftools.xyz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An MCP server + CLI that reads **live on-chain data** from [Aerodrome Finance](https://aerodrome.finance) (Base) to rank pools by veAERO vote efficiency, and recommends a vote allocation that accounts for **self-dilution** — the fact that adding more of your own votes to a pool measurably lowers your own $-per-vote there, which naive "just vote where APR looks highest" approaches ignore.
+[![25,000 veAERO turned into a vote-ready allocation on aero.deftools.xyz](docs/screenshot.png)](https://aero.deftools.xyz)
 
-No API keys, no backend, no database. Every number comes from Aerodrome's own official on-chain "Sugar" contracts and the `Voter` contract, read live off Base mainnet, plus [DefiLlama](https://defillama.com)'s free price API to convert bribe/fee tokens to USD.
+### What it does for you
 
-**This tool never touches a wallet or private key.** It outputs a recommendation — weights and expected USD — and you vote it yourself on [aerodrome.finance](https://aerodrome.finance).
+- **Hands you a castable vote, not a leaderboard.** Whole percentages summing to exactly 100 — the only form Aerodrome's UI accepts — with a copy button and a link straight to the voting page.
+- **Prices your own dilution.** The moment you add votes to a pool, your own $/vote there falls. The allocator models that explicitly instead of dumping everything into whatever shows the highest APR.
+- **Tells you when it expires.** A vote only counts toward the epoch it is cast in, so every recommendation carries the deadline and a countdown running off your own clock.
+- **Flags the traps rather than ranking them.** A single one-off bribe five weeks ago, a pool whose vote weight gets refilled in the last hours of the epoch, a pool too new to have a record — each is marked, because each looks like an opportunity and isn't.
+- **Never touches your wallet.** No connection request, no signature, no keys. It prints numbers; you cast the vote. Reading voting power from an address is a read-only chain call.
 
-**No install needed:** there's a hosted version at **[aero.deftools.xyz](https://aero.deftools.xyz)** — enter your veAERO amount and it gives you vote-ready percentages. See [Web app](#web-app) for how it stays current.
+### Three ways to run it
+
+| | |
+|---|---|
+| **Hosted page** | **[aero.deftools.xyz](https://aero.deftools.xyz)** — nothing to install. A scheduled job re-scans the chain every 6 hours; the allocation itself runs in your browser. |
+| **CLI** | `npx tsx src/cli.ts recommend --veaero 25000 --vote-ready` — a live scan off Base mainnet. No API keys, no backend, no database. |
+| **MCP server** | Four tools for Claude or any MCP-capable agent: *"recommend an allocation for my 25,000 veAERO."* |
+
+Everything below is the long version: why the obvious strategy loses money, what each number
+means, and — at least as important — what this tool cannot tell you.
 
 ## Why
 
@@ -25,6 +43,8 @@ Aerodrome pools receive weekly bribes + trading fees, split pro-rata among every
 `aero-vote-radar` addresses all four: it ranks pools using a trailing-average trend estimate instead of just the latest epoch, scores how *steady* each pool's incentives have actually been, judges every pool against the vote weight it *usually settles at* rather than the one it happens to be showing, and allocates using a greedy marginal-value algorithm that models dilution explicitly. It also ships a `backtest` command that replays past epochs so the claim "this beats naive APR-chasing" can be checked rather than taken on faith.
 
 ## How it works
+
+Every number comes from Aerodrome's own official on-chain "Sugar" contracts and the `Voter` contract, read live off Base mainnet, plus [DefiLlama](https://defillama.com)'s free price API to convert bribe and fee tokens to USD. No API keys, no backend, no database.
 
 | Data | Source | Contract (Base mainnet) |
 |---|---|---|
