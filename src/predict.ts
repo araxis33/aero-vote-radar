@@ -10,9 +10,15 @@
  * measurement costs one command rather than an afternoon, so there is no excuse
  * to skip it next time.
  *
- * Everything here is pure. The gathering — walking the snapshot history and
- * pairing it with settled weights off-chain — lives in `predict-cli.ts`.
+ * Everything here is pure, including `observationsFromSnapshot` below: it turns
+ * one already-parsed snapshot and already-fetched settled history into scorable
+ * observations, with no git or chain access of its own. Only the actual
+ * fetching — walking the snapshot history in git and reading settled epochs off
+ * the chain — lives in `predict-cli.ts`.
  */
+import { computeVoteStability, expectedDilutedVotes, previousSettledVotes } from "./dilution.js";
+import { WEEKLY_EPOCH, periodStartOf } from "./trend.js";
+import { MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
 
 export interface PredictionObservation {
   /** The weight the epoch actually settled at. Must be above zero. */
@@ -146,4 +152,91 @@ export const SIZE_BUCKETS: SizeBucket[] = [
 
 export function inBucket(o: PredictionObservation, bucket: SizeBucket): boolean {
   return o.tally >= bucket.from && o.tally < bucket.to;
+}
+
+/** One pool's observation, paired with the address it came from — see `observationsFromSnapshot`. */
+export interface SnapshotObservation {
+  address: string;
+  observation: PredictionObservation;
+}
+
+/**
+ * Turns one committed snapshot into the settled-epoch observations it can
+ * supply, pairing the live tally it recorded for each pool with the vote
+ * weight and USD value that epoch actually settled at, plus the trailing
+ * window the radar would have had at the time — all read from
+ * `settledVotes`/`settledUsd`, which `predict-cli.ts` builds once from a live
+ * chain scan and reuses across every snapshot.
+ *
+ * Returns null when the snapshot cannot be used at all: malformed JSON, or one
+ * taken inside the epoch still running, which has no settled answer yet. A
+ * per-pool skip (no settled history for that address, a trailing window that
+ * doesn't reach back far enough, or a trailing average below the noise floor)
+ * is silent rather than null, matching how `rankPoolsByEfficiency` excludes a
+ * pool from a ranking — one thin or untracked pool isn't a reason to distrust
+ * the rest of the snapshot.
+ */
+export function observationsFromSnapshot(
+  raw: unknown,
+  settledVotes: Map<string, Map<number, number>>,
+  settledUsd: Map<string, Map<number, number>>,
+  currentEpochStart: number,
+  trendEpochs: number = TREND_EPOCHS,
+  minTrailingUsd: number = MIN_TRAILING_USD,
+): { epochStart: number; entries: SnapshotObservation[] } | null {
+  const snap = raw as { generatedAt?: string; pools?: { pool: string; votesVeAero: number }[] };
+  if (!snap.generatedAt || !Array.isArray(snap.pools)) return null;
+  const takenAt = Math.floor(Date.parse(snap.generatedAt) / 1000);
+  if (!Number.isFinite(takenAt)) return null;
+  const epochStart = periodStartOf(takenAt);
+  // Only epochs whose answer is known. The running one has no answer yet.
+  if (epochStart >= currentEpochStart) return null;
+
+  const entries: SnapshotObservation[] = [];
+  for (const p of snap.pools) {
+    const address = String(p.pool).toLowerCase();
+    const votes = settledVotes.get(address);
+    const usd = settledUsd.get(address);
+    if (!votes || !usd) continue;
+
+    const actual = votes.get(epochStart);
+    const tally = p.votesVeAero;
+    if (!actual || actual <= 0 || !tally || tally <= 0) continue;
+
+    // The same trailing window the radar itself would have had, strictly
+    // older than the epoch being predicted — nothing here has seen the answer.
+    const usdWindow: number[] = [];
+    const voteWindow: number[] = [];
+    for (let k = 1; k <= trendEpochs; k++) {
+      const ts = epochStart - k * WEEKLY_EPOCH.lengthSeconds;
+      const u = usd.get(ts);
+      const v = votes.get(ts);
+      if (u === undefined || v === undefined) break;
+      usdWindow.push(u);
+      voteWindow.push(v);
+    }
+    if (usdWindow.length < trendEpochs) continue;
+    // Same admission gate the rankings use, so this describes the pools the
+    // tool would actually put a vote into rather than the whole long tail.
+    const trailingAvg = usdWindow.reduce((a, b) => a + b, 0) / usdWindow.length;
+    if (trailingAvg < minTrailingUsd) continue;
+
+    const { expectedVotes } = computeVoteStability(voteWindow, false, tally);
+    entries.push({
+      address,
+      observation: {
+        actual,
+        tally,
+        predicted: {
+          // Mid-week, so entry 0 of the series is the running epoch: the series
+          // handed over is the settled window, with the tally passed separately.
+          previous: previousSettledVotes(voteWindow, false, tally),
+          current: tally,
+          typical: expectedDilutedVotes(tally, expectedVotes),
+        },
+      },
+    });
+  }
+
+  return { epochStart, entries };
 }

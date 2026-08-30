@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import {
   asRatio,
   inBucket,
+  observationsFromSnapshot,
   scorePredictors,
   SIZE_BUCKETS,
   type PredictionObservation,
 } from "../src/predict.js";
+import { WEEKLY_EPOCH } from "../src/trend.js";
 
 const obs = (actual: number, predicted: Record<string, number>, tally = actual): PredictionObservation => ({
   actual,
@@ -120,4 +122,176 @@ test("size buckets partition the range without gaps or overlap", () => {
     const matched = SIZE_BUCKETS.filter((b) => inBucket(obs(1, { a: 1 }, tally), b));
     assert.equal(matched.length, 1, `tally ${tally} landed in ${matched.length} buckets`);
   }
+});
+
+// --- observationsFromSnapshot ------------------------------------------------
+
+const WEEK = WEEKLY_EPOCH.lengthSeconds;
+
+test("observationsFromSnapshot pairs a pool's live tally with the weight and USD its epoch actually settled at", () => {
+  const address = "0xPOOL1";
+  const epochStart = 10 * WEEK;
+  const generatedAt = new Date((epochStart + WEEK / 2) * 1000).toISOString();
+  const currentEpochStart = epochStart + WEEK; // this epoch has since settled
+
+  const votes = new Map<number, number>([
+    [epochStart, 5_000], // what the epoch actually settled at
+    [epochStart - WEEK, 4_000],
+    [epochStart - 2 * WEEK, 6_000],
+  ]);
+  const usd = new Map<number, number>([
+    [epochStart - WEEK, 100],
+    [epochStart - 2 * WEEK, 200],
+  ]);
+  const settledVotes = new Map([[address.toLowerCase(), votes]]);
+  const settledUsd = new Map([[address.toLowerCase(), usd]]);
+
+  const result = observationsFromSnapshot(
+    { generatedAt, pools: [{ pool: address, votesVeAero: 3_000 }] },
+    settledVotes,
+    settledUsd,
+    currentEpochStart,
+    2, // trendEpochs
+    0, // minTrailingUsd
+  );
+
+  assert.ok(result, "a snapshot from a settled epoch with matching history should not be null");
+  assert.equal(result!.epochStart, epochStart);
+  assert.equal(result!.entries.length, 1);
+
+  const { address: pairedAddress, observation } = result!.entries[0];
+  assert.equal(pairedAddress, address.toLowerCase(), "the address is matched and stored lowercase");
+  assert.equal(observation.actual, 5_000);
+  assert.equal(observation.tally, 3_000);
+  assert.equal(observation.predicted.current, 3_000, "'current' is just the live tally the snapshot recorded");
+  assert.equal(observation.predicted.previous, 4_000, "'previous' is the settled weight one epoch back");
+  assert.equal(observation.predicted.typical, 5_000, "'typical' is the larger of the tally and the median trailing weight");
+});
+
+test("observationsFromSnapshot returns null for a malformed snapshot (no generatedAt, or no pools array)", () => {
+  const empty = new Map<string, Map<number, number>>();
+  assert.equal(observationsFromSnapshot({}, empty, empty, 100 * WEEK), null);
+  assert.equal(observationsFromSnapshot({ generatedAt: "not a date", pools: [] }, empty, empty, 100 * WEEK), null);
+  assert.equal(observationsFromSnapshot({ generatedAt: new Date().toISOString() }, empty, empty, 100 * WEEK), null);
+});
+
+test("observationsFromSnapshot returns null for a snapshot taken inside the epoch still running", () => {
+  const epochStart = 10 * WEEK;
+  const generatedAt = new Date((epochStart + 10) * 1000).toISOString();
+  const empty = new Map<string, Map<number, number>>();
+  // currentEpochStart equal to the snapshot's own epoch: that epoch has no
+  // settled answer yet, so there is nothing to score it against.
+  assert.equal(observationsFromSnapshot({ generatedAt, pools: [] }, empty, empty, epochStart), null);
+});
+
+test("observationsFromSnapshot skips a pool with no settled history recorded for its address", () => {
+  const epochStart = 10 * WEEK;
+  const generatedAt = new Date((epochStart + WEEK / 2) * 1000).toISOString();
+  const empty = new Map<string, Map<number, number>>();
+
+  const result = observationsFromSnapshot(
+    { generatedAt, pools: [{ pool: "0xunknown", votesVeAero: 1_000 }] },
+    empty,
+    empty,
+    epochStart + WEEK,
+  );
+
+  assert.ok(result);
+  assert.equal(result!.entries.length, 0);
+});
+
+test("observationsFromSnapshot skips a pool whose trailing window has a gap and can't reach the requested depth", () => {
+  const address = "0xpool2";
+  const epochStart = 10 * WEEK;
+  const generatedAt = new Date((epochStart + WEEK / 2) * 1000).toISOString();
+
+  const votes = new Map<number, number>([
+    [epochStart, 5_000],
+    [epochStart - WEEK, 4_000],
+    // epochStart - 2*WEEK is missing: the window can't reach 2 trailing epochs.
+  ]);
+  const usd = new Map<number, number>([[epochStart - WEEK, 100]]);
+  const settledVotes = new Map([[address, votes]]);
+  const settledUsd = new Map([[address, usd]]);
+
+  const result = observationsFromSnapshot(
+    { generatedAt, pools: [{ pool: address, votesVeAero: 3_000 }] },
+    settledVotes,
+    settledUsd,
+    epochStart + WEEK,
+    2,
+    0,
+  );
+
+  assert.ok(result);
+  assert.equal(result!.entries.length, 0, "a window that can't reach the requested depth must be dropped, not truncated");
+});
+
+test("observationsFromSnapshot skips a pool whose trailing average is below the noise floor", () => {
+  const address = "0xpool3";
+  const epochStart = 10 * WEEK;
+  const generatedAt = new Date((epochStart + WEEK / 2) * 1000).toISOString();
+
+  const votes = new Map<number, number>([
+    [epochStart, 5_000],
+    [epochStart - WEEK, 4_000],
+    [epochStart - 2 * WEEK, 6_000],
+  ]);
+  const usd = new Map<number, number>([
+    [epochStart - WEEK, 1],
+    [epochStart - 2 * WEEK, 1],
+  ]);
+  const settledVotes = new Map([[address, votes]]);
+  const settledUsd = new Map([[address, usd]]);
+
+  const result = observationsFromSnapshot(
+    { generatedAt, pools: [{ pool: address, votesVeAero: 3_000 }] },
+    settledVotes,
+    settledUsd,
+    epochStart + WEEK,
+    2,
+    10, // minTrailingUsd
+  );
+
+  assert.ok(result);
+  assert.equal(result!.entries.length, 0);
+});
+
+test("observationsFromSnapshot skips a pool with no recorded settled weight for the epoch, or a non-positive tally", () => {
+  const address = "0xpool4";
+  const epochStart = 10 * WEEK;
+  const generatedAt = new Date((epochStart + WEEK / 2) * 1000).toISOString();
+
+  const votes = new Map<number, number>([
+    [epochStart - WEEK, 4_000],
+    [epochStart - 2 * WEEK, 6_000],
+    // no entry at epochStart itself: this epoch's settled answer isn't known.
+  ]);
+  const usd = new Map<number, number>([
+    [epochStart - WEEK, 100],
+    [epochStart - 2 * WEEK, 200],
+  ]);
+  const settledVotes = new Map([[address, votes]]);
+  const settledUsd = new Map([[address, usd]]);
+
+  const noAnswer = observationsFromSnapshot(
+    { generatedAt, pools: [{ pool: address, votesVeAero: 3_000 }] },
+    settledVotes,
+    settledUsd,
+    epochStart + WEEK,
+    2,
+    0,
+  );
+  assert.equal(noAnswer!.entries.length, 0, "no settled weight recorded for the epoch means nothing to score against");
+
+  votes.set(epochStart, 5_000);
+  const zeroTally = observationsFromSnapshot(
+    { generatedAt, pools: [{ pool: address, votesVeAero: 0 }] },
+    settledVotes,
+    settledUsd,
+    epochStart + WEEK,
+    2,
+    0,
+  );
+  assert.equal(zeroTally!.entries.length, 0, "a zero or negative tally can't form the 'current' predictor");
 });

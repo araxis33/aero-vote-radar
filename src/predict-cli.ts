@@ -23,13 +23,13 @@ import { join } from "node:path";
 import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
 import { getTokenPrices } from "./prices.js";
 import { epochUsd } from "./efficiency.js";
-import { computeVoteStability, expectedDilutedVotes, previousSettledVotes } from "./dilution.js";
-import { WEEKLY_EPOCH, periodStartOf } from "./trend.js";
+import { periodStartOf } from "./trend.js";
 import { mapWithConcurrency } from "./util.js";
-import { MIN_TRAILING_USD, TREND_EPOCHS } from "./constants.js";
+import { TREND_EPOCHS } from "./constants.js";
 import {
   asRatio,
   inBucket,
+  observationsFromSnapshot,
   scorePredictors,
   SIZE_BUCKETS,
   type PredictionObservation,
@@ -113,55 +113,11 @@ async function main() {
   const poolsSeen = new Set<string>();
 
   for (const raw of snapshots) {
-    const snap = raw as { generatedAt?: string; pools?: { pool: string; votesVeAero: number }[] };
-    if (!snap.generatedAt || !Array.isArray(snap.pools)) continue;
-    const takenAt = Math.floor(Date.parse(snap.generatedAt) / 1000);
-    if (!Number.isFinite(takenAt)) continue;
-    const epochStart = periodStartOf(takenAt);
-    // Only epochs whose answer is known. The running one has no answer yet.
-    if (epochStart >= currentEpochStart) continue;
-
-    for (const p of snap.pools) {
-      const address = String(p.pool).toLowerCase();
-      const votes = settledVotes.get(address);
-      const usd = settledUsd.get(address);
-      if (!votes || !usd) continue;
-
-      const actual = votes.get(epochStart);
-      const tally = p.votesVeAero;
-      if (!actual || actual <= 0 || !tally || tally <= 0) continue;
-
-      // The same trailing window the radar itself would have had, strictly
-      // older than the epoch being predicted — nothing here has seen the answer.
-      const usdWindow: number[] = [];
-      const voteWindow: number[] = [];
-      for (let k = 1; k <= TREND_EPOCHS; k++) {
-        const ts = epochStart - k * WEEKLY_EPOCH.lengthSeconds;
-        const u = usd.get(ts);
-        const v = votes.get(ts);
-        if (u === undefined || v === undefined) break;
-        usdWindow.push(u);
-        voteWindow.push(v);
-      }
-      if (usdWindow.length < TREND_EPOCHS) continue;
-      // Same admission gate the rankings use, so this describes the pools the
-      // tool would actually put a vote into rather than the whole long tail.
-      const trailingAvg = usdWindow.reduce((a, b) => a + b, 0) / usdWindow.length;
-      if (trailingAvg < MIN_TRAILING_USD) continue;
-
-      const { expectedVotes } = computeVoteStability(voteWindow, false, tally);
-      observations.push({
-        actual,
-        tally,
-        predicted: {
-          // Mid-week, so entry 0 of the series is the running epoch: the series
-          // handed over is the settled window, with the tally passed separately.
-          previous: previousSettledVotes(voteWindow, false, tally),
-          current: tally,
-          typical: expectedDilutedVotes(tally, expectedVotes),
-        },
-      });
-      epochsCovered.add(epochStart);
+    const result = observationsFromSnapshot(raw, settledVotes, settledUsd, currentEpochStart);
+    if (!result) continue;
+    for (const { address, observation } of result.entries) {
+      observations.push(observation);
+      epochsCovered.add(result.epochStart);
       poolsSeen.add(address);
     }
   }
