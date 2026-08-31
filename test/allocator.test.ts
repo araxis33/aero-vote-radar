@@ -7,6 +7,7 @@ import {
   toWholePercentWeights,
   unallocatedVeAero,
   voteBasisCaveat,
+  votesToDivideBy,
 } from "../src/allocator.js";
 import type { AllocationResult } from "../src/allocator.js";
 import type { PoolEfficiency } from "../src/efficiency.js";
@@ -222,6 +223,38 @@ test("the shortlist follows the basis being allocated on, not the order passed i
 
   const current = recommendAllocation([between, steady], 1_000, 1, undefined, 1, "current", 0);
   assert.equal(current[0].pool, "0xBETWEEN", "the old behaviour is still available");
+});
+
+test("the default basis shortlists and prices pools on last epoch's settled weight", () => {
+  // "previous" is the actual default in production — recommend/backtest/the MCP
+  // tools all fall back to it — but unlike "typical" (tested above) nothing
+  // exercised it end-to-end through recommendAllocation/votesToDivideBy: every
+  // other test's epochVotesSeries defaults to all-zero, which only reaches
+  // previousSettledVotes' fallback branch, not the "read last epoch" branch that
+  // real snapshots hit every time. Same fixtures as the "typical" case above:
+  // BETWEEN looks cheap on its live tally but usually settles 100x higher.
+  const between = fixture({
+    address: "0xBETWEEN",
+    symbol: "BETWEEN",
+    currentVotesVeAero: 1_000,
+    trailingAvgUsd: 1_000,
+    epochVotesSeries: [1_000, 100_000, 100_000, 100_000],
+  });
+  const steady = fixture({
+    address: "0xSTEADY",
+    symbol: "STEADY",
+    currentVotesVeAero: 10_000,
+    trailingAvgUsd: 500,
+    epochVotesSeries: [10_000, 10_000, 10_000, 10_000],
+  });
+
+  const previous = recommendAllocation([between, steady], 1_000, 1, undefined, 1, "previous", 0);
+  assert.equal(previous[0].pool, "0xSTEADY", "shortlisted by the weight it actually settles at, not its live tally");
+
+  // votesToDivideBy is what recommendAllocation actually calls to get there;
+  // exercised directly here since nothing else in this suite calls it.
+  assert.equal(votesToDivideBy(between, "previous", 0), 100_000, "reads last epoch's settled weight, not the live tally of 1,000");
+  assert.equal(votesToDivideBy(steady, "previous", 0), 10_000);
 });
 
 test("allocateAcrossCandidates funds a pool nobody else has voted on", () => {
