@@ -20,11 +20,12 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
 import { getTokenPrices } from "./prices.js";
 import { epochUsd } from "./efficiency.js";
 import { periodStartOf } from "./trend.js";
-import { mapWithConcurrency } from "./util.js";
+import { formatError, mapWithConcurrency } from "./util.js";
 import { TREND_EPOCHS } from "./constants.js";
 import {
   asRatio,
@@ -64,10 +65,24 @@ function snapshotsFromGit(): unknown[] {
   return out;
 }
 
-function snapshotsFromDir(dir: string): unknown[] {
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")));
+/**
+ * Every `.json` file in `dir`, parsed. Skips a file that can't be read or
+ * doesn't parse rather than letting it crash the whole measurement — the same
+ * tolerance `snapshotsFromGit` already has for a commit whose JSON never
+ * parsed, and for the same reason: one bad file (partial write, an unrelated
+ * JSON file that happens to sit in the directory) is not a reason to refuse to
+ * measure the rest of it.
+ */
+export function snapshotsFromDir(dir: string): unknown[] {
+  const out: unknown[] = [];
+  for (const f of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+    try {
+      out.push(JSON.parse(readFileSync(join(dir, f), "utf8")));
+    } catch (err) {
+      console.error(`(skipping ${f}: ${formatError(err)})`);
+    }
+  }
+  return out;
 }
 
 async function main() {
@@ -183,7 +198,15 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+// Only run when this file is executed directly (as `npm run predict-check`),
+// not when it's imported — e.g. by tests importing `snapshotsFromDir`. Without
+// this, importing the module for its pure helpers would also kick off `main`'s
+// live chain scan, the same hazard `mcp-server.ts` guards against for the same
+// reason.
+const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  main().catch((err) => {
+    console.error(`Error: ${formatError(err)}`);
+    process.exitCode = 1;
+  });
+}

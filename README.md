@@ -509,6 +509,7 @@ test/
   snapshot.test.ts     unit tests for the published snapshot shape
   mcp-server.test.ts   unit tests for the MCP tools' veAero/address budget resolution
   predict.test.ts      unit tests for predictor scoring (log-scale error, bias, closest-of, pool-size buckets)
+  predict-cli.test.ts  unit tests for snapshotsFromDir, including that a malformed file is skipped rather than crashing the run
   site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
 ```
 
