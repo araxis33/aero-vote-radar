@@ -24,8 +24,8 @@
     "ai-agent"
   ],
   "bin": {
-    "aero-vote-radar": "./dist/cli.js",
-    "aero-vote-radar-mcp": "./dist/mcp-server.js"
+    "aero-vote-radar": "dist/cli.js",
+    "aero-vote-radar-mcp": "dist/mcp-server.js"
   },
   "files": [
     "dist"
