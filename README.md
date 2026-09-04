@@ -6,6 +6,7 @@ Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and ge
 
 [![CI](https://github.com/araxis33/aero-vote-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/araxis33/aero-vote-radar/actions/workflows/ci.yml)
 [![Live app](https://img.shields.io/badge/live-aero.deftools.xyz-2563eb)](https://aero.deftools.xyz)
+[![npm](https://img.shields.io/npm/v/aero-vote-radar)](https://www.npmjs.com/package/aero-vote-radar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [![25,000 veAERO turned into a vote-ready allocation on aero.deftools.xyz](docs/screenshot.png)](https://aero.deftools.xyz)
@@ -23,8 +24,8 @@ Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and ge
 | | |
 |---|---|
 | **Hosted page** | **[aero.deftools.xyz](https://aero.deftools.xyz)** — nothing to install. A scheduled job re-scans the chain every 6 hours; the allocation itself runs in your browser. |
-| **CLI** | `npx tsx src/cli.ts recommend --veaero 25000 --vote-ready` — a live scan off Base mainnet. No API keys, no backend, no database. |
-| **MCP server** | Four tools for Claude or any MCP-capable agent: *"recommend an allocation for my 25,000 veAERO."* |
+| **CLI** | `npx aero-vote-radar recommend --veaero 25000 --vote-ready` — a live scan off Base mainnet, nothing to clone. No API keys, no backend, no database. |
+| **MCP server** | `npx aero-vote-radar-mcp` — five tools for Claude or any MCP-capable agent: *"recommend an allocation for my 25,000 veAERO."* |
 
 Everything below is the long version: why the obvious strategy loses money, what each number
 means, and — at least as important — what this tool cannot tell you.
@@ -341,6 +342,15 @@ before the question became urgent rather than after.
 
 Requires Node.js 18.18 or newer (the test suite's `node --import tsx` invocation depends on the `--import` flag, added in 18.18).
 
+From npm — nothing to clone, and `npx` will fetch it on first use anyway:
+
+```bash
+npm install -g aero-vote-radar     # or skip this and use npx below
+aero-vote-radar recommend --veaero 25000 --vote-ready
+```
+
+From source, if you want the tests, the snapshot history, or to change the strategy:
+
 ```bash
 git clone https://github.com/araxis33/aero-vote-radar
 cd aero-vote-radar
@@ -357,18 +367,22 @@ export BASE_RPC_URL="https://your-rpc-provider.example/..."
 ## CLI usage
 
 ```bash
-npx tsx src/cli.ts pools --top 10
-npx tsx src/cli.ts pools --top 10 --min-consistency 0.5
-npx tsx src/cli.ts recommend --veaero 25000
-npx tsx src/cli.ts recommend --address 0xYourAddress --vote-ready
-npx tsx src/cli.ts recommend --veaero 25000 --max-weight 0.25   # no pool above 25% of your vote
-npx tsx src/cli.ts recommend --veaero 25000 --vote-basis current   # judge pools on the live mid-week tally instead of last epoch's settled weight
-npx tsx src/cli.ts recommend --veaero 25000 --calldata --nft 17324   # the same vote as unsigned Voter.vote calldata to sign yourself
-npx tsx src/cli.ts backtest --veaero 25000 --epochs 5
-npx tsx src/cli.ts backtest --veaero 25000 --min-consistency 0.5   # test the filtered strategy you actually vote
-npx tsx src/cli.ts my-veaero 0xYourAddress
-npx tsx src/cli.ts my-veaero 0xYourAddress --json
+npx aero-vote-radar pools --top 10
+npx aero-vote-radar pools --top 10 --min-consistency 0.5
+npx aero-vote-radar recommend --veaero 25000
+npx aero-vote-radar recommend --address 0xYourAddress --vote-ready
+npx aero-vote-radar recommend --veaero 25000 --max-weight 0.25   # no pool above 25% of your vote
+npx aero-vote-radar recommend --veaero 25000 --vote-basis current   # judge pools on the live mid-week tally instead of last epoch's settled weight
+npx aero-vote-radar recommend --veaero 25000 --calldata --nft 17324   # the same vote as unsigned Voter.vote calldata to sign yourself
+npx aero-vote-radar backtest --veaero 25000 --epochs 5
+npx aero-vote-radar backtest --veaero 25000 --min-consistency 0.5   # test the filtered strategy you actually vote
+npx aero-vote-radar my-veaero 0xYourAddress
+npx aero-vote-radar my-veaero 0xYourAddress --json
 ```
+
+Working from a clone instead of the published package? Every command above is the same with
+`npx tsx src/cli.ts` in place of `npx aero-vote-radar` — that is the form the sample runs
+below were captured in.
 
 Pass `--json` to any command for machine-readable output instead of a table — useful for piping into other scripts or tools.
 
@@ -450,10 +464,10 @@ Total voting power: 11,470,610.348 veAERO
 ## As an MCP server
 
 ```bash
-npx tsx src/mcp-server.ts
+npx aero-vote-radar-mcp        # from a clone: npx tsx src/mcp-server.ts
 ```
 
-or, after `npm run build` and `npm link` / publishing, point any MCP-capable agent (Claude, etc.) at the `aero-vote-radar-mcp` binary. It exposes four tools:
+Point any MCP-capable agent (Claude, etc.) at that command — in Claude Code, `claude mcp add aero-vote-radar -- npx -y aero-vote-radar-mcp`. It exposes five tools:
 
 - **`list_pool_efficiency`** — ranked pools with current + predicted $/vote, predictive edge, consistency, and momentum (recent-vs-older completed-epoch trend). Optional `minConsistency` filter.
 - **`recommend_allocation`** — given a veAERO amount *or* a wallet `address` to read it from, returns weights, whole-percent vote weights, and expected USD per pool.
