@@ -211,7 +211,7 @@ test("resolveBudget rejects zero and negative --veaero amounts", async () => {
 
 test("resolveBudget accepts a valid --veaero amount and logs nothing", async () => {
   const { result, logged } = await captureStderr(() => resolveBudget(["--veaero", "25000"], "USAGE"));
-  assert.equal(result, 25000);
+  assert.deepEqual(result, { veaero: 25000, positions: [] });
   assert.deepEqual(logged, []);
 });
 

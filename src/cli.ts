@@ -172,6 +172,18 @@ const RECOMMEND_USAGE =
 
 const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --address <0x...>) [--epochs N] [--min-consistency 0..1] [--json] (N must be a positive integer, max ${MAX_BACKTEST_EPOCHS}; min-consistency a number from 0 to 1)`;
 
+export interface ResolvedBudget {
+  veaero: number;
+  /**
+   * The wallet's locks, when the budget came from `--address` — empty for a
+   * plain `--veaero` amount. Returned alongside the budget (rather than just
+   * the total) so a caller that also needs to pick a veNFT to vote from, like
+   * `--calldata`, can reuse this fetch instead of hitting `fetchVeAeroPositions`
+   * a second time for the same address.
+   */
+  positions: VeNftSummary[];
+}
+
 /**
  * Resolves the veAERO budget from either an explicit `--veaero` amount or, with
  * `--address`, the wallet's actual on-chain voting power — so the common case
@@ -181,7 +193,7 @@ const BACKTEST_USAGE = `Usage: aero-vote-radar backtest (--veaero <amount> | --a
  * rather than always printing `recommend`'s.
  * Returns null after printing its own error, so the caller just bails.
  */
-export async function resolveBudget(args: string[], usage: string): Promise<number | null> {
+export async function resolveBudget(args: string[], usage: string): Promise<ResolvedBudget | null> {
   const rawVeaero = getFlag(args, "veaero");
   const address = getFlag(args, "address");
 
@@ -206,7 +218,7 @@ export async function resolveBudget(args: string[], usage: string): Promise<numb
     // human-readable text to what's supposed to be a clean JSON payload for
     // `recommend --address ... --json` / `backtest --address ... --json`.
     console.error(`\nUsing ${total.toLocaleString("en-US", { maximumFractionDigits: 3 })} veAERO of live voting power from ${address} (${positions.length} lock(s)).`);
-    return total;
+    return { veaero: total, positions };
   }
 
   const veaero = Number(rawVeaero);
@@ -214,7 +226,7 @@ export async function resolveBudget(args: string[], usage: string): Promise<numb
     console.error(`${usage}\nAmount must be a finite positive number.`);
     return null;
   }
-  return veaero;
+  return { veaero, positions: [] };
 }
 
 /**
@@ -297,22 +309,20 @@ function printVoteBasisCaveat(veAeroBudget: number, voteBasis: VoteBasis): void 
  * the one output someone will paste into a wallet, so it names the contract it
  * targets, restates the weights beside the blob that encodes them, and says who
  * signs — which is never this program.
+ *
+ * `positions` comes from `resolveBudget`, already fetched for `--address` (or
+ * empty for a plain `--veaero` amount) — refetching it here would mean a
+ * second live `fetchVeAeroPositions` call for the exact same address on every
+ * `recommend --address ... --calldata` run.
  */
-async function printVoteCalldata(
+function printVoteCalldata(
   args: string[],
+  positions: VeNftSummary[],
   votePercents: ReturnType<typeof toWholePercentWeights>,
   expectedUsd: number,
   veAeroBudget: number,
   voteBasis: VoteBasis,
-): Promise<void> {
-  const address = getFlag(args, "address");
-  // Only fetched when it can actually decide something: with --nft the answer
-  // is already known, and without an address there is nothing to read.
-  const positions =
-    getFlag(args, "nft") === undefined && address !== undefined && isValidAddress(address)
-      ? await fetchVeAeroPositions(address)
-      : [];
-
+): void {
   const chosen = chooseVoteTokenId(getFlag(args, "nft"), positions);
   if ("error" in chosen) {
     console.error(chosen.error);
@@ -369,11 +379,12 @@ async function cmdRecommend(args: string[]) {
     return;
   }
 
-  const veaero = await resolveBudget(args, RECOMMEND_USAGE);
-  if (veaero === null) {
+  const resolved = await resolveBudget(args, RECOMMEND_USAGE);
+  if (resolved === null) {
     process.exitCode = 1;
     return;
   }
+  const { veaero, positions } = resolved;
 
   const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
   const allocation = recommendAllocation(ranked, veaero, topK, undefined, maxWeight, voteBasis);
@@ -432,7 +443,7 @@ async function cmdRecommend(args: string[]) {
   }
 
   if (hasFlag(args, "calldata")) {
-    await printVoteCalldata(args, votePercents, votePercentsExpectedUsd, veaero, voteBasis);
+    printVoteCalldata(args, positions, votePercents, votePercentsExpectedUsd, veaero, voteBasis);
     return;
   }
 
@@ -483,11 +494,12 @@ async function cmdBacktest(args: string[]) {
     return;
   }
 
-  const veaero = await resolveBudget(args, BACKTEST_USAGE);
-  if (veaero === null) {
+  const resolved = await resolveBudget(args, BACKTEST_USAGE);
+  if (resolved === null) {
     process.exitCode = 1;
     return;
   }
+  const { veaero } = resolved;
 
   const report = await backtestLive(veaero, epochs, undefined, minConsistency);
 
