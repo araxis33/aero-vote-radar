@@ -12,7 +12,7 @@ import {
   type VoteBasis,
 } from "../src/allocator.js";
 import { epochEndOf, formatDuration } from "../src/trend.js";
-import { previousSettledVotes } from "../src/dilution.js";
+import { expectedDilutedVotes, previousSettledVotes } from "../src/dilution.js";
 import { VOTE_BASIS_CROSSOVER_VEAERO, VOTER_ADDRESS } from "../src/constants.js";
 import { buildVoteCalldata } from "../src/calldata.js";
 import type { WholePercentWeight } from "../src/allocator.js";
@@ -70,14 +70,21 @@ const siteModule = new Function(`
   ${extractFunction(siteSource, "toWholePercentWeights")}
   ${extractFunction(siteSource, "expectedUsdForWholePercentVote")}
   ${extractFunction(siteSource, "votesToExpect")}
+  ${extractFunction(siteSource, "typicalVotes")}
+  ${extractFunction(siteSource, "votesForBasis")}
   ${extractConst(siteSource, "VOTE_BASIS_CROSSOVER_VEAERO")}
   ${extractFunction(siteSource, "voteBasisCaveat")}
-  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote, votesToExpect, voteBasisCaveat, VOTE_BASIS_CROSSOVER_VEAERO };
+  return { allocateAcrossCandidates, toWholePercentWeights, expectedUsdForWholePercentVote, votesToExpect, typicalVotes, votesForBasis, voteBasisCaveat, VOTE_BASIS_CROSSOVER_VEAERO };
 `)() as {
   allocateAcrossCandidates: SiteAllocate;
   toWholePercentWeights: SitePercents;
   expectedUsdForWholePercentVote: SiteExpected;
   votesToExpect: (pool: { votesVeAero: number; epochVotes?: number[]; currentEpochPartial?: boolean }) => number;
+  typicalVotes: (pool: { votesVeAero: number; expectedVotes?: number | null }) => number;
+  votesForBasis: (
+    pool: { votesVeAero: number; expectedVotes?: number | null; epochVotes?: number[]; currentEpochPartial?: boolean },
+    basis: string,
+  ) => number;
   voteBasisCaveat: (veAeroBudget: number, voteBasis: string) => string | null;
   VOTE_BASIS_CROSSOVER_VEAERO: number;
 };
@@ -394,4 +401,49 @@ test("docs/index.html refuses the same malformed allocations src/calldata.ts ref
     assert.throws(() => siteCalldata.voteCalldata(tokenId, rows), `the page accepted ${name}`);
     assert.throws(() => buildVoteCalldata(tokenId, rows), `src/calldata.ts accepted ${name}`);
   }
+});
+
+/**
+ * The third vote basis reached the page after the first two, and it is the one
+ * a visitor picks *because* the caveat pointed them at it — so a page copy that
+ * computed it differently from src/dilution.ts would quietly answer a question
+ * the tool had just told them to ask.
+ */
+test("docs/index.html's typicalVotes matches src/dilution.ts", () => {
+  const cases: { votesVeAero: number; expectedVotes?: number | null }[] = [
+    { votesVeAero: 1_208_915, expectedVotes: 13_423_457 }, // a pool whose weight has drained away
+    { votesVeAero: 13_423_457, expectedVotes: 1_208_915 }, // and the same pool, refilled past its usual level
+    { votesVeAero: 5_000, expectedVotes: 5_000 },
+    { votesVeAero: 5_000, expectedVotes: null },
+    { votesVeAero: 5_000 },
+    { votesVeAero: 0, expectedVotes: 900 },
+    { votesVeAero: 900, expectedVotes: Number.NaN },
+  ];
+
+  for (const c of cases) {
+    assert.equal(
+      siteModule.typicalVotes(c),
+      expectedDilutedVotes(c.votesVeAero, c.expectedVotes ?? null),
+      `typicalVotes disagreed for ${JSON.stringify(c)}`,
+    );
+  }
+});
+
+test("docs/index.html routes each vote basis to the weight src/ would use", () => {
+  const pool = {
+    votesVeAero: 1_208_915,
+    expectedVotes: 13_423_457,
+    epochVotes: [1_208_915, 1_168_143, 15_790_839],
+    currentEpochPartial: true,
+  };
+
+  assert.equal(siteModule.votesForBasis(pool, "current"), pool.votesVeAero);
+  assert.equal(
+    siteModule.votesForBasis(pool, "previous"),
+    previousSettledVotes(pool.epochVotes, pool.currentEpochPartial, pool.votesVeAero),
+  );
+  assert.equal(siteModule.votesForBasis(pool, "typical"), expectedDilutedVotes(pool.votesVeAero, pool.expectedVotes));
+  // Anything unrecognised must fall back to the default basis, not to the live
+  // tally: a stale bookmark carrying an old basis should be conservative.
+  assert.equal(siteModule.votesForBasis(pool, "nonsense"), siteModule.votesForBasis(pool, "previous"));
 });
