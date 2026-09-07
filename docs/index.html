@@ -155,6 +155,25 @@
     border-left: 3px solid var(--warn); background: rgba(255, 184, 77, 0.07);
     padding: 11px 13px; border-radius: 0 8px 8px 0; font-size: 13.5px; margin-top: 13px; color: #f0dcbb;
   }
+  /* how much of this page to believe --------------------------------------- */
+  .trust { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 15px 17px; margin-top: 13px; }
+  .trust .when { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }
+  .kept { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .kept > div { border-left: 3px solid var(--line); padding-left: 11px; }
+  .kept .k { font-size: 21px; font-weight: 660; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .kept .k.good { color: var(--good); }
+  .kept .k.mid { color: var(--warn); }
+  .kept .k.bad { color: var(--bad); }
+  .kept .w { font-size: 12.5px; color: var(--dim); margin-top: 3px; }
+  .trust .basis { font-size: 12.5px; color: var(--dim); margin: 12px 0 0; max-width: 84ch; }
+  .stat .r { font-size: 12px; color: var(--dim); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .calldata-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 11px 0 0; }
+  .calldata-row input { max-width: 240px; }
+  .hex {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--muted); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 10px;
+    word-break: break-all; max-height: 154px; overflow-y: auto;
+  }
   .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 12.5px; color: var(--dim); margin-top: 11px; }
   .legend span b { color: var(--muted); font-weight: 600; }
 
@@ -271,7 +290,11 @@
 </div>
 
 <div class="totals">
-  <div class="stat"><div class="n num" id="statUsd">—</div><div class="l">Expected next epoch</div></div>
+  <div class="stat">
+    <div class="n num" id="statUsd">—</div>
+    <div class="l">Expected next epoch</div>
+    <div class="r" id="statUsdRange" hidden></div>
+  </div>
   <div class="stat"><div class="n num" id="statPools">—</div><div class="l">Pools used</div></div>
   <div class="stat"><div class="n num" id="statPerVote">—</div><div class="l">Blended $ / veAERO</div></div>
 </div>
@@ -286,6 +309,18 @@
 </div>
 <div class="note" id="allocNote" hidden></div>
 <div class="note" id="basisNote" hidden></div>
+
+<details id="calldataBox">
+  <summary>Cast this from your own wallet — unsigned calldata</summary>
+  <p>Retyping seven weights into a form is where a measured allocation loses accuracy, to a mistyped digit or a row skipped because the page scrolled. This builds the exact bytes <code>Voter.vote()</code> expects instead. It is unsigned: no key, no wallet connection, nothing sent anywhere. Paste it into the wallet that holds the veNFT, check that <code>to</code> is the Voter contract and that the pools and percentages match the table above, and sign it there.</p>
+  <div class="calldata-row">
+    <input id="tokenId" type="text" spellcheck="false" autocomplete="off" inputmode="numeric" placeholder="veNFT id, e.g. 118577">
+    <button id="calldataBtn" type="button">Build calldata</button>
+    <button id="calldataCopy" type="button" hidden>Copy</button>
+  </div>
+  <div class="lookup-msg" id="calldataMsg"></div>
+  <div class="hex" id="calldataOut" hidden></div>
+</details>
 
 <h2>Which way incentives are moving</h2>
 <p class="h2note">Recent finished epochs against the older ones, per pool. A high average is worth less if it is on the way down.</p>
@@ -314,6 +349,14 @@
 </div>
 <div class="note" id="yieldNote"></div>
 
+<h2>How much of this list survives the week</h2>
+<p class="h2note">Every dashboard here, this one included, ranks pools by a rate computed from vote weight that is still moving. So: of the ten pools a list like this one put on top, how many were still on top when the epoch closed?</p>
+<div class="trust" id="trustPanel" hidden>
+  <p class="when" id="trustWhen"></p>
+  <div class="kept" id="trustKept"></div>
+  <p class="basis" id="trustBasis"></p>
+</div>
+
 <h2>All ranked pools</h2>
 <p class="h2note">Every live-gauge pool that clears a minimum trailing value, sorted by predicted dollars per vote.</p>
 <div class="scroll">
@@ -328,6 +371,13 @@
   <span><b class="badge v" style="margin-right:4px">vAMM</b> volatile pool — plain <code>x·y=k</code>, for tokens whose prices move independently</span>
   <span><svg class="spark" style="display:inline-block; width:34px; height:14px; vertical-align:-2px; margin-right:4px" viewBox="0 0 34 14" aria-hidden="true"><rect x="0" y="4" width="9" height="10"/><rect x="12" y="2" width="9" height="12"/><rect class="partial" x="24.5" y="7.5" width="8" height="6"/></svg> the dashed last bar is the epoch still running — a part-week, so it is charted but left out of the trend. Bar heights are square-rooted so a single huge week doesn’t flatten the rest; hover for exact dollars</span>
   <span><b class="badge s" style="margin-right:4px">sAMM</b> stable pool — a flatter curve for pairs meant to hold the same value, like two stablecoins or ETH and a liquid-staking version of it</span>
+</div>
+
+<h2>How wrong this page usually is</h2>
+<p class="h2note">The allocation is built on an assumption about the weight each pool will settle at. Every six-hourly scan this repo has committed since 7 August is a moment when that assumption was made and the answer is now known, so the size of the miss can be stated rather than hoped about.</p>
+<div class="trust" id="accuracyPanel" hidden>
+  <div class="kept" id="accuracyKept"></div>
+  <p class="basis" id="accuracyBasis"></p>
 </div>
 
 <details>
@@ -614,6 +664,18 @@ function refillCell(p) {
   td.title = r >= 1
     ? "This pool usually settles at " + r.toFixed(1) + "x the weight it is showing right now, so the predicted figure beside it is optimistic by roughly that much."
     : "This pool is currently carrying more weight than it usually settles at.";
+
+  // This column is a prediction from the pool's own settled history. The scan
+  // archive can check it against what the pool actually did, which is worth
+  // more than a second column saying nearly the same thing — especially when
+  // the two disagree.
+  const measured = measuredSurge(p.pool);
+  if (measured) {
+    const actual = 1 + measured.medianSurge;
+    td.title +=
+      " Measured: across " + measured.readings + " readings taken a day or two before the close, it ended up at x" +
+      actual.toFixed(1) + " the weight it was showing then.";
+  }
   return td;
 }
 
@@ -781,6 +843,10 @@ function poolCell(symbol, address) {
 // --- state ------------------------------------------------------------------
 
 let snapshot = null;
+// The weekly measurement in data/timing.json. Null until it loads, and it may
+// stay null: the page has to work when the measurement is missing, because the
+// snapshot is what the site is for and the measurement is what it admits.
+let timing = null;
 let lastPercents = [];
 
 const el = {
@@ -803,8 +869,22 @@ const el = {
   basisNote: document.getElementById("basisNote"),
   copyBtn: document.getElementById("copyBtn"),
   statUsd: document.getElementById("statUsd"),
+  statUsdRange: document.getElementById("statUsdRange"),
   statPools: document.getElementById("statPools"),
   statPerVote: document.getElementById("statPerVote"),
+  trustPanel: document.getElementById("trustPanel"),
+  trustWhen: document.getElementById("trustWhen"),
+  trustKept: document.getElementById("trustKept"),
+  trustBasis: document.getElementById("trustBasis"),
+  accuracyPanel: document.getElementById("accuracyPanel"),
+  accuracyKept: document.getElementById("accuracyKept"),
+  accuracyBasis: document.getElementById("accuracyBasis"),
+  calldataBox: document.getElementById("calldataBox"),
+  tokenId: document.getElementById("tokenId"),
+  calldataBtn: document.getElementById("calldataBtn"),
+  calldataCopy: document.getElementById("calldataCopy"),
+  calldataMsg: document.getElementById("calldataMsg"),
+  calldataOut: document.getElementById("calldataOut"),
 };
 
 // Epoch arithmetic, matching epochEndOf/formatDuration in src/trend.ts. Computed
@@ -997,6 +1077,7 @@ function clearAllocation(message) {
   lastPercents = [];
   el.copyBtn.disabled = true;
   el.statUsd.textContent = el.statPools.textContent = el.statPerVote.textContent = "—";
+  el.statUsdRange.hidden = true;
   el.allocNote.textContent = message;
   el.allocNote.hidden = !message;
   el.basisNote.hidden = true;
@@ -1079,7 +1160,7 @@ function renderAllocation() {
   lastPercents = [];
   for (const a of shown) {
     const pct = percents.get(a.pool);
-    lastPercents.push({ symbol: a.symbol, percent: pct });
+    lastPercents.push({ pool: a.pool, symbol: a.symbol, percent: pct });
 
     const tr = document.createElement("tr");
     tr.appendChild(poolCell(a.symbol, a.pool));
@@ -1100,12 +1181,139 @@ function renderAllocation() {
   el.statPools.textContent = String(shown.length);
   el.statPerVote.textContent = "$" + (totalUsd / budget).toFixed(5);
 
+  // A single figure implies a precision the measurement does not support. The
+  // spread is the measured typical miss on the weight this figure divides by,
+  // so it moves with the basis the visitor selected rather than being decorative.
+  const error = measuredErrorFor(el.votebasis.value);
+  if (error === null) {
+    el.statUsdRange.hidden = true;
+  } else {
+    el.statUsdRange.textContent = usd(totalUsd / (1 + error)) + " – " + usd(totalUsd * (1 + error)) + " typical";
+    el.statUsdRange.title =
+      "The weight this assumes is typically " + Math.round(error * 100) + "% out, measured over " +
+      "every scan since the history began. Payout moves with weight, so the dollars move with it too.";
+    el.statUsdRange.hidden = false;
+  }
+
   if (dropped > 0) {
     el.allocNote.textContent =
       dropped + " pool" + (dropped > 1 ? "s" : "") + " received a share too small to round up to 1% and " +
       (dropped > 1 ? "were" : "was") + " dropped. Their weight sits in the rows above.";
     el.allocNote.hidden = false;
   }
+}
+
+// --- how much of this page to believe ---------------------------------------
+
+/**
+ * The measured window that covers how far this epoch still has to run, so a
+ * visitor is told what a list looks like *from where they are standing* rather
+ * than an average over the week.
+ *
+ * Falls back to the best-covered window when the visitor's own one has no scans
+ * behind it yet — an honest figure from a different hour beats a blank panel,
+ * as long as the label says which hour it came from, which it does.
+ */
+function trustWindowNow() {
+  if (!timing || !Array.isArray(timing.trust)) return null;
+  const hoursLeft = (epochEndOf(Math.floor(Date.now() / 1000)) - Math.floor(Date.now() / 1000)) / 3600;
+  const here = timing.trust.find((w) => hoursLeft >= w.fromHours && hoursLeft < w.toHours);
+  if (here && here.keptRich !== null) return { window: here, isNow: true };
+  const covered = timing.trust.filter((w) => w.keptRich !== null).sort((a, b) => b.scans - a.scans);
+  return covered.length ? { window: covered[0], isNow: false } : null;
+}
+
+const keptClass = (kept) => (kept >= 6 ? "good" : kept >= 3 ? "mid" : "bad");
+
+/** One "6.0 of 10" tile with the set of pools it was measured over. */
+function keptTile(kept, label) {
+  const box = document.createElement("div");
+  const n = document.createElement("div");
+  n.className = "k " + keptClass(kept);
+  n.textContent = kept === null ? "—" : kept.toFixed(1) + " of 10";
+  const w = document.createElement("div");
+  w.className = "w";
+  w.textContent = label;
+  box.appendChild(n);
+  box.appendChild(w);
+  return box;
+}
+
+function renderTrust() {
+  const found = trustWindowNow();
+  if (!found) return;
+  const { window: w, isNow } = found;
+
+  el.trustWhen.textContent = isNow
+    ? "Measured for where this epoch is right now — " + w.label
+    : "Measured at the best-covered point of the week — " + w.label;
+
+  el.trustKept.replaceChildren(
+    keptTile(w.keptRich, "of pools paying $1,000+ an epoch"),
+    keptTile(w.keptThick, "of pools with 50,000+ votes behind them"),
+    keptTile(w.keptAll, "of every pool, near-empty gauges included"),
+  );
+
+  el.trustBasis.textContent =
+    "Median over " + w.scans + " scans of " + timing.epochs.length + " settled epoch" +
+    (timing.epochs.length === 1 ? "" : "s") + " (" + timing.epochs.join(", ") + "), " +
+    timing.observations.toLocaleString("en-US") + " pool readings in total. Both lists were ranked with the " +
+    "epoch's final rewards, so the churn measured here comes purely from votes moving, not from anyone " +
+    "mispredicting fees — the real figure is no better than this. Which is the argument for the consistency " +
+    "filter and the per-pool cap above: the thinner the gauge, the less of your list is still there on Thursday.";
+  el.trustPanel.hidden = false;
+}
+
+function renderAccuracy() {
+  if (!timing || !timing.accuracy || !Array.isArray(timing.accuracy.overall)) return;
+  const byName = new Map(timing.accuracy.overall.map((b) => [b.name, b]));
+  const previous = byName.get("previous");
+  const current = byName.get("current");
+  if (!previous || !current) return;
+
+  const tile = (basis, label) => {
+    const box = document.createElement("div");
+    const n = document.createElement("div");
+    n.className = "k " + (basis.medianAbsError <= 0.15 ? "good" : basis.medianAbsError <= 0.25 ? "mid" : "bad");
+    n.textContent = (basis.medianAbsError * 100).toFixed(0) + "% out";
+    const w = document.createElement("div");
+    w.className = "w";
+    w.textContent = label;
+    box.appendChild(n);
+    box.appendChild(w);
+    return box;
+  };
+
+  el.accuracyKept.replaceChildren(
+    tile(previous, "assuming last epoch's final weight — the default here"),
+    tile(current, "assuming the weight showing right now"),
+  );
+
+  const closest = previous.closestOn >= current.closestOn ? previous : current;
+  el.accuracyBasis.textContent =
+    "Typical miss on a pool's settled weight, measured over " + previous.observations.toLocaleString("en-US") +
+    " mid-week readings of " + timing.accuracy.epochs.length + " settled epoch" +
+    (timing.accuracy.epochs.length === 1 ? "" : "s") + ". Read it as the size of the error you are voting on, not " +
+    "as a claim: the two are close, and by a different measure — how often each was the nearest of the two — " +
+    "“" + (closest.name === "previous" ? "last epoch's final weight" : "the live weight") + "” wins, on " +
+    closest.closestOn.toLocaleString("en-US") + " readings against " +
+    (closest === previous ? current : previous).closestOn.toLocaleString("en-US") + ". Payout moves with weight, " +
+    "so this is also where the range under “Expected next epoch” comes from. Observations inside one pool " +
+    "are not independent, and only epochs the scan history reaches can be scored at all.";
+  el.accuracyPanel.hidden = false;
+}
+
+/** The measured error of whichever basis the visitor has selected, or null. */
+function measuredErrorFor(basisName) {
+  if (!timing || !timing.accuracy || !Array.isArray(timing.accuracy.overall)) return null;
+  const found = timing.accuracy.overall.find((b) => b.name === basisName);
+  return found && found.medianAbsError > 0 ? found.medianAbsError : null;
+}
+
+/** What this pool actually did between a day or two out and the close, if it was measured. */
+function measuredSurge(address) {
+  if (!timing || !Array.isArray(timing.lateMovers)) return null;
+  return timing.lateMovers.find((m) => m.address === String(address).toLowerCase()) ?? null;
 }
 
 // --- wallet lookup ----------------------------------------------------------
@@ -1165,6 +1373,143 @@ async function copyWeights() {
   setTimeout(() => { el.copyBtn.textContent = original; }, 1600);
 }
 
+// --- unsigned calldata ------------------------------------------------------
+
+/**
+ * The Voter contract on Base, and the call being built. Both are repeated in
+ * the output so nobody has to trust this page about where their vote is going.
+ */
+const VOTER_ADDRESS = "0x16613524e02ad97eDfeF371bC883F2F5d6C480A5";
+const VOTE_SELECTOR = "0x7ac09bf7"; // vote(uint256,address[],uint256[])
+
+/**
+ * Hand-port of src/calldata.ts for a page with no build step, held to the real
+ * implementation by test/site-parity.test.ts — the same arrangement the
+ * allocator itself is under. Encoding by hand rather than shipping an ABI
+ * library keeps the page a single static file; the parity test is what makes
+ * that safe rather than merely convenient.
+ *
+ * Validation throws instead of repairing. Voting is a once-a-week financial
+ * action, and guessing what a malformed request meant is not a service.
+ */
+function voteCalldata(tokenId, rows) {
+  if (!/^[0-9]+$/.test(tokenId) || BigInt(tokenId) <= 0n) {
+    throw new Error("The veNFT id must be a positive whole number.");
+  }
+  if (rows.length === 0) throw new Error("Nothing to vote: the allocation is empty.");
+
+  const seen = new Set();
+  let total = 0;
+  for (const r of rows) {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(r.pool)) throw new Error(r.pool + " is not a pool address.");
+    const key = r.pool.toLowerCase();
+    if (seen.has(key)) throw new Error("Pool " + r.pool + " appears twice in the allocation.");
+    seen.add(key);
+    if (!Number.isInteger(r.percent) || r.percent <= 0) {
+      throw new Error(r.symbol + " has a weight that is not a whole number of percentage points above zero.");
+    }
+    total += r.percent;
+  }
+  if (total !== 100) throw new Error("Weights must total 100%, got " + total + "%.");
+
+  const word = (value) => BigInt(value).toString(16).padStart(64, "0");
+  const addressWord = (address) => address.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+  const n = rows.length;
+  // Head: tokenId, then the offsets of the two dynamic arrays. The pools array
+  // starts after those three words; the weights array after the pools array.
+  const head = word(tokenId) + word(96) + word(96 + 32 * (1 + n));
+  const pools = word(n) + rows.map((r) => addressWord(r.pool)).join("");
+  const weights = word(n) + rows.map((r) => word(r.percent)).join("");
+  return VOTE_SELECTOR + head + pools + weights;
+}
+
+/**
+ * A known vector, checked once on load. If this page's encoder ever disagrees
+ * with what the tested implementation produces, the button is withdrawn rather
+ * than left offering bytes for someone to sign.
+ */
+const CALLDATA_SELF_TEST = {
+  tokenId: "1",
+  rows: [
+    { pool: "0x0000000000000000000000000000000000000001", symbol: "A", percent: 60 },
+    { pool: "0x0000000000000000000000000000000000000002", symbol: "B", percent: 40 },
+  ],
+  expected:
+    "0x7ac09bf7" +
+    "0000000000000000000000000000000000000000000000000000000000000001" +
+    "0000000000000000000000000000000000000000000000000000000000000060" +
+    "00000000000000000000000000000000000000000000000000000000000000c0" +
+    "0000000000000000000000000000000000000000000000000000000000000002" +
+    "0000000000000000000000000000000000000000000000000000000000000001" +
+    "0000000000000000000000000000000000000000000000000000000000000002" +
+    "0000000000000000000000000000000000000000000000000000000000000002" +
+    "000000000000000000000000000000000000000000000000000000000000003c" +
+    "0000000000000000000000000000000000000000000000000000000000000028",
+};
+
+function calldataEncoderIsSound() {
+  try {
+    return voteCalldata(CALLDATA_SELF_TEST.tokenId, CALLDATA_SELF_TEST.rows) === CALLDATA_SELF_TEST.expected;
+  } catch {
+    return false;
+  }
+}
+
+let lastCalldataText = "";
+
+function buildCalldata() {
+  el.calldataMsg.className = "lookup-msg";
+  el.calldataOut.hidden = true;
+  el.calldataCopy.hidden = true;
+
+  if (lastPercents.length === 0) {
+    el.calldataMsg.className = "lookup-msg err";
+    el.calldataMsg.textContent = "There is no allocation to encode yet — enter your veAERO above.";
+    return;
+  }
+
+  let tx;
+  try {
+    const data = voteCalldata(el.tokenId.value.trim(), lastPercents);
+    tx = {
+      chainId: 8453,
+      to: VOTER_ADDRESS,
+      value: "0x0",
+      data: data,
+      functionSignature: "vote(uint256,address[],uint256[])",
+      tokenId: el.tokenId.value.trim(),
+      pools: lastPercents.map((r) => r.pool),
+      weights: lastPercents.map((r) => r.percent),
+    };
+  } catch (err) {
+    el.calldataMsg.className = "lookup-msg err";
+    el.calldataMsg.textContent = err.message || String(err);
+    return;
+  }
+
+  lastCalldataText = JSON.stringify(tx, null, 2);
+  el.calldataOut.textContent = lastCalldataText;
+  el.calldataOut.hidden = false;
+  el.calldataCopy.hidden = false;
+  el.calldataMsg.className = "lookup-msg ok";
+  el.calldataMsg.textContent =
+    "Unsigned. " + lastPercents.length + " pools, " +
+    lastPercents.map((r) => r.percent + "% " + r.symbol).join(", ") + ".";
+}
+
+async function copyCalldata() {
+  if (!lastCalldataText) return;
+  const original = el.calldataCopy.textContent;
+  try {
+    await navigator.clipboard.writeText(lastCalldataText);
+    el.calldataCopy.textContent = "Copied ✓";
+    setTimeout(() => { el.calldataCopy.textContent = original; }, 1600);
+  } catch {
+    el.calldataMsg.className = "lookup-msg";
+    el.calldataMsg.textContent = "Clipboard refused — select the text below and copy it manually.";
+  }
+}
+
 // --- wiring -----------------------------------------------------------------
 
 for (const control of [el.veaero, el.topk, el.mincons, el.maxweight]) {
@@ -1183,6 +1528,32 @@ el.lookup.addEventListener("click", doLookup);
 el.addr.addEventListener("keydown", (e) => { if (e.key === "Enter") doLookup(); });
 el.copyBtn.addEventListener("click", copyWeights);
 el.copyBtn.disabled = true;
+
+if (calldataEncoderIsSound()) {
+  el.calldataBtn.addEventListener("click", buildCalldata);
+  el.calldataCopy.addEventListener("click", copyCalldata);
+  el.tokenId.addEventListener("keydown", (e) => { if (e.key === "Enter") buildCalldata(); });
+} else {
+  // Withdrawn rather than degraded: a transaction builder that fails its own
+  // known vector has no business offering bytes for someone to sign.
+  el.calldataBox.hidden = true;
+}
+
+// The weekly measurement, fetched beside the snapshot. It is deliberately not
+// awaited together with it: if this file is missing or stale the page must still
+// render the allocation, minus the parts that say how much to believe it.
+fetch("data/timing.json", { cache: "no-cache" })
+  .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then((data) => {
+    timing = data;
+    renderTrust();
+    renderAccuracy();
+    if (snapshot) renderAllocation();
+  })
+  .catch(() => {
+    // No panel, no range, no measured tooltips — and no error either. The
+    // measurement is the page's admission of doubt, not its subject.
+  });
 
 fetch("data/snapshot.json", { cache: "no-cache" })
   .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
