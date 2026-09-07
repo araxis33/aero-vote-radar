@@ -509,6 +509,19 @@ test("unallocatedVeAero reports nothing for an ordinary uncapped allocation", ()
   assert.equal(unallocatedVeAero([], 0), 0);
 });
 
+test("unallocatedVeAero reports the whole budget as unplaced when nothing qualified at all", () => {
+  // This is the case a caller must check *before* unallocatedVeAero, not after:
+  // an empty allocation with a positive budget always reads as "fully unplaced"
+  // here, because nothing was spent — it does not by itself mean a --max-weight
+  // cap was too tight (the cap could be untouched at its uncapped default of 1),
+  // only that recommendAllocation had zero candidate pools to place anything
+  // into (e.g. every pool filtered out by --min-consistency). cli.ts's
+  // `allocation.length === 0` branch and the equivalent guard in
+  // mcp-server.ts's `recommend_allocation` exist to report that distinct cause
+  // instead of blaming the cap.
+  assert.equal(unallocatedVeAero([], 25_000), 25_000);
+});
+
 test("a cap of 1 or above changes nothing", () => {
   const candidates = [
     { address: "0xA", symbol: "A", existingVotes: 1000, expectedUsd: 5000 },

@@ -394,7 +394,13 @@ async function cmdRecommend(args: string[]) {
   // than the user has. Refusing here is the only honest option: printing the
   // rows anyway means toWholePercentWeights scales them back to 100% and hands
   // back exactly the concentration --max-weight was asked to prevent.
-  const unplaced = unallocatedVeAero(allocation, veaero);
+  //
+  // Skipped when nothing qualified at all: unallocatedVeAero(allocation=[], ...)
+  // returns the *whole* budget (nothing was spent), which would otherwise always
+  // read as "unplaced > 0" and blame --max-weight even when it's untouched at its
+  // uncapped default of 1 — the real cause (zero candidate pools) is reported by
+  // the allocation.length === 0 branch below instead.
+  const unplaced = allocation.length > 0 ? unallocatedVeAero(allocation, veaero) : 0;
   if (unplaced > 0) {
     const pct = Math.round((unplaced / veaero) * 100);
     console.error(

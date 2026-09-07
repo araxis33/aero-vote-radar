@@ -161,6 +161,18 @@ server.registerTool(
     const ranked = (await rankPoolsByEfficiency()).filter((p) => p.consistency >= minConsistency);
     const allocation = recommendAllocation(ranked, budget, topCandidates, undefined, maxWeight, voteBasis);
 
+    // Zero qualifying pools is a distinct failure from "maxWeight too tight":
+    // unallocatedVeAero(allocation=[], ...) returns the *whole* budget (nothing
+    // was spent), which would otherwise always read as "unplaced > 0" below and
+    // blame maxWeight even when it's untouched at its uncapped default of 1.
+    if (allocation.length === 0) {
+      throw new Error(
+        minConsistency > 0
+          ? `No live-gauge pool passes minConsistency ${minConsistency} right now — try a lower value.`
+          : "No live-gauge pool with a big enough trailing average is available to allocate to right now.",
+      );
+    }
+
     // Same guard the CLI applies: toWholePercentWeights normalises by the
     // weights it is handed, so publishing a part-spent allocation would restore
     // the concentration the cap was asked to prevent.
