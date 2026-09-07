@@ -308,6 +308,7 @@
   </table>
 </div>
 <div class="note" id="allocNote" hidden></div>
+<div class="note" id="refillNote" hidden></div>
 <div class="note" id="basisNote" hidden></div>
 
 <details id="calldataBox">
@@ -648,7 +649,10 @@ function voteBasisCaveat(veAeroBudget, voteBasis) {
 }
 
 /** How loudly to flag a pool whose live weight is well below its usual one. */
-const refillClass = (r) => (r >= 3 ? "c-bad" : r >= 1.5 ? "c-warn" : "c-good");
+/** Where a pool stops being "roughly where it usually sits" and starts being a pool
+ * whose weight has not arrived yet. The same boundary the Refill column colours on. */
+const REFILL_WARN_RATIO = 1.5;
+const refillClass = (r) => (r >= 3 ? "c-bad" : r >= REFILL_WARN_RATIO ? "c-warn" : "c-good");
 
 function refillCell(p) {
   const td = document.createElement("td");
@@ -866,6 +870,7 @@ const el = {
   moversUp: document.getElementById("moversUp"),
   moversDown: document.getElementById("moversDown"),
   allocNote: document.getElementById("allocNote"),
+  refillNote: document.getElementById("refillNote"),
   basisNote: document.getElementById("basisNote"),
   copyBtn: document.getElementById("copyBtn"),
   statUsd: document.getElementById("statUsd"),
@@ -1072,6 +1077,25 @@ function renderRanking() {
   el.rankBody.replaceChildren(frag);
 }
 
+/**
+ * The weight this row's expected dollars were divided by — marked when the pool
+ * usually settles well above it, so a reader scanning the suggestion sees which
+ * specific row the caveat underneath is about rather than having to match names.
+ */
+function assumedVotesCell(a) {
+  const td = cell(num(a.existingVotes), "num", "Pool votes assumed");
+  const pool = snapshot.pools.find((p) => p.pool === a.pool);
+  const ratio = pool && typeof pool.refillRatio === "number" ? pool.refillRatio : null;
+  if (ratio === null || ratio < REFILL_WARN_RATIO) return td;
+
+  td.classList.add(refillClass(ratio));
+  td.textContent = num(a.existingVotes) + " ⚠";
+  td.title =
+    "This pool usually settles at x" + ratio.toFixed(1) + " this weight. Rewards are split by weight, " +
+    "so if it fills up again the expected dollars on this row fall by roughly that much.";
+  return td;
+}
+
 function clearAllocation(message) {
   el.allocBody.replaceChildren();
   lastPercents = [];
@@ -1080,7 +1104,55 @@ function clearAllocation(message) {
   el.statUsdRange.hidden = true;
   el.allocNote.textContent = message;
   el.allocNote.hidden = !message;
+  el.refillNote.hidden = true;
   el.basisNote.hidden = true;
+}
+
+/**
+ * Warns, under the suggestion itself, when the vote is being funded into pools
+ * that usually settle with far more weight than they are showing right now.
+ *
+ * The Refill column has carried this for weeks, but it sits in a different
+ * table further down the page, and a visitor who reads the allocation and
+ * stops — which is the whole point of the allocation — never meets it. A caveat
+ * only the diligent reader finds is a caveat the tool does not really make.
+ *
+ * The measured figure is quoted beside the predicted one wherever the archive
+ * has enough readings on that pool, because "it usually refills" and "it did
+ * refill, this many times" are different strengths of claim.
+ */
+function renderRefillNote(shown, percents) {
+  const byAddress = new Map(snapshot.pools.map((p) => [p.pool, p]));
+  const flagged = [];
+  let share = 0;
+  for (const a of shown) {
+    const pool = byAddress.get(a.pool);
+    const ratio = pool && typeof pool.refillRatio === "number" ? pool.refillRatio : null;
+    if (ratio === null || ratio < REFILL_WARN_RATIO) continue;
+    const percent = percents.get(a.pool) || 0;
+    share += percent;
+    flagged.push({ symbol: a.symbol, ratio, percent, measured: measuredSurge(a.pool) });
+  }
+
+  if (flagged.length === 0) {
+    el.refillNote.hidden = true;
+    return;
+  }
+
+  flagged.sort((a, b) => b.percent - a.percent);
+  const described = flagged.map((f) => {
+    const measured = f.measured ? ", and did so at x" + (1 + f.measured.medianSurge).toFixed(1) +
+      " across " + f.measured.readings + " measured weeks" : "";
+    return f.symbol + " (" + f.percent + "% of your vote) usually settles at x" + f.ratio.toFixed(1) +
+      " the weight it shows now" + measured;
+  });
+
+  el.refillNote.textContent =
+    share + "% of this suggestion goes into pools whose weight is not all there yet. " +
+    described.join("; ") + ". Rewards are split by weight, so if that weight arrives, the dollars above " +
+    "fall by roughly the same factor — the pool is not paying more, it is simply emptier at this moment. " +
+    "The Refill column in the full ranking marks every pool this way.";
+  el.refillNote.hidden = false;
 }
 
 /**
@@ -1167,12 +1239,13 @@ function renderAllocation() {
     tr.appendChild(cell(pct + "%", "num pct", "Vote %"));
     tr.appendChild(cell(num(a.veAeroAllocated), "num", "veAERO"));
     tr.appendChild(cell(usd(a.expectedUsd), "num", "Expected $"));
-    tr.appendChild(cell(num(a.existingVotes), "num", "Pool votes assumed"));
+    tr.appendChild(assumedVotesCell(a));
     tr.appendChild(cell(a.consistency.toFixed(2), "num " + consistencyClass(a.consistency), "Consistency"));
     frag.appendChild(tr);
   }
   el.allocBody.replaceChildren(frag);
   el.copyBtn.disabled = lastPercents.length === 0;
+  renderRefillNote(shown, percents);
 
   // The headline must describe the vote on screen, not the continuous allocation
   // behind it: sub-1% rows are not shown and their points went to the rows that are.
