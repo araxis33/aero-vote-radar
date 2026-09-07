@@ -13,7 +13,9 @@ import {
 } from "../src/allocator.js";
 import { epochEndOf, formatDuration } from "../src/trend.js";
 import { previousSettledVotes } from "../src/dilution.js";
-import { VOTE_BASIS_CROSSOVER_VEAERO } from "../src/constants.js";
+import { VOTE_BASIS_CROSSOVER_VEAERO, VOTER_ADDRESS } from "../src/constants.js";
+import { buildVoteCalldata } from "../src/calldata.js";
+import type { WholePercentWeight } from "../src/allocator.js";
 
 /**
  * The static site cannot import the TypeScript allocator: `docs/` is served by
@@ -313,5 +315,83 @@ test("docs/index.html's voteBasisCaveat matches src/allocator.ts word for word",
         `voteBasisCaveat disagreed at ${budget} veAERO on "${basis}"`,
       );
     }
+  }
+});
+
+/**
+ * The calldata builder is the one hand-port whose output someone signs. A page
+ * that encoded a different pool order, a wrong offset or another contract than
+ * the tested implementation would produce a transaction that looks right in the
+ * table above it and votes for something else — so it is held to viem's own
+ * encoding, not to a fixture written by the same hand that wrote the port.
+ */
+const siteCalldata = new Function(`
+  ${extractConst(siteSource, "VOTER_ADDRESS")}
+  ${extractConst(siteSource, "VOTE_SELECTOR")}
+  ${extractFunction(siteSource, "voteCalldata")}
+  ${extractConst(siteSource, "CALLDATA_SELF_TEST")}
+  ${extractFunction(siteSource, "calldataEncoderIsSound")}
+  return { voteCalldata, calldataEncoderIsSound, VOTER_ADDRESS, VOTE_SELECTOR, CALLDATA_SELF_TEST };
+`)() as {
+  voteCalldata: (tokenId: string, rows: WholePercentWeight[]) => string;
+  calldataEncoderIsSound: () => boolean;
+  VOTER_ADDRESS: string;
+  VOTE_SELECTOR: string;
+  CALLDATA_SELF_TEST: { tokenId: string; rows: WholePercentWeight[]; expected: string };
+};
+
+const weight = (i: number, percent: number): WholePercentWeight => ({
+  pool: `0x${String(i).padStart(40, "0")}`,
+  symbol: `P${i}`,
+  percent,
+});
+
+test("docs/index.html encodes the same vote bytes as src/calldata.ts", () => {
+  const cases: { name: string; tokenId: string; rows: WholePercentWeight[] }[] = [
+    { name: "everything in one pool", tokenId: "1", rows: [weight(1, 100)] },
+    { name: "two pools", tokenId: "118577", rows: [weight(1, 60), weight(2, 40)] },
+    {
+      name: "a spread across seven pools, the shape the allocation usually takes",
+      tokenId: "999999999999999999999",
+      rows: [weight(1, 30), weight(2, 25), weight(3, 15), weight(4, 12), weight(5, 8), weight(6, 6), weight(7, 4)],
+    },
+    {
+      name: "a hundred one-percent rows, so the array offsets are exercised",
+      tokenId: "42",
+      rows: Array.from({ length: 100 }, (_, i) => weight(i + 1, 1)),
+    },
+  ];
+
+  for (const { name, tokenId, rows } of cases) {
+    assert.equal(siteCalldata.voteCalldata(tokenId, rows), buildVoteCalldata(tokenId, rows).data, `disagreed on: ${name}`);
+  }
+});
+
+test("docs/index.html points the vote at the same contract, with the same selector", () => {
+  assert.equal(siteCalldata.VOTER_ADDRESS, VOTER_ADDRESS);
+  assert.equal(siteCalldata.VOTE_SELECTOR, buildVoteCalldata("1", [weight(1, 100)]).data.slice(0, 10));
+});
+
+test("docs/index.html's calldata self-test vector is the one viem produces", () => {
+  const { tokenId, rows, expected } = siteCalldata.CALLDATA_SELF_TEST;
+  assert.equal(expected, buildVoteCalldata(tokenId, rows).data);
+  assert.equal(siteCalldata.calldataEncoderIsSound(), true);
+});
+
+test("docs/index.html refuses the same malformed allocations src/calldata.ts refuses", () => {
+  const bad: { name: string; tokenId: string; rows: WholePercentWeight[] }[] = [
+    { name: "no rows", tokenId: "1", rows: [] },
+    { name: "weights that do not total 100", tokenId: "1", rows: [weight(1, 60), weight(2, 30)] },
+    { name: "the same pool twice", tokenId: "1", rows: [weight(1, 50), weight(1, 50)] },
+    { name: "a zero weight", tokenId: "1", rows: [weight(1, 100), weight(2, 0)] },
+    { name: "a fractional weight", tokenId: "1", rows: [weight(1, 99.5), weight(2, 0.5)] },
+    { name: "a token id that is not a number", tokenId: "118577n", rows: [weight(1, 100)] },
+    { name: "a zero token id", tokenId: "0", rows: [weight(1, 100)] },
+    { name: "an empty token id", tokenId: "", rows: [weight(1, 100)] },
+  ];
+
+  for (const { name, tokenId, rows } of bad) {
+    assert.throws(() => siteCalldata.voteCalldata(tokenId, rows), `the page accepted ${name}`);
+    assert.throws(() => buildVoteCalldata(tokenId, rows), `src/calldata.ts accepted ${name}`);
   }
 });
