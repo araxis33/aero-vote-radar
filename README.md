@@ -15,6 +15,7 @@ Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and ge
 
 - **Hands you a castable vote, not a leaderboard.** Whole percentages summing to exactly 100 — the only form Aerodrome's UI accepts — with a copy button and a link straight to the voting page.
 - **Prices your own dilution.** The moment you add votes to a pool, your own $/vote there falls. The allocator models that explicitly instead of dumping everything into whatever shows the highest APR.
+- **Tells you how much of itself to believe.** Of the ten pools a list like this puts on top, roughly six were still on top when the epoch closed — and only two once near-empty gauges are counted in. Measured, from the scan history, and printed on the page above the ranking rather than left as a warning that the numbers "move".
 - **Tells you when it expires.** A vote only counts toward the epoch it is cast in, so every recommendation carries the deadline and a countdown running off your own clock.
 - **Flags the traps rather than ranking them.** A single one-off bribe five weeks ago, a pool whose vote weight gets refilled in the last hours of the epoch, a pool too new to have a record — each is marked, because each looks like an opportunity and isn't.
 - **Never touches your wallet.** No connection request, no signature, no keys. It prints numbers; you cast the vote. Reading voting power from an address is a read-only chain call.
@@ -205,6 +206,51 @@ itself wanders, which is precisely why the tool points at
 `backtest --veaero <your amount>` instead of publishing a figure and letting it
 go stale.
 
+## How much of the ranking survives the week
+
+Every dashboard in this corner of Base, this one included, ranks pools by a rate whose
+denominator — vote weight — is still moving while you read it. The usual treatment is a
+sentence warning that the figure is unstable. This repo can do better than a warning,
+because it has been committing the live tally every six hours since 7 August: pair each of
+those scans with the weight its epoch went on to settle at, and the question becomes
+answerable. Of the ten pools a list put on top at that moment, how many were still on top
+at the close?
+
+```
+npm run timing                        # walks the committed snapshot history, writes docs/data/timing.json
+npm run timing some/dir out.json      # or a directory of snapshot JSON files, to another path
+```
+
+Measured over 104 scans of the four settled epochs the history reaches (6, 13, 20 and 27
+August), 10,560 pool readings:
+
+| ranked over | top ten still on top at close |
+|---|---|
+| pools paying $1,000+ an epoch | **6 of 10** |
+| pools with 50,000+ votes behind them | 3 of 10 |
+| every pool, near-empty gauges included | 1–2 of 10 |
+
+Two things make that number honest rather than flattering:
+
+- **Both lists are ranked with the epoch's settled rewards.** The earlier ranking is handed
+  perfect foresight about payouts it could not have had, so every place it loses is caused
+  purely by votes moving. Whatever a real forecast does to it, the figure is a ceiling.
+- **It is reported over three sets of pools, not one.** The single number across everything
+  is dominated by gauges so thin that one voter's arrival halves the rate. Reporting only
+  that would tell a voter their list is worthless when the part of it they can actually use
+  holds up reasonably well — a different kind of lie.
+
+The same job measures how far the vote weight the allocation assumes typically lands from
+where the epoch settles (about 20% on last epoch's final weight, 19% on the live weight),
+which is what turns the headline "expected next epoch" figure into a range instead of a
+point. Neither basis is a large edge over the other, and by the "closest of the two"
+measure last epoch's weight wins outright — the page says so, because a tool that hides the
+size of its own error is asking to be trusted rather than checked.
+
+Limits worth stating: four settled epochs is a small sample and grows by one a week; the
+scans within a pool are correlated, so the reading count is not a count of independent
+observations; and only epochs the snapshot history actually reaches can be scored at all.
+
 ## Casting the vote: unsigned calldata
 
 Everything above ends in a table of percentages that somebody then retypes into
@@ -213,7 +259,12 @@ percentage point loses accuracy — to a mistyped digit, or a row skipped becaus
 the form scrolled.
 
 `--calldata` closes that gap by printing the same vote as the exact bytes
-`Voter.vote` expects:
+`Voter.vote` expects — and so does the hosted page, under *"Cast this from your own
+wallet"* below the allocation, where a veNFT id turns the table on screen into the same
+unsigned transaction. The page encodes it by hand, because it ships as one static file with
+no build step; `test/site-parity.test.ts` holds that hand-port to viem's own encoding on
+fixtures from one pool to a hundred, and the page checks itself against a known vector on
+load and withdraws the button rather than offering bytes it cannot verify.
 
 ```bash
 npx tsx src/cli.ts recommend --veaero 25000 --min-consistency 0.5 --calldata --nft 17324
@@ -504,10 +555,14 @@ src/
   snapshot-cli.ts  entrypoint for the scheduled snapshot job
   predict.ts       pure scoring for which vote-basis predictor is actually most accurate
   predict-cli.ts   entrypoint for `npm run predict-check`
+  settled.ts       the committed scan history + the settled on-chain answer, shared by both measurements
+  timing.ts        pure scoring for how much of a ranking survives to the epoch's close
+  timing-cli.ts    entrypoint for `npm run timing`, writes docs/data/timing.json
 docs/              the web app, served by GitHub Pages
   index.html       static page: reads the snapshot, runs the allocator client-side
   data/
     snapshot.json  latest scan, refreshed every 6 hours by CI
+    timing.json    survival + accuracy measurement, refreshed weekly by CI
 test/
   allocator.test.ts    unit tests for the greedy marginal-allocation algorithm and percentage rounding
   backtest.test.ts     unit tests for the backtester, including that it never peeks at the epoch under test
@@ -524,6 +579,7 @@ test/
   mcp-server.test.ts   unit tests for the MCP tools' veAero/address budget resolution
   predict.test.ts      unit tests for predictor scoring (log-scale error, bias, closest-of, pool-size buckets)
   predict-cli.test.ts  unit tests for snapshotsFromDir, including that a malformed file is skipped rather than crashing the run
+  timing.test.ts       unit tests for top-ten survival, the window a scan falls in, and the late-mover threshold
   site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
 ```
 
