@@ -17,16 +17,10 @@
  * observations within one pool are not independent (the same pool appears at
  * every scan time), and only epochs with snapshot coverage can be scored.
  */
-import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { fetchActivePools, fetchPoolEpochs } from "./pools.js";
-import { getTokenPrices } from "./prices.js";
-import { epochUsd } from "./efficiency.js";
 import { periodStartOf } from "./trend.js";
-import { formatError, mapWithConcurrency } from "./util.js";
-import { TREND_EPOCHS } from "./constants.js";
+import { formatError } from "./util.js";
+import { loadSettledHistory, snapshotsFromDir, snapshotsFromGit } from "./settled.js";
 import {
   asRatio,
   inBucket,
@@ -36,54 +30,11 @@ import {
   type PredictionObservation,
 } from "./predict.js";
 
-const VE_DECIMALS = 18;
-const SNAPSHOT_PATH = "docs/data/snapshot.json";
 const BASES = ["previous", "current", "typical"];
 
-/** Every committed version of the snapshot, newest first. Empty if git is unavailable. */
-function snapshotsFromGit(): unknown[] {
-  let shas: string[];
-  try {
-    shas = execFileSync("git", ["log", "--format=%H", "--", SNAPSHOT_PATH], { encoding: "utf8" })
-      .split("\n")
-      .filter(Boolean);
-  } catch {
-    console.error("Could not read the snapshot history from git. Pass a directory of snapshot JSON files instead.");
-    return [];
-  }
-
-  const out: unknown[] = [];
-  for (const sha of shas) {
-    try {
-      out.push(JSON.parse(execFileSync("git", ["show", `${sha}:${SNAPSHOT_PATH}`], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })));
-    } catch {
-      // A commit from before the file existed, or one whose JSON never parsed.
-      // Skipping it is right: one unreadable revision is not a reason to refuse
-      // to measure anything.
-    }
-  }
-  return out;
-}
-
-/**
- * Every `.json` file in `dir`, parsed. Skips a file that can't be read or
- * doesn't parse rather than letting it crash the whole measurement — the same
- * tolerance `snapshotsFromGit` already has for a commit whose JSON never
- * parsed, and for the same reason: one bad file (partial write, an unrelated
- * JSON file that happens to sit in the directory) is not a reason to refuse to
- * measure the rest of it.
- */
-export function snapshotsFromDir(dir: string): unknown[] {
-  const out: unknown[] = [];
-  for (const f of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
-    try {
-      out.push(JSON.parse(readFileSync(join(dir, f), "utf8")));
-    } catch (err) {
-      console.error(`(skipping ${f}: ${formatError(err)})`);
-    }
-  }
-  return out;
-}
+// Re-exported because the tests import it from here, where it lived before the
+// second measurement needed it too. The implementation is in settled.ts.
+export { snapshotsFromDir };
 
 async function main() {
   const dir = process.argv[2];
@@ -94,34 +45,7 @@ async function main() {
     return;
   }
 
-  const pools = await fetchActivePools();
-  // Deep enough that a scan from the oldest covered epoch still has a full
-  // trailing window strictly older than the epoch it is predicting.
-  const depth = TREND_EPOCHS + 10;
-  const epochsByPool = await mapWithConcurrency(pools, 8, (p) =>
-    fetchPoolEpochs(p.address, depth).catch(() => []),
-  );
-  const allTokens = epochsByPool.flat().flatMap((e) => [
-    ...e.bribes.map((b) => b.token),
-    ...e.fees.map((f) => f.token),
-  ]);
-  const prices = await getTokenPrices(allTokens);
-
-  // address -> epoch start -> settled weight / USD, so a scan can be paired with
-  // the epoch it was taken inside regardless of how deep each pool's history is.
-  const settledVotes = new Map<string, Map<number, number>>();
-  const settledUsd = new Map<string, Map<number, number>>();
-  pools.forEach((pool, i) => {
-    const votes = new Map<number, number>();
-    const usd = new Map<number, number>();
-    for (const e of epochsByPool[i]) {
-      votes.set(e.ts, Number(e.votes) / 10 ** VE_DECIMALS);
-      usd.set(e.ts, epochUsd(e, prices));
-    }
-    settledVotes.set(pool.address.toLowerCase(), votes);
-    settledUsd.set(pool.address.toLowerCase(), usd);
-  });
-
+  const { votes: settledVotes, usd: settledUsd } = await loadSettledHistory();
   const currentEpochStart = periodStartOf(Math.floor(Date.now() / 1000));
   const observations: PredictionObservation[] = [];
   const epochsCovered = new Set<number>();
