@@ -191,12 +191,15 @@ budget grows, dilution rather than pool-picking decides the outcome, that
 protection turns into an over-estimate on every pool at once, and the default
 pulls ahead. The crossover sits near 1,000,000 veAERO.
 
-**So the tool now says so.** Below that size, `recommend` closes with a line
-saying the basis it just used is the one the backtest does not favour, and the
-web page carries the same note under its allocation; above it, a run using
-`--vote-basis typical` gets the warning pointing the other way. Neither switches
-anything: two honest measurements disagree, and the choice belongs to the person
-whose veAERO it is. `VOTE_BASIS_CROSSOVER_VEAERO` in `src/constants.ts` holds the
+**So the tool now says so — and lets you act on it.** Below that size,
+`recommend` closes with a line saying the basis it just used is the one the
+backtest does not favour, and the web page carries the same note under its
+allocation; above it, a run using `--vote-basis typical` gets the warning
+pointing the other way. The page's *"Vote weight to expect"* dropdown offers all
+three, `typical` included, so a visitor the caveat has just warned can switch
+basis on the spot instead of being sent to a command line they will not open.
+Nothing switches by itself: two honest measurements disagree, and the choice
+belongs to the person whose veAERO it is. `VOTE_BASIS_CROSSOVER_VEAERO` in `src/constants.ts` holds the
 threshold and the reasoning.
 
 **Take the table as a shape, not as numbers.** It moves week to week — the run
