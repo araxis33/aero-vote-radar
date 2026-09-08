@@ -583,6 +583,7 @@ test/
   predict.test.ts      unit tests for predictor scoring (log-scale error, bias, closest-of, pool-size buckets)
   predict-cli.test.ts  unit tests for snapshotsFromDir, including that a malformed file is skipped rather than crashing the run
   timing.test.ts       unit tests for top-ten survival, the window a scan falls in, and the late-mover threshold
+  timing-cli.test.ts   unit tests for buildAccuracyReport, including that an empty pool-size bucket is dropped rather than published as NaN
   site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
 ```
 

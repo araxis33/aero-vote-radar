@@ -68,6 +68,31 @@ const toAccuracy = (observations: PredictionObservation[]): BasisAccuracy[] =>
     closestOn: s.closestOn,
   }));
 
+/**
+ * Assembles the accuracy section of `docs/data/timing.json` from already-scored
+ * observations. Pure and exported so the bucket-filtering behaviour below is
+ * unit-testable without a chain scan or the committed snapshot history — the
+ * same separation `predict.ts`'s `scorePredictors`/`observationsFromSnapshot`
+ * already have from `predict-cli.ts`'s live-fetching `main`.
+ *
+ * A pool-size bucket with no observations is dropped rather than published
+ * empty: `scorePredictors` still returns a row per basis with `observations: 0`
+ * and a `NaN` error/bias for an empty input, and shipping that to the page
+ * would render as a literal "NaN%" instead of the bucket simply not appearing.
+ * Checking `bases[0].observations` is enough because every basis is scored
+ * against the same filtered set, so all three always agree on the count.
+ */
+export function buildAccuracyReport(observations: PredictionObservation[], epochsCovered: Set<number>): AccuracyReport {
+  return {
+    overall: toAccuracy(observations),
+    buckets: SIZE_BUCKETS.map((bucket) => ({
+      label: bucket.label,
+      bases: toAccuracy(observations.filter((o) => inBucket(o, bucket))),
+    })).filter((b) => b.bases.length > 0 && b.bases[0].observations > 0),
+    epochs: [...epochsCovered].sort((a, b) => a - b).map((t) => new Date(t * 1000).toISOString().slice(0, 10)),
+  };
+}
+
 async function main() {
   const outPath = process.argv[3] ?? "docs/data/timing.json";
   const dir = process.argv[2];
@@ -105,14 +130,7 @@ async function main() {
     return;
   }
 
-  const accuracy: AccuracyReport = {
-    overall: toAccuracy(observations),
-    buckets: SIZE_BUCKETS.map((bucket) => ({
-      label: bucket.label,
-      bases: toAccuracy(observations.filter((o) => inBucket(o, bucket))),
-    })).filter((b) => b.bases.length > 0 && b.bases[0].observations > 0),
-    epochs: [...epochsCovered].sort((a, b) => a - b).map((t) => new Date(t * 1000).toISOString().slice(0, 10)),
-  };
+  const accuracy = buildAccuracyReport(observations, epochsCovered);
 
   const report = { ...buildTimingReport(scans), accuracy };
 
