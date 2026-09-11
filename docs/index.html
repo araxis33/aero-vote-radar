@@ -1663,7 +1663,11 @@ fetch("data/timing.json", { cache: "no-cache" })
     timing = data;
     renderTrust();
     renderAccuracy();
-    if (snapshot) renderAllocation();
+    // renderRanking's Refill tooltips read `timing` too (via measuredSurge), and
+    // this fetch deliberately isn't awaited together with the snapshot one — so
+    // whichever of the two resolves second has to re-render what the first one
+    // already drew with the other half of the data missing.
+    if (snapshot) { renderRanking(); renderAllocation(); }
   })
   .catch(() => {
     // No panel, no range, no measured tooltips — and no error either. The
