@@ -447,3 +447,29 @@ test("docs/index.html routes each vote basis to the weight src/ would use", () =
   // tally: a stale bookmark carrying an old basis should be conservative.
   assert.equal(siteModule.votesForBasis(pool, "nonsense"), siteModule.votesForBasis(pool, "previous"));
 });
+
+/**
+ * `keptClass` has no `src/` counterpart — it is the "how much of this page to
+ * believe" panel's own severity colouring, not a hand-port — but it is pure
+ * and worth pinning directly: `keptTile`'s three tiles (`keptAll`/`keptThick`/
+ * `keptRich`) are computed independently in `src/timing.ts`'s
+ * `buildTimingReport` and can be `null` (no qualifying pools in that window)
+ * even when a sibling tile in the same window is a real number — that's
+ * exactly the case `trustWindowNow` tolerates by checking only `keptRich`
+ * before picking a window. A naive `kept >= 6 ? ... : kept >= 3 ? ... : "bad"`
+ * coerces `null` to `0` for both comparisons and falls through to `"bad"`,
+ * the same red used for "fewer than 3 of 10 survived" — painting "no
+ * measurement yet" as "worst possible measurement".
+ */
+const siteKeptClass = new Function(`
+  ${extractConst(siteSource, "keptClass")}
+  return keptClass;
+`)() as (kept: number | null) => string;
+
+test("docs/index.html's keptClass renders 'no data' as neutral, not as the worst score", () => {
+  assert.equal(siteKeptClass(null), "", "a null (unmeasured) tile must not be coloured as the worst outcome");
+  assert.equal(siteKeptClass(6), "good");
+  assert.equal(siteKeptClass(3), "mid");
+  assert.equal(siteKeptClass(2.9), "bad");
+  assert.equal(siteKeptClass(0), "bad");
+});

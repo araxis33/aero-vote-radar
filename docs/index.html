@@ -1325,7 +1325,7 @@ function trustWindowNow() {
   return covered.length ? { window: covered[0], isNow: false } : null;
 }
 
-const keptClass = (kept) => (kept >= 6 ? "good" : kept >= 3 ? "mid" : "bad");
+const keptClass = (kept) => (kept === null ? "" : kept >= 6 ? "good" : kept >= 3 ? "mid" : "bad");
 
 /** One "6.0 of 10" tile with the set of pools it was measured over. */
 function keptTile(kept, label) {
