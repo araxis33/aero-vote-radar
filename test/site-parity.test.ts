@@ -473,3 +473,37 @@ test("docs/index.html's keptClass renders 'no data' as neutral, not as the worst
   assert.equal(siteKeptClass(2.9), "bad");
   assert.equal(siteKeptClass(0), "bad");
 });
+
+/**
+ * `accuracyClass`/`accuracyText` back the "how accurate was each vote basis"
+ * tiles in `renderAccuracy`, fed from `timing.accuracy.overall` — one entry
+ * per basis, always present by name (see `buildAccuracyReport`'s `BASES`),
+ * even when that basis scored zero usable observations. `scorePredictors` in
+ * src/predict.ts medians an empty array to `NaN` rather than fabricating a
+ * number for exactly that case (the same reasoning that already excludes an
+ * empty pool-size bucket from `report.buckets`), so a basis with
+ * `observations: 0` carries a `medianAbsError` of `NaN`. Every `<=` against
+ * `NaN` is false, so a naive port of the threshold ternary falls through to
+ * "bad" and prints "NaN% out" — the same "no data reads as the worst possible
+ * score" bug `keptClass`/`keptTile` were fixed for above, in the tile right
+ * next to them.
+ */
+const siteAccuracy = new Function(`
+  ${extractConst(siteSource, "accuracyClass")}
+  ${extractConst(siteSource, "accuracyText")}
+  return { accuracyClass, accuracyText };
+`)() as {
+  accuracyClass: (basis: { observations: number; medianAbsError: number }) => string;
+  accuracyText: (basis: { observations: number; medianAbsError: number }) => string;
+};
+
+test("docs/index.html's accuracyClass/accuracyText render a zero-observation basis as neutral 'no data', not '0% out'/NaN%", () => {
+  const noData = { observations: 0, medianAbsError: NaN };
+  assert.equal(siteAccuracy.accuracyClass(noData), "", "a basis with no observations must not be coloured as the worst outcome");
+  assert.equal(siteAccuracy.accuracyText(noData), "—");
+
+  assert.equal(siteAccuracy.accuracyClass({ observations: 5, medianAbsError: 0.1 }), "good");
+  assert.equal(siteAccuracy.accuracyClass({ observations: 5, medianAbsError: 0.2 }), "mid");
+  assert.equal(siteAccuracy.accuracyClass({ observations: 5, medianAbsError: 0.3 }), "bad");
+  assert.equal(siteAccuracy.accuracyText({ observations: 5, medianAbsError: 0.173 }), "17% out");
+});

@@ -1327,6 +1327,15 @@ function trustWindowNow() {
 
 const keptClass = (kept) => (kept === null ? "" : kept >= 6 ? "good" : kept >= 3 ? "mid" : "bad");
 
+// observations === 0 leaves medianAbsError as NaN (see scorePredictors in
+// src/predict.ts, which medians an empty array rather than fabricating a
+// number) — every `<=` comparison against NaN is false, so this used to fall
+// through to "bad" and print "NaN% out": the same "no data reads as the worst
+// possible score" bug keptClass/keptTile above were fixed for.
+const accuracyClass = (basis) =>
+  basis.observations === 0 ? "" : basis.medianAbsError <= 0.15 ? "good" : basis.medianAbsError <= 0.25 ? "mid" : "bad";
+const accuracyText = (basis) => (basis.observations === 0 ? "—" : (basis.medianAbsError * 100).toFixed(0) + "% out");
+
 /** One "6.0 of 10" tile with the set of pools it was measured over. */
 function keptTile(kept, label) {
   const box = document.createElement("div");
@@ -1377,8 +1386,8 @@ function renderAccuracy() {
   const tile = (basis, label) => {
     const box = document.createElement("div");
     const n = document.createElement("div");
-    n.className = "k " + (basis.medianAbsError <= 0.15 ? "good" : basis.medianAbsError <= 0.25 ? "mid" : "bad");
-    n.textContent = (basis.medianAbsError * 100).toFixed(0) + "% out";
+    n.className = "k " + accuracyClass(basis);
+    n.textContent = accuracyText(basis);
     const w = document.createElement("div");
     w.className = "w";
     w.textContent = label;
