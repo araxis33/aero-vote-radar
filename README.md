@@ -228,40 +228,42 @@ budget grows, dilution rather than pool-picking decides the outcome, that
 protection turns into an over-estimate on every pool at once, and the default
 pulls ahead. The crossover sits near 1,000,000 veAERO.
 
-**Re-measured 2026-09-15, and the advantage is gone.** The same command, the
-same five-epoch depth, against a fresh live scan:
+**Re-measured 2026-09-15 — twice, and the first attempt was wrong.**
+
+The first re-run found the advantage gone: +4.2% at 2,000 veAERO, -11.4% at
+5,000, +4.0% at 25,000, -3.1% at 100,000, sign alternating. It was measured on a
+pool universe missing most of Aerodrome — concentrated-liquidity pools were
+being dropped in discovery, so the replay chose from 107 pools where 359 exist
+and could not see the largest vote weights on the chain at all.
+
+With them restored, same command, same five epochs, `--min-consistency 0.5`:
 
 | veAERO | default $ | typical $ | difference | typical ahead in |
 |---|---|---|---|---|
-| 2,000 | 27.65 | 28.81 | +4.2% | 3 of 5 epochs |
-| 5,000 | 62.66 | 55.50 | **-11.4%** | 2 of 5 epochs |
-| 25,000 | 293.69 | 305.44 | +4.0% | 3 of 5 epochs |
-| 100,000 | 1,223.77 | 1,185.47 | -3.1% | 2 of 5 epochs |
+| 2,000 | 57.43 | 87.64 | **+52.6%** | 5 of 5 epochs |
+| 5,000 | 102.33 | 180.70 | **+76.6%** | 5 of 5 epochs |
+| 10,000 | 178.12 | 287.42 | **+61.4%** | 5 of 5 epochs |
+| 25,000 | 585.04 | 559.32 | -4.4% | 4 of 5 |
+| 50,000 | 1,201.74 | 991.38 | -17.5% | 4 of 5 |
+| 100,000 | 2,105.05 | 1,606.93 | **-23.7%** | 4 of 5 |
 
-The sign alternates and neither basis wins a majority of epochs at any size.
-This README already says to treat a single-digit uplift as noise rather than
-proof, and that is what this is. The clean ladder above -- +114%, +99%, +64% --
-did not survive three weeks.
+The crossover is real — below it `typical` wins *every* epoch, not a majority —
+and it sits near **20,000 veAERO**, not the 1,000,000 this file carried for
+three weeks. That figure was never a measurement of Aerodrome; it was a
+measurement of the twentieth of it the tool could see.
 
-**So the warning came out.** Below the crossover the page and `recommend` now
-say nothing about the vote basis, because there is nothing left to say: telling
-a voter that the setting they are on is the wrong one, on the strength of a
-difference the tool can no longer measure, spends their trust and pays them no
-money. It was also the second of two amber blocks a first-time visitor met
-before any number, which is its own kind of dishonesty -- a page that spends its
-opening explaining why not to believe it.
-
-The dropdown still offers all three, `backtest --veaero <your amount>` still
-scores them against each other on your own size, and the large-budget caveat
-stays -- its reason is structural rather than a replay that can move, since past
-that size a budget is big enough to shift the very weight `typical` assumes will
-arrive. `VOTE_BASIS_CROSSOVER_VEAERO` in `src/constants.ts` carries both
-measurements and both dates.
+**So the page prices on `typical` by default** and says nothing below the
+crossover, because there is nothing to warn about: that is the basis the
+evidence favours at that size. Above it, a run on `typical` gets the caveat
+pointing the other way, for a structural reason rather than a replay that can
+move — past that size a budget is large enough to shift the very weight
+`typical` assumes will arrive.
 
 **The lesson is about measurement, not about `typical`.** A number quoted as
-settled fact in prose goes stale silently; the same number recomputed weekly in
-CI announces when it moves. That is why `timing.json` exists, and the vote-basis
-dollars are the next thing that belongs in it.
+settled fact in prose goes stale in silence. But re-measuring it on a broken
+universe is not a check on the number either — it is the same mistake with a
+fresh date on it. `backtest --veaero <your amount>` scores all three on the
+reader's own size, which is the only version that cannot go quietly wrong.
 
 ## How much of the ranking survives the week
 

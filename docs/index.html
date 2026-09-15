@@ -854,7 +854,7 @@ function rateForBasis(p, basis) {
  * favours. Mirrors VOTE_BASIS_CROSSOVER_VEAERO in src/constants.ts, which
  * carries the measurement and the date it was taken.
  */
-const VOTE_BASIS_CROSSOVER_VEAERO = 1000000;
+const VOTE_BASIS_CROSSOVER_VEAERO = 20000;
 
 /**
  * Whether, at this budget, the basis this allocation was priced on is the one
@@ -1664,10 +1664,11 @@ function renderAccuracy() {
     "so this is also where the range under “Expected next epoch” comes from. Observations inside one pool " +
     "are not independent, and only epochs the scan history reaches can be scored at all." +
     (typical
-      ? " The third option, “the weight it usually settles at”, is the least accurate of the three here. It " +
-        "once earned enough more in replay to be worth the trade; re-measured on 2026-09-15 it did not — " +
-        "+4% at 2,000 and 25,000 veAERO, −11% at 5,000, −3% at 100,000, with no consistent winner. At that " +
-        "size the three bases are the same bet, so nothing here recommends switching."
+      ? " The third option, “the weight it usually settles at”, is the least accurate of the three here — " +
+        "and it is the default, because accuracy over every pool is not the question an allocator asks. " +
+        "Replaying the last five epochs it earned +53% at 2,000 veAERO, +77% at 5,000 and +61% at 10,000, " +
+        "ahead in every single epoch at each size, then fell behind above roughly 20,000. Past that the page " +
+        "says so under the allocation."
       : "");
   el.accuracyPanel.hidden = false;
 }

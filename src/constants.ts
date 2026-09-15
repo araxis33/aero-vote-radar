@@ -75,20 +75,36 @@ export const MIN_VOTE_BASELINE = 1000;
 // The crossover moves week to week — a run the day before that one put the
 // 1,000,000 figure at -30.7% rather than -4%.
 //
-// RE-MEASURED 2026-09-15, same command, last 5 epochs: the small-budget
-// advantage is gone. Typical against the default now reads +4.2% at 2,000
-// veAERO, -11.4% at 5,000, +4.0% at 25,000 and -3.1% at 100,000 — the sign
-// alternates, and typical was ahead in 2 or 3 of 5 epochs each time, which is
-// what no edge looks like. The README itself calls a single-digit uplift noise
-// rather than proof, so below this line the page and the CLI now say nothing:
-// warning a voter off a setting that measures the same as the one they are on
-// costs their trust and buys them no money.
+// RE-MEASURED 2026-09-15, twice, and the second one is the one that counts.
 //
-// The constant stays because the structural argument above it does, and
-// because the advantage could return; it now gates only the large-budget
-// caveat. It is a threshold for a warning, never for silently switching the
-// basis.
-export const VOTE_BASIS_CROSSOVER_VEAERO = 1_000_000;
+// The first re-run that day found the advantage gone entirely: +4.2% at 2,000
+// veAERO, -11.4% at 5,000, +4.0% at 25,000, -3.1% at 100,000, with the sign
+// alternating. On that reading the small-budget warning was removed.
+//
+// It was measured on a pool universe that was missing most of Aerodrome.
+// Concentrated-liquidity pools were being dropped in pool discovery, so the
+// backtest was choosing from 107 pools where 359 exist and could not see the
+// largest vote weights on the chain at all. With them restored, the same
+// command over the same five epochs, filtered at --min-consistency 0.5:
+//
+//   veAERO     default      typical    difference   typical ahead in
+//    2,000      $57.43       $87.64        +52.6%       5 of 5 epochs
+//    5,000     $102.33      $180.70        +76.6%       5 of 5 epochs
+//   10,000     $178.12      $287.42        +61.4%       5 of 5 epochs
+//   25,000     $585.04      $559.32         -4.4%       4 of 5 epochs
+//   50,000   $1,201.74      $991.38        -17.5%       4 of 5 epochs
+//  100,000   $2,105.05    $1,606.93        -23.7%       4 of 5 epochs
+//
+// The crossover is real, it is not noise — below it "typical" wins every single
+// epoch, not a majority — and it sits near 20,000 veAERO rather than the
+// 1,000,000 recorded above. That old figure was never a measurement of
+// Aerodrome; it was a measurement of the twentieth of it the tool could see.
+//
+// Which is the lesson worth keeping: a number re-measured on a broken universe
+// is not a check on the number, it is the same mistake with a fresh date on it.
+// The crossover still moves week to week, so this remains a threshold for a
+// warning, never for silently switching the basis.
+export const VOTE_BASIS_CROSSOVER_VEAERO = 20_000;
 
 export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";
 
