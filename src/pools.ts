@@ -60,23 +60,42 @@ export function resolvePoolInfo<TPool extends string, TGauge extends string>(
   symbols: readonly MulticallOutcome[],
   token0s: readonly MulticallOutcome[],
   token1s: readonly MulticallOutcome[],
+  tokenSymbols?: ReadonlyMap<string, string>,
 ): { pools: PoolInfo[]; skipped: number } {
   const pools: PoolInfo[] = [];
   let skipped = 0;
 
   alivePools.forEach((pool, i) => {
-    if (symbols[i].status !== "success" || token0s[i].status !== "success" || token1s[i].status !== "success") {
+    // A pool that will not even name its own two tokens cannot be described.
+    if (token0s[i].status !== "success" || token1s[i].status !== "success") {
       skipped++;
       return;
     }
-    pools.push({
-      address: pool,
-      symbol: symbols[i].result as string,
-      token0: token0s[i].result as string,
-      token1: token1s[i].result as string,
-      gauge: aliveGauges[i],
-      gaugeAlive: true,
-    });
+    const token0 = token0s[i].result as string;
+    const token1 = token1s[i].result as string;
+
+    // Slipstream (concentrated-liquidity) pools are not ERC20 LP tokens and have
+    // no `symbol()` at all, so requiring one silently dropped every one of them.
+    // They are not a fringe case: they carry the largest vote weights on
+    // Aerodrome. CL-WETH/cbBTC alone paid $113,895 in the epoch of 2026-09-03,
+    // against $121,033 for all 107 pools this function was returning — so the
+    // ranking was blind to more of the protocol than it covered, and the
+    // "non-standard/cross-chain entries" note was describing them wrongly.
+    //
+    // Naming them from the pair they hold is enough. Everything downstream keys
+    // on the address; the symbol is for the reader.
+    let symbol: string | null = symbols[i].status === "success" ? (symbols[i].result as string) : null;
+    if (!symbol && tokenSymbols) {
+      const a = tokenSymbols.get(token0.toLowerCase());
+      const b = tokenSymbols.get(token1.toLowerCase());
+      if (a && b) symbol = `CL-${a}/${b}`;
+    }
+    if (!symbol) {
+      skipped++;
+      return;
+    }
+
+    pools.push({ address: pool, symbol, token0, token1, gauge: aliveGauges[i], gaugeAlive: true });
   });
 
   return { pools, skipped };
@@ -157,10 +176,30 @@ export async function fetchActivePools(): Promise<PoolInfo[]> {
     }),
   ]);
 
-  const { pools: resolved, skipped } = resolvePoolInfo(alivePools, aliveGauges, symbols, token0s, token1s);
+  // The tokens of every pool whose own `symbol()` failed — which is every
+  // Slipstream pool. One extra multicall over the distinct tokens is what buys
+  // back the half of the protocol this function used to drop on the floor.
+  const needsPair = alivePools
+    .map((_, i) => i)
+    .filter((i) => symbols[i].status !== "success" && token0s[i].status === "success" && token1s[i].status === "success");
+  const tokenSymbols = new Map<string, string>();
+  if (needsPair.length > 0) {
+    const tokens = [
+      ...new Set(needsPair.flatMap((i) => [(token0s[i].result as string).toLowerCase(), (token1s[i].result as string).toLowerCase()])),
+    ];
+    const results = await client.multicall({
+      contracts: tokens.map((t) => ({ address: t as `0x${string}`, abi: POOL_ABI, functionName: "symbol" }) as const),
+      allowFailure: true,
+    });
+    tokens.forEach((t, i) => {
+      if (results[i].status === "success") tokenSymbols.set(t, results[i].result as string);
+    });
+  }
+
+  const { pools: resolved, skipped } = resolvePoolInfo(alivePools, aliveGauges, symbols, token0s, token1s, tokenSymbols);
 
   if (skipped > 0) {
-    console.error(`(skipped ${skipped} voter-registered pool(s) whose contract calls failed — likely non-standard/cross-chain entries)`);
+    console.error(`(skipped ${skipped} voter-registered pool(s) that would not name themselves or their tokens)`);
   }
 
   return resolved;

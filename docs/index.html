@@ -292,6 +292,33 @@
   <p class="hint">Read-only. The page never asks to connect a wallet, and nothing you type is sent anywhere except a public Base RPC call to read your voting power.</p>
 </section>
 
+<!-- The receipt, above the forecast. Everything below this section is a
+     prediction a stranger has no reason to trust yet; this is the one part of
+     the page they can check against their own wallet. Hidden until an address
+     is looked up, because there is nothing honest to show without one. -->
+<section id="reviewPanel" hidden>
+  <div class="rowhead">
+    <div>
+      <h2>What your last vote actually earned</h2>
+      <p class="h2note">The epoch is closed and the weights are final — nothing here is a forecast.</p>
+    </div>
+  </div>
+  <div class="lookup-msg" id="reviewMsg"></div>
+  <p class="h2note" id="reviewSummary"></p>
+  <table>
+      <thead>
+        <tr>
+          <th>Pool</th>
+          <th class="num">Your veAERO</th>
+          <th class="num">Pool total</th>
+          <th class="num">Pool paid</th>
+          <th class="num">You earned</th>
+        </tr>
+      </thead>
+    <tbody id="reviewBody"></tbody>
+  </table>
+</section>
+
 <div class="rowhead">
   <div>
     <h2>Suggested allocation</h2>
@@ -559,7 +586,7 @@ const hexOf = (n) => word(BigInt(n).toString(16));
 
 let rpcIndex = 0;
 
-async function ethCall(data) {
+async function ethCall(data, to = VE_ADDRESS) {
   let lastErr;
   for (let attempt = 0; attempt < RPCS.length; attempt++) {
     const url = RPCS[(rpcIndex + attempt) % RPCS.length];
@@ -567,7 +594,7 @@ async function ethCall(data) {
       const res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: VE_ADDRESS, data }, "latest"] }),
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
         signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -593,7 +620,166 @@ async function fetchVotingPower(address) {
   const powers = await Promise.all(ids.map((id) => ethCall(SEL_POWER_OF + hexOf(id)).then((r) => BigInt(r))));
   const total = powers.reduce((a, b) => a + b, 0n);
 
-  return { total: Number(total) / 1e18, locks: count, truncated: count > limit };
+  return { total: Number(total) / 1e18, locks: count, truncated: count > limit, ids };
+}
+
+// --- what the vote already cast actually earned ------------------------------
+// The one thing on this page that asks the visitor to believe nothing. The
+// epoch is closed, the weights are final, and every figure below can be checked
+// against their own wallet — which is the only honest way to introduce a tool
+// whose main output is a forecast.
+//
+// Read through the Voter's own getters rather than event logs: a week of Base is
+// roughly 300,000 blocks and public RPCs cap a getLogs range far below that, so
+// the log route is ~150 chunked requests and will not run in a browser. These
+// are the same plain eth_calls the voting-power lookup above already makes.
+
+// VOTER_ADDRESS is declared once, with the calldata builder further down —
+// site-parity.test.ts pins that single copy against src/constants.ts, and a
+// second const of the same name in this scope is a syntax error.
+const SEL_POOL_VOTE = "0xa86a366d";        // poolVote(uint256,uint256)
+const SEL_VOTES = "0xd23254b4";            // votes(uint256,address)
+
+const WEEK_SECONDS = 604800;
+
+/**
+ * The pools these locks have weight on, merged across locks.
+ *
+ * There is no length getter for a token's pool list on this deployment, so the
+ * index is walked upward until the call reverts — that revert is the length.
+ * The cap is there so a malformed answer cannot spin forever against a public
+ * endpoint.
+ */
+async function fetchCastVotes(ids, maxPoolsPerLock = 20) {
+  const merged = new Map();
+  for (const id of ids) {
+    for (let i = 0; i < maxPoolsPerLock; i++) {
+      let pool;
+      try {
+        pool = await ethCall(SEL_POOL_VOTE + hexOf(id) + hexOf(i), VOTER_ADDRESS);
+      } catch {
+        break; // past the end of this lock's list
+      }
+      const address = "0x" + pool.replace(/^0x/, "").slice(-40).toLowerCase();
+      const weight = Number(BigInt(await ethCall(SEL_VOTES + hexOf(id) + word(address), VOTER_ADDRESS))) / 1e18;
+      // A pool can stay in the list with zero weight after a re-vote; keeping it
+      // would put an empty row in a report about where the vote went.
+      if (weight > 0) merged.set(address, (merged.get(address) || 0) + weight);
+    }
+  }
+  return [...merged].map(([pool, veAero]) => ({ pool, veAero }));
+}
+
+/**
+ * Scores those votes against what the epoch settled at, using the per-epoch
+ * series the snapshot already publishes.
+ *
+ * Index 0 of `epochUsd` / `epochVotes` is the pool's own latest epoch, each
+ * further index one week older, so the offset is derived per pool rather than
+ * assumed — a pool whose rewards contract has not been touched this week has a
+ * different latest epoch from the snapshot's.
+ */
+function scoreCastVotes(votes, epochTs) {
+  const byAddress = new Map(snapshot.pools.map((p) => [p.pool.toLowerCase(), p]));
+  const rows = [];
+  let unscored = 0;
+  let budget = 0;
+
+  for (const v of votes) {
+    budget += v.veAero;
+    const p = byAddress.get(v.pool);
+    if (!p || !Array.isArray(p.epochUsd) || !Array.isArray(p.epochVotes)) { unscored++; continue; }
+    const index = Math.round((p.latestEpochTs - epochTs) / WEEK_SECONDS);
+    if (index < 0 || index >= p.epochUsd.length || index >= p.epochVotes.length) { unscored++; continue; }
+
+    const poolUsd = p.epochUsd[index];
+    const poolVotes = p.epochVotes[index];
+    // A pool with no recorded weight cannot have paid a share of anything.
+    const earnedUsd = poolVotes > 0 ? (poolUsd * v.veAero) / poolVotes : 0;
+    rows.push({ symbol: p.symbol, pool: v.pool, veAero: v.veAero, poolUsd, poolVotes, earnedUsd });
+  }
+
+  rows.sort((a, b) => b.earnedUsd - a.earnedUsd);
+  return { rows, unscored, budget, earnedUsd: rows.reduce((a, r) => a + r.earnedUsd, 0) };
+}
+
+/** The most recently closed epoch in the snapshot — never the one still running. */
+function lastSettledEpoch() {
+  if (!snapshot || !Array.isArray(snapshot.epochYields)) return null;
+  return snapshot.epochYields.find((y) => !y.partial) || null;
+}
+
+async function renderVoteReview(address) {
+  const settled = lastSettledEpoch();
+  if (!settled) return;
+
+  el.reviewMsg.textContent = "Reading what your locks voted for…";
+  el.reviewPanel.hidden = false;
+  el.reviewBody.replaceChildren();
+  el.reviewSummary.textContent = "";
+
+  let power;
+  try {
+    power = await fetchVotingPower(address);
+  } catch {
+    el.reviewMsg.textContent = "Could not reach a Base RPC to read this address. Try again in a moment.";
+    return;
+  }
+  if (!power.ids || power.ids.length === 0) {
+    el.reviewMsg.textContent = "No veAERO locks on this address, so there is no vote to score.";
+    return;
+  }
+
+  let votes;
+  try {
+    votes = await fetchCastVotes(power.ids);
+  } catch {
+    el.reviewMsg.textContent = "Could not read this address's votes. Try again in a moment.";
+    return;
+  }
+  if (votes.length === 0) {
+    el.reviewMsg.textContent = "These locks have no vote recorded on any pool, so there is nothing to score yet.";
+    return;
+  }
+
+  const scored = scoreCastVotes(votes, settled.ts);
+  const day = new Date(settled.ts * 1000).toISOString().slice(0, 10);
+
+  if (scored.rows.length === 0) {
+    el.reviewMsg.textContent =
+      "This address voted, but none of the pools it chose have a settled record for the epoch of " + day + ".";
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  for (const r of scored.rows) {
+    const tr = document.createElement("tr");
+    tr.appendChild(poolCell(r.symbol, r.pool));
+    tr.appendChild(cell(num(r.veAero), "num", "Your veAERO"));
+    tr.appendChild(cell(num(r.poolVotes), "num", "Pool total"));
+    tr.appendChild(cell(usd(r.poolUsd), "num", "Pool paid"));
+    tr.appendChild(cell(smallUsd(r.earnedUsd), "num", "You earned"));
+    frag.appendChild(tr);
+  }
+  el.reviewBody.replaceChildren(frag);
+
+  const perVote = scored.budget > 0 ? scored.earnedUsd / scored.budget : 0;
+  const parts = [
+    "Epoch of " + day + ", settled. You earned " + smallUsd(scored.earnedUsd) + " on " +
+      num(scored.budget) + " veAERO, or " + smallUsd(perVote) + " per veAERO.",
+    // The protocol-wide figure for the same epoch is the fair benchmark: it is a
+    // fact about the week rather than a claim about this tool, and it is already
+    // published in the snapshot.
+    "Across every pool that epoch, one veAERO earned " + smallUsd(settled.usdPerVote) + " on average — " +
+      (perVote >= settled.usdPerVote
+        ? "your vote beat that by " + Math.round((perVote / settled.usdPerVote - 1) * 100) + "%."
+        : "your vote came in " + Math.round((1 - perVote / settled.usdPerVote) * 100) + "% under it."),
+  ];
+  if (scored.unscored > 0) {
+    parts.push(scored.unscored + " pool(s) you voted for have no settled record for that epoch and are not counted.");
+  }
+  el.reviewSummary.textContent = parts.join(" ");
+  el.reviewMsg.textContent = "";
 }
 
 // --- formatting -------------------------------------------------------------
@@ -603,6 +789,12 @@ const usd = (n) =>
   : n >= 1 ? "$" + n.toFixed(2)
   : "$" + n.toFixed(4);
 const num = (n, d) => n.toLocaleString("en-US", { maximumFractionDigits: d === undefined ? 0 : d });
+// A small lock's share of a pool is routinely fractions of a cent, and usd()
+// rounds those to "$0.0000" — which reads as "this pool paid you nothing"
+// rather than "your share was small". On figures whose whole point is that the
+// holder can check them against their wallet, the figure has to survive being
+// printed.
+const smallUsd = (n) => (n === 0 ? "$0" : n < 0.01 ? "$" + n.toFixed(6) : usd(n));
 const pctChange = (n) => (n >= 0 ? "+" : "") + Math.round(n * 100).toLocaleString("en-US") + "%";
 const consistencyClass = (c) => (c >= 0.6 ? "c-good" : c >= 0.45 ? "c-warn" : "c-bad");
 
@@ -920,6 +1112,10 @@ const el = {
   statUsdRange: document.getElementById("statUsdRange"),
   statPools: document.getElementById("statPools"),
   statPerVote: document.getElementById("statPerVote"),
+  reviewPanel: document.getElementById("reviewPanel"),
+  reviewMsg: document.getElementById("reviewMsg"),
+  reviewSummary: document.getElementById("reviewSummary"),
+  reviewBody: document.getElementById("reviewBody"),
   statKeptBox: document.getElementById("statKeptBox"),
   statKept: document.getElementById("statKept"),
   statKeptNote: document.getElementById("statKeptNote"),
@@ -1519,6 +1715,10 @@ async function doLookup() {
       "Found " + num(total, 2) + " veAERO across " + locks + " lock" + (locks > 1 ? "s" : "") +
       (truncated ? " (only the first 60 counted)" : "") + ".";
     renderAllocation();
+    // Deliberately not awaited: the allocation is the page's job and is already
+    // on screen, while this walks one call per lock per pool and can take a
+    // moment. A slow receipt must not hold up the forecast.
+    renderVoteReview(raw.toLowerCase());
   } catch (err) {
     el.lookupMsg.className = "lookup-msg err";
     el.lookupMsg.textContent = "Couldn't reach a Base node (" + (err.message || err) + "). Type the amount manually instead.";
