@@ -11,6 +11,11 @@ import {
 import { backtestLive } from "./backtest.js";
 import { buildVoteCalldata } from "./calldata.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
+import { fetchVotesFor, fetchLastVoted, fetchPoolSymbols, scoreVotes } from "./voted.js";
+import { fetchPoolEpochs, type EpochData } from "./pools.js";
+import { getTokenPrices } from "./prices.js";
+import { mapWithConcurrency } from "./util.js";
+import { periodStartOf, WEEKLY_EPOCH } from "./trend.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
 import { formatError, isValidAddress, padCol, wrapText } from "./util.js";
 import { computeTrend, epochEndOf, formatDuration, isEpochInProgress } from "./trend.js";
@@ -576,6 +581,132 @@ async function cmdBacktest(args: string[]) {
   console.log("assumes your votes wouldn't have moved anyone else's, and only sees pools whose gauge is still alive.\n");
 }
 
+/**
+ * `review` — scores the vote already cast, for the epoch that has most recently
+ * closed.
+ *
+ * The rest of this CLI asks a holder to trust a forecast before they have any
+ * reason to. This asks for nothing: the epoch is settled, the weights are final,
+ * and every figure can be checked against their own wallet. It is the first
+ * thing a stranger can run that proves the tool is reading the right chain.
+ *
+ * Only pools the holder actually voted for are fetched, not the whole protocol,
+ * so it is a handful of calls rather than a full scan.
+ */
+async function cmdReview(args: string[]) {
+  const address = getFlag(args, "address");
+  const nftFlag = getFlag(args, "nft");
+  if (!address && !nftFlag) {
+    console.error("Usage: aero-vote-radar review (--address 0x... | --nft <id>) [--json]");
+    process.exitCode = 1;
+    return;
+  }
+  if (address && !isValidAddress(address)) {
+    console.error("--address must be a 0x-prefixed 40-character hex address.");
+    process.exitCode = 1;
+    return;
+  }
+
+  let tokenIds: bigint[];
+  if (nftFlag) {
+    if (!/^[0-9]+$/.test(nftFlag)) {
+      console.error("--nft must be a whole veNFT id.");
+      process.exitCode = 1;
+      return;
+    }
+    tokenIds = [BigInt(nftFlag)];
+  } else {
+    const positions = await fetchVeAeroPositions(address as string);
+    if (positions.length === 0) {
+      console.log(`No veAERO locks found for ${address}.`);
+      return;
+    }
+    tokenIds = positions.map((p) => BigInt(p.id));
+  }
+
+  // The most recently *closed* epoch. The one in progress has no settled weight
+  // to divide by, so scoring it would be a forecast wearing a receipt's clothes.
+  const now = Math.floor(Date.now() / 1000);
+  const epochTs = periodStartOf(now, WEEKLY_EPOCH) - WEEKLY_EPOCH.lengthSeconds;
+
+  const votes = (await Promise.all(tokenIds.map((id) => fetchVotesFor(id)))).flat();
+  if (votes.length === 0) {
+    console.log("\nThis lock has no vote recorded on any pool. Nothing to score yet.\n");
+    return;
+  }
+  const lastVoted = Math.max(...(await Promise.all(tokenIds.map((id) => fetchLastVoted(id)))));
+
+  // Only the pools this lock voted for — read directly, never through the
+  // active-pool list. That list keeps live gauges only, and a holder can
+  // perfectly well have voted for a pool whose gauge has since been killed
+  // (measured on a real lock, that is exactly what happened). Going direct also
+  // skips a ~1,800-pool scan this command has no use for, which is the
+  // difference between a report that takes seconds and one that takes minutes.
+  const pools = [...new Set(votes.map((v) => v.pool))];
+  const symbols = await fetchPoolSymbols(pools);
+  const epochsByPool = new Map<string, { symbol: string; epochs: EpochData[] }>();
+  const fetched = await mapWithConcurrency(pools, 8, (p) => fetchPoolEpochs(p, 4).catch(() => [] as EpochData[]));
+  pools.forEach((p, i) => epochsByPool.set(p, { symbol: symbols.get(p) ?? p, epochs: fetched[i] }));
+
+  const tokens = [...new Set(fetched.flat().flatMap((e) => [...e.bribes.map((b) => b.token), ...e.fees.map((f) => f.token)]))];
+  const prices = await getTokenPrices(tokens);
+
+  const review = scoreVotes(votes, epochTs, epochsByPool, prices);
+
+  if (hasFlag(args, "json")) {
+    console.log(JSON.stringify({ ...review, lastVoted, tokenIds: tokenIds.map(String) }, null, 2));
+    return;
+  }
+
+  const day = new Date(epochTs * 1000).toISOString().slice(0, 10);
+  console.log(`
+Your vote for the epoch of ${day}, scored against what it settled at:
+`);
+  if (review.rows.length === 0) {
+    console.log("  None of the pools voted for have a settled record for that epoch.\n");
+    return;
+  }
+
+  const COLS = [24, 8, 14, 14, 14, 12];
+  const row = (cells: string[]) => cells.map((c, i) => padCol(c, COLS[i])).join("");
+  console.log(row(["Pool", "Your %", "Your veAERO", "Pool total", "Pool paid", "You earned"]));
+  for (const r of review.rows) {
+    console.log(
+      row([
+        r.symbol,
+        `${Math.round(r.share * 100)}%`,
+        r.myVotes.toLocaleString("en-US", { maximumFractionDigits: 2 }),
+        r.poolVotes.toLocaleString("en-US", { maximumFractionDigits: 0 }),
+        fmtUsd(r.poolUsd),
+        // A small lock's share of a pool is routinely fractions of a cent, and
+        // fmtUsd rounds those to "$0" — which reads as "this pool paid you
+        // nothing" rather than "your share was small". The whole point of the
+        // command is that the holder can check the figure, so it has to survive
+        // being printed.
+        fmtUsdPerVote(r.earnedUsd),
+      ]),
+    );
+  }
+
+  console.log(
+    `\nTotal earned: ${fmtUsdPerVote(review.earnedUsd)} on ${review.budget.toLocaleString("en-US", { maximumFractionDigits: 2 })} veAERO.`,
+  );
+  if (review.budget > 0) {
+    console.log(`That is ${fmtUsdPerVote(review.earnedUsd / review.budget)} per veAERO.`);
+  }
+  if (review.unscored > 0) {
+    console.log(`(${review.unscored} pool(s) you voted for have no settled record for that epoch and are not counted above.)`);
+  }
+  if (lastVoted > 0) {
+    console.log(`Last vote cast ${new Date(lastVoted * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC.`);
+  }
+  console.log(
+    `
+To compare: backtest --veaero ${Math.round(review.budget)} --epochs 1 replays the same epoch with this tool's allocation.
+`,
+  );
+}
+
 async function cmdMyVeAero(args: string[]) {
   // Find the first non-flag argument rather than assuming args[0], so
   // `--json` can be passed either before or after the address.
@@ -633,6 +764,8 @@ async function main() {
       return cmdBacktest(rest);
     case "my-veaero":
       return cmdMyVeAero(rest);
+    case "review":
+      return cmdReview(rest);
     default: {
       // An unrecognised command exits non-zero: printing usage and reporting
       // success meant a typo in a script looked exactly like a completed run.
@@ -656,6 +789,12 @@ Commands:
       naive "vote for the highest current $/vote" strategy. Pass the same
       --min-consistency you vote with, so the backtest tests the strategy you
       actually run; the naive baseline stays unfiltered either way.
+
+  review (--address 0x... | --nft <id>) [--json]
+      Score the vote you already cast. Reads which pools your lock chose and what
+      share of those pools' settled rewards that bought, for the epoch that has
+      closed most recently. Nothing here is a prediction: the epoch is over, so
+      every figure can be checked against your own wallet.
 
   my-veaero <address> [--json]
       Look up an account's veAERO locks and voting power
