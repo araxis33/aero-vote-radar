@@ -39,7 +39,8 @@
     "snapshot": "tsx src/snapshot-cli.ts",
     "test": "node --import tsx --test test/**/*.test.ts",
     "predict-check": "tsx src/predict-cli.ts",
-    "timing": "tsx src/timing-cli.ts"
+    "timing": "tsx src/timing-cli.ts",
+    "accrual": "tsx src/accrual-cli.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
