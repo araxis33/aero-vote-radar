@@ -85,16 +85,39 @@ export async function fetchVotesFor(tokenId: bigint, maxPools = 60): Promise<Cas
  * checkable address is worth more than no row.
  */
 export async function fetchPoolSymbols(pools: string[]): Promise<Map<string, string>> {
+  const symbolOf = async (address: string): Promise<string | null> => {
+    try {
+      return (await client.readContract({
+        address: address as `0x${string}`,
+        abi: POOL_ABI,
+        functionName: "symbol",
+      })) as string;
+    } catch {
+      return null;
+    }
+  };
+
   const out = new Map<string, string>();
   await Promise.all(
     pools.map(async (pool) => {
+      const direct = await symbolOf(pool);
+      if (direct) {
+        out.set(pool.toLowerCase(), direct);
+        return;
+      }
+
+      // Slipstream (concentrated-liquidity) pools have no `symbol()` at all, and
+      // they are a real destination for votes — measured on a live wallet, both
+      // of its pools were this kind. Falling straight through to the address
+      // would print a table of raw hex, so the name is composed from the pair
+      // the pool actually holds.
       try {
-        const symbol = (await client.readContract({
-          address: pool as `0x${string}`,
-          abi: POOL_ABI,
-          functionName: "symbol",
-        })) as string;
-        out.set(pool.toLowerCase(), symbol);
+        const [token0, token1] = (await Promise.all([
+          client.readContract({ address: pool as `0x${string}`, abi: POOL_ABI, functionName: "token0" }),
+          client.readContract({ address: pool as `0x${string}`, abi: POOL_ABI, functionName: "token1" }),
+        ])) as [string, string];
+        const [a, b] = await Promise.all([symbolOf(token0), symbolOf(token1)]);
+        out.set(pool.toLowerCase(), a && b ? `CL-${a}/${b}` : pool);
       } catch {
         out.set(pool.toLowerCase(), pool);
       }

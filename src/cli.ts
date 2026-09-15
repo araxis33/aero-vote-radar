@@ -702,7 +702,7 @@ Your vote for the epoch of ${day}, scored against what it settled at:
   }
   console.log(
     `
-To compare: backtest --veaero ${Math.round(review.budget)} --epochs 1 replays the same epoch with this tool's allocation.
+To compare: backtest --veaero ${Math.max(1, Math.round(review.budget))} --epochs 1 replays the same epoch with this tool's allocation.
 `,
   );
 }
