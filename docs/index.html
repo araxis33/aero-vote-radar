@@ -1564,6 +1564,25 @@ const keptClass = (kept) => (kept === null ? "" : kept >= 6 ? "good" : kept >= 3
  * what the suggestion is for — never met it. A number about how much to believe
  * the headline belongs next to the headline.
  */
+/**
+ * True when the survival measurement was taken over a materially smaller set of
+ * pools than the scan on screen.
+ *
+ * Every scan committed before 2026-09-15 covers 107 pools, because pool
+ * discovery was dropping every concentrated-liquidity pool; the ranking beside
+ * this figure is now drawn from 359. Quoting the old number without saying so
+ * would be presenting a fact about a third of Aerodrome as a fact about all of
+ * it. The threshold is generous — a fifth — because week-to-week wobble in the
+ * pool count is normal and does not need a disclaimer. It clears itself as
+ * post-fix scans accumulate.
+ */
+function coverageGap() {
+  if (!timing || !snapshot) return false;
+  const measured = timing.medianPoolsPerScan;
+  if (typeof measured !== "number" || measured <= 0 || !snapshot.poolCount) return false;
+  return measured < snapshot.poolCount * 0.8;
+}
+
 function renderKeptStat() {
   const found = trustWindowNow();
   if (!found || found.window.keptRich === null) {
@@ -1572,7 +1591,7 @@ function renderKeptStat() {
   }
   el.statKept.textContent = found.window.keptRich + " of 10";
   el.statKept.className = "n num c-" + (keptClass(found.window.keptRich) === "good" ? "good" : keptClass(found.window.keptRich) === "mid" ? "warn" : "bad");
-  el.statKeptNote.textContent = "of pools paying $1,000+, measured";
+  el.statKeptNote.textContent = coverageGap() ? "measured before the pool list was fixed" : "of pools paying $1,000+, measured";
   el.statKeptNote.title =
     "Of the ten pools a list like this one put on top at this hour of the week, how many were still in the top " +
     "ten when the epoch closed. Measured over " + found.window.scans + " scans of " + timing.epochs.length +
@@ -1619,6 +1638,11 @@ function renderTrust() {
   );
 
   el.trustBasis.textContent =
+    (coverageGap()
+      ? "Measured before 2026-09-15, when pool discovery was still dropping every concentrated-liquidity pool: these " +
+        "scans each saw about " + timing.medianPoolsPerScan + " pools, against " + snapshot.poolCount +
+        " in the scan above. Read it as a fact about the pools it could see. It corrects itself as new scans land. " +
+      "" : "") +
     "Median over " + w.scans + " scans of " + timing.epochs.length + " settled epoch" +
     (timing.epochs.length === 1 ? "" : "s") + " (" + timing.epochs.join(", ") + "), " +
     timing.observations.toLocaleString("en-US") + " pool readings in total. Both lists were ranked with the " +
@@ -1951,6 +1975,11 @@ fetch("data/snapshot.json", { cache: "no-cache" })
     renderEpochYields();
     renderRanking();
     renderAllocation();
+    // The survival tile compares the measurement's pool coverage against this
+    // scan's, so it cannot be right until both files are in. Whichever fetch
+    // resolves second has to redraw it — the same reason renderRanking is
+    // repeated in the other handler.
+    if (timing) { renderKeptStat(); renderTrust(); }
   })
   .catch((err) => {
     el.meta.innerHTML = "";

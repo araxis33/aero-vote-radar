@@ -105,6 +105,21 @@ export interface TimingReport {
   scans: number;
   pools: number;
   observations: number;
+  /**
+   * Median number of pools a single scan in this measurement could see.
+   *
+   * Not decoration. Until 2026-09-15 pool discovery dropped every
+   * concentrated-liquidity pool, so scans committed before then cover 107 pools
+   * where 359 exist. A survival figure measured over those scans is a fact
+   * about the third of Aerodrome they contained, while the ranking a visitor
+   * reads it beside is drawn from all of it.
+   *
+   * Publishing the coverage lets the page notice that gap and say so, rather
+   * than presenting a number from one universe as a fact about another — the
+   * same mistake that kept a 1,000,000 veAERO crossover in this repo for three
+   * weeks. It closes on its own as post-fix scans accumulate.
+   */
+  medianPoolsPerScan: number;
   trust: RankTrust[];
   lateMovers: LateMover[];
 }
@@ -203,6 +218,9 @@ export function buildTimingReport(scans: TimingScan[], generatedAt: string = new
     scans: scans.length,
     pools: pools.size,
     observations,
+    // Median rather than mean: one truncated scan should not drag the figure the
+    // page compares against today's coverage.
+    medianPoolsPerScan: scans.length === 0 ? 0 : Math.round(median(scans.map((s) => s.rows.length))),
     trust,
     lateMovers,
   };
