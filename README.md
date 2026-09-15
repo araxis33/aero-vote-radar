@@ -541,6 +541,7 @@ npx aero-vote-radar recommend --veaero 25000 --vote-basis current   # judge pool
 npx aero-vote-radar recommend --veaero 25000 --calldata --nft 17324   # the same vote as unsigned Voter.vote calldata to sign yourself
 npx aero-vote-radar backtest --veaero 25000 --epochs 5
 npx aero-vote-radar backtest --veaero 25000 --min-consistency 0.5   # test the filtered strategy you actually vote
+npx aero-vote-radar review --address 0xYourAddress   # score the vote you already cast, against what the epoch settled at
 npx aero-vote-radar my-veaero 0xYourAddress
 npx aero-vote-radar my-veaero 0xYourAddress --json
 ```
@@ -672,6 +673,7 @@ src/
   settled.ts       the committed scan history + the settled on-chain answer, shared by both measurements
   timing.ts        pure scoring for how much of a ranking survives to the epoch's close
   timing-cli.ts    entrypoint for `npm run timing`, writes docs/data/timing.json
+  voted.ts         what a lock actually voted for, and what that vote earned once the epoch settled
   accrual.ts       pure separation of real accrual from reward-token repricing, using the published raw amounts
   accrual-cli.ts   entrypoint for `npm run accrual`, writes docs/data/accrual.json
 docs/              the web app, served by GitHub Pages
@@ -698,6 +700,7 @@ test/
   predict-cli.test.ts  unit tests for snapshotsFromDir, including that a malformed file is skipped rather than crashing the run
   timing.test.ts       unit tests for top-ten survival, the window a scan falls in, and the late-mover threshold
   timing-cli.test.ts   unit tests for buildAccuracyReport, including that an empty pool-size bucket is dropped rather than published as NaN
+  voted.test.ts        unit tests for scoring a cast vote against settled weight, including the unscorable-pool and zero-weight cases
   accrual.test.ts      unit tests for revaluing at one price vector, the epoch-boundary skip, and the pools-that-only-repriced split
   site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
 ```

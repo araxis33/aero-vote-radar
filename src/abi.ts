@@ -20,6 +20,34 @@ export const POOL_ABI = [
 ] as const;
 
 export const VOTER_ABI = [
+  // What one veNFT actually voted for. `poolVote` enumerates the pools it chose
+  // (there is no length getter on this deployment, so the caller reads upward
+  // until the call reverts), and `votes` gives the weight it put on each.
+  // Together with `lastVoted` these three answer "what did this lock do last
+  // Thursday" in a handful of eth_calls, without touching event logs — which
+  // matters because a week of Base is ~300,000 blocks and public RPCs cap a
+  // getLogs range far below that.
+  {
+    type: "function",
+    name: "poolVote",
+    stateMutability: "view",
+    inputs: [{ type: "uint256" }, { type: "uint256" }],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "votes",
+    stateMutability: "view",
+    inputs: [{ type: "uint256" }, { type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "lastVoted",
+    stateMutability: "view",
+    inputs: [{ type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
   {
     type: "function",
     name: "length",
