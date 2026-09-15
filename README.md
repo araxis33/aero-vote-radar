@@ -13,6 +13,16 @@ Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and ge
 
 ### What it does for you
 
+The page opens on one question -- how much veAERO you have -- with the four
+expert controls folded behind *Settings* on defaults that work, and it prices
+the suggestion against **the weight each pool usually settles at** rather than
+the weight showing at this moment. That last choice is why there is no longer a
+paragraph under the allocation explaining that the dollars above are about to
+fall: they are already the post-refill ones. Replaying past epochs, the three
+bases earn within a few percent of each other with no consistent winner
+(measured 2026-09-15, see below), so among equals the page now shows the figure
+it does not have to disclaim.
+
 - **Hands you a castable vote, not a leaderboard.** Whole percentages summing to exactly 100 — the only form Aerodrome's UI accepts — with a copy button and a link straight to the voting page.
 - **Prices your own dilution.** The moment you add votes to a pool, your own $/vote there falls. The allocator models that explicitly instead of dumping everything into whatever shows the highest APR.
 - **Tells you how much of itself to believe.** Of the ten pools a list like this puts on top, roughly six were still on top when the epoch closed — and only two once near-empty gauges are counted in. Measured, from the scan history, and printed on the page above the ranking rather than left as a warning that the numbers "move".

@@ -56,6 +56,13 @@
   /* panel ----------------------------------------------------------------- */
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
   .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 14px; }
+  /* The one question a visitor can actually answer on arrival stands alone; the
+     four expert knobs fold away behind "Settings" with defaults that work. */
+  .controls-main { grid-template-columns: min(280px, 100%); }
+  details.advanced { margin-top: 14px; border-top: 0; padding-top: 0; }
+  details.advanced > summary { font-size: 13px; font-weight: 500; padding: 4px 0; }
+  details.advanced > summary:hover { color: var(--text); }
+  details.advanced[open] > summary { margin-bottom: 12px; }
   .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .field label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
   input, select, button { font: inherit; }
@@ -238,11 +245,16 @@
     <div class="lookup-msg" id="lookupMsg"></div>
   </div>
 
-  <div class="controls">
+  <div class="controls controls-main">
     <div class="field">
-      <label for="veaero">veAERO to allocate</label>
+      <label for="veaero">How much veAERO do you have?</label>
       <input id="veaero" type="number" min="0" step="any" value="25000" inputmode="decimal">
     </div>
+  </div>
+
+  <details class="advanced">
+    <summary>Settings</summary>
+    <div class="controls">
     <div class="field">
       <label for="topk">Pools considered</label>
       <input id="topk" type="number" min="1" max="60" step="1" value="15">
@@ -260,9 +272,9 @@
     <div class="field">
       <label for="votebasis">Vote weight to expect</label>
       <select id="votebasis">
-        <option value="previous" selected>Last epoch&rsquo;s final weight</option>
+        <option value="typical" selected>The weight it usually settles at</option>
+        <option value="previous">Last epoch&rsquo;s final weight</option>
         <option value="current">The live weight right now</option>
-        <option value="typical">The weight it usually settles at</option>
       </select>
     </div>
     <div class="field">
@@ -275,7 +287,8 @@
         <option value="0.2">20%</option>
       </select>
     </div>
-  </div>
+    </div>
+  </details>
   <p class="hint">Read-only. The page never asks to connect a wallet, and nothing you type is sent anywhere except a public Base RPC call to read your voting power.</p>
 </section>
 
@@ -298,6 +311,11 @@
   </div>
   <div class="stat"><div class="n num" id="statPools">—</div><div class="l">Pools used</div></div>
   <div class="stat"><div class="n num" id="statPerVote">—</div><div class="l">Blended $ / veAERO</div></div>
+  <div class="stat" id="statKeptBox" hidden>
+    <div class="n num" id="statKept">—</div>
+    <div class="l">Still on top at close</div>
+    <div class="r" id="statKeptNote"></div>
+  </div>
 </div>
 
 <div class="scroll cards">
@@ -902,6 +920,9 @@ const el = {
   statUsdRange: document.getElementById("statUsdRange"),
   statPools: document.getElementById("statPools"),
   statPerVote: document.getElementById("statPerVote"),
+  statKeptBox: document.getElementById("statKeptBox"),
+  statKept: document.getElementById("statKept"),
+  statKeptNote: document.getElementById("statKeptNote"),
   trustPanel: document.getElementById("trustPanel"),
   trustWhen: document.getElementById("trustWhen"),
   trustKept: document.getElementById("trustKept"),
@@ -1105,8 +1126,11 @@ function renderRanking() {
  * usually settles well above it, so a reader scanning the suggestion sees which
  * specific row the caveat underneath is about rather than having to match names.
  */
-function assumedVotesCell(a) {
+function assumedVotesCell(a, basis) {
   const td = cell(num(a.existingVotes), "num", "Pool votes assumed");
+  // Under "typical" this number already is the settled weight, so there is
+  // nothing left to flag: the row is priced against what the pool fills up to.
+  if (basis === "typical") return td;
   const pool = snapshot.pools.find((p) => p.pool === a.pool);
   const ratio = pool && typeof pool.refillRatio === "number" ? pool.refillRatio : null;
   if (ratio === null || ratio < REFILL_WARN_RATIO) return td;
@@ -1144,7 +1168,15 @@ function clearAllocation(message) {
  * has enough readings on that pool, because "it usually refills" and "it did
  * refill, this many times" are different strengths of claim.
  */
-function renderRefillNote(shown, percents) {
+function renderRefillNote(shown, percents, basis) {
+  // "typical" already divides by the weight each pool usually settles at, so
+  // the dollars on screen are the post-refill ones. Warning that they are
+  // about to fall by the refill factor would be warning about an adjustment
+  // this page has already made.
+  if (basis === "typical") {
+    el.refillNote.hidden = true;
+    return;
+  }
   const byAddress = new Map(snapshot.pools.map((p) => [p.pool, p]));
   const flagged = [];
   let share = 0;
@@ -1260,13 +1292,13 @@ function renderAllocation() {
     tr.appendChild(cell(pct + "%", "num pct", "Vote %"));
     tr.appendChild(cell(num(a.veAeroAllocated), "num", "veAERO"));
     tr.appendChild(cell(usd(a.expectedUsd), "num", "Expected $"));
-    tr.appendChild(assumedVotesCell(a));
+    tr.appendChild(assumedVotesCell(a, basis));
     tr.appendChild(cell(a.consistency.toFixed(2), "num " + consistencyClass(a.consistency), "Consistency"));
     frag.appendChild(tr);
   }
   el.allocBody.replaceChildren(frag);
   el.copyBtn.disabled = lastPercents.length === 0;
-  renderRefillNote(shown, percents);
+  renderRefillNote(shown, percents, basis);
 
   // The headline must describe the vote on screen, not the continuous allocation
   // behind it: sub-1% rows are not shown and their points went to the rows that are.
@@ -1318,6 +1350,31 @@ function trustWindowNow() {
 }
 
 const keptClass = (kept) => (kept === null ? "" : kept >= 6 ? "good" : kept >= 3 ? "mid" : "bad");
+
+/**
+ * The same survival figure the trust panel carries, repeated beside the dollar
+ * headline.
+ *
+ * It was measured weeks ago and published honestly, but it sat below three
+ * screens of table, and a visitor who reads the suggestion and stops — which is
+ * what the suggestion is for — never met it. A number about how much to believe
+ * the headline belongs next to the headline.
+ */
+function renderKeptStat() {
+  const found = trustWindowNow();
+  if (!found || found.window.keptRich === null) {
+    el.statKeptBox.hidden = true;
+    return;
+  }
+  el.statKept.textContent = found.window.keptRich + " of 10";
+  el.statKept.className = "n num c-" + (keptClass(found.window.keptRich) === "good" ? "good" : keptClass(found.window.keptRich) === "mid" ? "warn" : "bad");
+  el.statKeptNote.textContent = "of pools paying $1,000+, measured";
+  el.statKeptNote.title =
+    "Of the ten pools a list like this one put on top at this hour of the week, how many were still in the top " +
+    "ten when the epoch closed. Measured over " + found.window.scans + " scans of " + timing.epochs.length +
+    " settled epochs" + (found.isNow ? "" : ", taken from the best-covered window rather than this hour") + ".";
+  el.statKeptBox.hidden = false;
+}
 
 // observations === 0 leaves medianAbsError as NaN (see scorePredictors in
 // src/predict.ts, which medians an empty array rather than fabricating a
@@ -1663,6 +1720,7 @@ fetch("data/timing.json", { cache: "no-cache" })
   .then((data) => {
     timing = data;
     renderTrust();
+    renderKeptStat();
     renderAccuracy();
     // renderRanking's Refill tooltips read `timing` too (via measuredSurge), and
     // this fetch deliberately isn't awaited together with the snapshot one — so
