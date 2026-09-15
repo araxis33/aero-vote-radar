@@ -72,11 +72,22 @@ export const MIN_VOTE_BASELINE = 1000;
 // the outcome, the protection turns into over-estimated weight everywhere, and
 // the default pulls ahead.
 //
-// The crossover moves week to week — a run the day before this one put the
-// 1,000,000 figure at -30.7% rather than -4% — so this constant sets the size
-// above which a voter is told nothing and below which they are told to check
-// their own size with `backtest`. It is a threshold for a warning, never for
-// silently switching the basis.
+// The crossover moves week to week — a run the day before that one put the
+// 1,000,000 figure at -30.7% rather than -4%.
+//
+// RE-MEASURED 2026-09-15, same command, last 5 epochs: the small-budget
+// advantage is gone. Typical against the default now reads +4.2% at 2,000
+// veAERO, -11.4% at 5,000, +4.0% at 25,000 and -3.1% at 100,000 — the sign
+// alternates, and typical was ahead in 2 or 3 of 5 epochs each time, which is
+// what no edge looks like. The README itself calls a single-digit uplift noise
+// rather than proof, so below this line the page and the CLI now say nothing:
+// warning a voter off a setting that measures the same as the one they are on
+// costs their trust and buys them no money.
+//
+// The constant stays because the structural argument above it does, and
+// because the advantage could return; it now gates only the large-budget
+// caveat. It is a threshold for a warning, never for silently switching the
+// basis.
 export const VOTE_BASIS_CROSSOVER_VEAERO = 1_000_000;
 
 export const DEFILLAMA_PRICE_URL = "https://coins.llama.fi/prices/current";

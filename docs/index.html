@@ -662,19 +662,11 @@ function voteBasisCaveat(veAeroBudget, voteBasis) {
 
   const belowCrossover = veAeroBudget < VOTE_BASIS_CROSSOVER_VEAERO;
 
-  if (voteBasis !== "typical" && belowCrossover) {
-    return (
-      "Below ~" + VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO, replaying past epochs has " +
-      "favoured the \"typical\" vote basis over this one: it earned more, despite predicting settled vote " +
-      "weight less accurately. The two measurements disagree, and the gap moves week to week."
-    );
-  }
-
   if (voteBasis === "typical" && !belowCrossover) {
     return (
-      "Above ~" + VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO, replaying past epochs has " +
-      "favoured the default vote basis over \"typical\": at this size dilution rather than pool-picking " +
-      "decides the outcome, and \"typical\" over-states every pool's weight by construction."
+      "Above ~" + VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO, dilution rather than pool-picking " +
+      "decides the outcome, and \"typical\" prices every pool as though its weight will stay away — on a budget " +
+      "large enough to move that weight itself."
     );
   }
 
@@ -1400,10 +1392,10 @@ function renderAccuracy() {
     tile(previous, "assuming last epoch's final weight — the default here"),
     tile(current, "assuming the weight showing right now"),
   ];
-  // The third basis is on the dropdown too, and it is the one where the two
-  // measurements in this repo disagree: it predicts weight worst and has still
-  // earned more in the replay below the crossover. Showing its error next to the
-  // others is how a visitor can see the trade rather than be told about it.
+  // The third basis is on the dropdown too. It predicts weight worst of the
+  // three, and the replay advantage that used to justify that cost is gone on
+  // re-measurement. Showing its error beside the others is how a visitor can
+  // see the trade rather than be told about it.
   if (typical) tiles.push(tile(typical, "assuming the weight it usually settles at"));
   el.accuracyKept.replaceChildren(...tiles);
 
@@ -1419,10 +1411,10 @@ function renderAccuracy() {
     "so this is also where the range under “Expected next epoch” comes from. Observations inside one pool " +
     "are not independent, and only epochs the scan history reaches can be scored at all." +
     (typical
-      ? " Note what the third option costs and pays: “the weight it usually settles at” is the least accurate " +
-        "of the three here, and replaying past epochs it has still earned more below ~1,000,000 veAERO, because " +
-        "it refuses to price a pool as though its weight will stay away. Accuracy and earnings are not the same " +
-        "measurement, and this page will not pretend they agree."
+      ? " The third option, “the weight it usually settles at”, is the least accurate of the three here. It " +
+        "once earned enough more in replay to be worth the trade; re-measured on 2026-09-15 it did not — " +
+        "+4% at 2,000 and 25,000 veAERO, −11% at 5,000, −3% at 100,000, with no consistent winner. At that " +
+        "size the three bases are the same bet, so nothing here recommends switching."
       : "");
   el.accuracyPanel.hidden = false;
 }
