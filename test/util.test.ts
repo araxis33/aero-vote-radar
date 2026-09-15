@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatError, isValidAddress, mapWithConcurrency, normalizeAddress, wrapText } from "../src/util.js";
+import { formatError, isValidAddress, mapWithConcurrency, normalizeAddress, padCol, wrapText } from "../src/util.js";
 
 test("isValidAddress accepts a well-formed 0x-prefixed 40-hex-character address", () => {
   assert.equal(isValidAddress("0x1234567890abcdef1234567890ABCDEF12345678"), true);
@@ -135,4 +135,21 @@ test("wrapText leaves a word longer than the width intact rather than cutting it
 
 test("wrapText collapses the whitespace it wraps on, including newlines already present", () => {
   assert.equal(wrapText("  two   words\nhere  ", 40), "two words here");
+});
+
+test("padCol pads a short value out to the column width", () => {
+  assert.equal(padCol("vAMM-WETH/MET", 18), "vAMM-WETH/MET".padEnd(18));
+});
+
+test("padCol truncates a value at or past the width and still separates it from the next column", () => {
+  const longSymbol = "vAMM-VIRTUAL/cbBTC"; // 18 chars: a real pool symbol, at the column width itself
+  const result = padCol(longSymbol, 18);
+
+  assert.equal(result.length, 18);
+  assert.ok(result.endsWith(" "), "a truncated value must still leave a separator before the next column");
+  assert.ok(result.startsWith(longSymbol.slice(0, 16)), "truncation should keep as much of the original text as fits");
+});
+
+test("padCol never grows a column narrower than 1 character wide", () => {
+  assert.equal(padCol("toolong", 1).length, 1);
 });

@@ -12,7 +12,7 @@ import { backtestLive } from "./backtest.js";
 import { buildVoteCalldata } from "./calldata.js";
 import { fetchVeAeroPositions, type VeNftSummary } from "./veAero.js";
 import { BACKTEST_EPOCHS, MAX_BACKTEST_EPOCHS } from "./constants.js";
-import { formatError, isValidAddress, wrapText } from "./util.js";
+import { formatError, isValidAddress, padCol, wrapText } from "./util.js";
 import { computeTrend, epochEndOf, formatDuration, isEpochInProgress } from "./trend.js";
 
 function fmtUsd(n: number): string {
@@ -154,7 +154,7 @@ async function cmdPools(args: string[]) {
   for (const p of topRanked) {
     console.log(
       [
-        p.pool.symbol.padEnd(18),
+        padCol(p.pool.symbol, 18),
         p.currentVotesVeAero.toLocaleString("en-US", { maximumFractionDigits: 0 }).padEnd(18),
         fmtUsdPerVote(p.currentValuePerVote).padEnd(18),
         fmtUsdPerVote(p.predictedValuePerVote).padEnd(18),
@@ -477,7 +477,7 @@ async function cmdRecommend(args: string[]) {
   for (const a of allocation) {
     console.log(
       [
-        a.symbol.padEnd(18),
+        padCol(a.symbol, 18),
         `${(a.weight * 100).toFixed(1)}%`.padEnd(18),
         a.veAeroAllocated.toLocaleString("en-US", { maximumFractionDigits: 0 }).padEnd(18),
         fmtUsd(a.expectedUsd),

@@ -58,6 +58,24 @@ export function formatError(err: unknown): string {
 }
 
 /**
+ * Pads `value` to `width` for a fixed-width table column, truncating with an
+ * ellipsis first if it's already at or past `width`.
+ *
+ * Pool symbols come straight from on-chain token metadata with no length
+ * limit, and `String.prototype.padEnd` is a no-op once the input reaches the
+ * target width — so an 18-character-or-longer symbol (several already exist
+ * in live data, e.g. `vAMM-VIRTUAL/cbBTC`) printed with a bare `.padEnd(18)`
+ * runs straight into the next column with no separator, merging the two in
+ * the CLI's human-readable table output. Truncating first guarantees at least
+ * one space of separation regardless of how long the value is.
+ */
+export function padCol(value: string, width: number): string {
+  if (value.length < width) return value.padEnd(width);
+  if (width <= 2) return value.slice(0, width);
+  return `${value.slice(0, width - 2)}…`.padEnd(width);
+}
+
+/**
  * Breaks a paragraph onto lines no longer than `width`, on spaces only.
  *
  * The CLI's own output is hand-formatted to fit a terminal, but explanatory
