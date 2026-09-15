@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aero Vote Radar — where to point your veAERO</title>
-<meta name="description" content="Ranks live Aerodrome pools by dollar-value per veAERO vote and builds a self-dilution-aware vote allocation you can paste straight into Aerodrome's UI.">
+<title>Aero Vote Radar — where to vote your veAERO to earn the most</title>
+<meta name="description" content="Tells you where to vote your veAERO on Aerodrome this week to earn the most. Enter how much you hold, copy the percentages, paste them into Aerodrome. Free, read-only, no wallet connection.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cpath fill='%230433ff' d='M29.5 62.6c1.4-5.5 11.8-11.2 16.7-13.8 14.7-7 30.5-11.3 46.3-14.7 3.6-.8 7.3-1.5 11-2.1 6.7-1.5 3.2-9.7-2.9-7.6-6.5 1.1-12.9 2.5-19.3 4-14.8 3.7-29.6 8.1-43.1 15.4-6.9 3.9-15.6 9.2-17.5 17.4 0 .4-.2.9-.1 1.4v1c0 .3 0 .7.1 1 3.6 15.9 45.5 20.9 59.6 22.3 6.6.8 13.3 1.1 19.9 1.5 2 .6 3.1-2 .8-2.3-1 0-2-.2-3.1-.3-17-1.6-34.2-4-50.4-9.8-3.8-1.3-7.5-2.9-10.9-5.1-2.2-1.4-4.4-2.9-5.9-5.1-.2-.3-.3-.6-.5-.9 0-.1 0-.3-.1-.4v-1.4z'/%3E%3Cpath fill='%23ff1100' d='M29.5 86.4c1.4-5.5 11.8-11.2 16.7-13.8 14.7-7 30.5-11.3 46.3-14.7 3.6-.8 7.3-1.5 11-2.1 6.7-1.5 3.2-9.7-2.9-7.6-6.5 1.1-12.9 2.5-19.3 4-14.8 3.7-29.6 8.1-43.1 15.4-6.9 3.9-15.6 9.2-17.5 17.4 0 .4-.2.9-.1 1.4v1c0 .3 0 .7.1 1 3.6 15.9 45.5 20.9 59.6 22.3 6.6.7 13.2 1.1 19.7 1.5.3 0 .6 0 .9 0 1.7 0 1.7-2.4 0-2.4-1 0-2-.2-3.1-.3-17-1.6-34.2-4-50.4-9.8-3.8-1.3-7.5-2.9-10.9-5.1-2.2-1.4-4.4-2.9-5.9-5.1-.2-.3-.3-.6-.5-.9 0-.1 0-.3-.1-.4v-1.4z'/%3E%3C/svg%3E">
 <style>
   :root {
@@ -116,6 +116,7 @@
   }
   .badge.v { background: rgba(4, 51, 255, 0.2); color: var(--aero-soft); border: 1px solid rgba(4, 51, 255, 0.42); }
   .badge.s { background: rgba(53, 208, 127, 0.14); color: var(--good); border: 1px solid rgba(53, 208, 127, 0.34); }
+  .badge.c { background: rgba(168, 128, 255, 0.16); color: #c3a6ff; border: 1px solid rgba(168, 128, 255, 0.38); }
   .pname { overflow: hidden; text-overflow: ellipsis; }
   .ext { color: var(--dim); font-size: 12px; }
   .ext:hover { color: var(--accent); }
@@ -229,7 +230,8 @@
   </svg>
   <div>
     <h1>Aero Vote Radar</h1>
-    <p class="sub">Where to point your veAERO this epoch — ranked by dollar value per vote, adjusted for the fact that your own vote dilutes the pool you cast it into.</p>
+    <p class="sub">Where to vote your veAERO this week to earn the most.<br>
+      Tell it how much you hold, copy the percentages, paste them into Aerodrome.</p>
   </div>
 </header>
 
@@ -237,9 +239,9 @@
 
 <section class="panel">
   <div class="field" style="margin-bottom:14px">
-    <label for="addr">Your wallet — reads your voting power from Base</label>
+    <label for="addr">Your wallet — it will look up how much veAERO you have</label>
     <div class="addr-row">
-      <input id="addr" type="text" spellcheck="false" autocomplete="off" placeholder="0x… (optional — or just type an amount below)">
+      <input id="addr" type="text" spellcheck="false" autocomplete="off" placeholder="0x… (optional — or just type the amount below)">
       <button id="lookup" class="primary" type="button">Look up</button>
     </div>
     <div class="lookup-msg" id="lookupMsg"></div>
@@ -248,7 +250,7 @@
   <div class="controls controls-main">
     <div class="field">
       <label for="veaero">How much veAERO do you have?</label>
-      <input id="veaero" type="number" min="0" step="any" value="25000" inputmode="decimal">
+      <input id="veaero" type="number" min="0" step="any" value="10000" inputmode="decimal">
     </div>
   </div>
 
@@ -333,11 +335,11 @@
 <div class="totals">
   <div class="stat">
     <div class="n num" id="statUsd">—</div>
-    <div class="l">Expected next epoch</div>
+    <div class="l">You would earn next week</div>
     <div class="r" id="statUsdRange" hidden></div>
   </div>
   <div class="stat"><div class="n num" id="statPools">—</div><div class="l">Pools used</div></div>
-  <div class="stat"><div class="n num" id="statPerVote">—</div><div class="l">Blended $ / veAERO</div></div>
+  <div class="stat"><div class="n num" id="statPerVote">—</div><div class="l">Per veAERO</div></div>
   <div class="stat" id="statKeptBox" hidden>
     <div class="n num" id="statKept">—</div>
     <div class="l">Still on top at close</div>
@@ -418,6 +420,7 @@
   <span><b class="badge v" style="margin-right:4px">vAMM</b> volatile pool — plain <code>x·y=k</code>, for tokens whose prices move independently</span>
   <span><svg class="spark" style="display:inline-block; width:34px; height:14px; vertical-align:-2px; margin-right:4px" viewBox="0 0 34 14" aria-hidden="true"><rect x="0" y="4" width="9" height="10"/><rect x="12" y="2" width="9" height="12"/><rect class="partial" x="24.5" y="7.5" width="8" height="6"/></svg> the dashed last bar is the epoch still running — a part-week, so it is charted but left out of the trend. Bar heights are square-rooted so a single huge week doesn’t flatten the rest; hover for exact dollars</span>
   <span><b class="badge s" style="margin-right:4px">sAMM</b> stable pool — a flatter curve for pairs meant to hold the same value, like two stablecoins or ETH and a liquid-staking version of it</span>
+  <span><b class="badge c" style="margin-right:4px">CL</b> concentrated-liquidity pool — liquidity sits in a price range instead of across the whole curve. These carry the largest vote weights on Aerodrome</span>
 </div>
 
 <h2>How wrong this page usually is</h2>
@@ -874,9 +877,10 @@ function voteBasisCaveat(veAeroBudget, voteBasis) {
 
   if (voteBasis === "typical" && !belowCrossover) {
     return (
-      "Above ~" + VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO, dilution rather than pool-picking " +
-      "decides the outcome, and \"typical\" prices every pool as though its weight will stay away — on a budget " +
-      "large enough to move that weight itself."
+      "At your size, replaying the last five epochs, this setting earned less than \"last epoch's final " +
+      "weight\" — about 4% less at 25,000 veAERO and 24% less at 100,000. Above roughly " +
+      VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US") + " veAERO your vote is big enough to move a pool's weight itself, " +
+      "so assuming the weight will arrive anyway starts costing you."
     );
   }
 
@@ -1050,12 +1054,16 @@ function poolCell(symbol, address) {
   const box = document.createElement("div");
   box.className = "poolcell";
 
-  const stable = /^sAMM/i.test(symbol);
+  // Three kinds now, not two. Concentrated-liquidity pools joined the ranking
+  // on 2026-09-15 and were briefly labelled "vAMM" by the old else-branch, which
+  // is simply the wrong pool type on the row a visitor is about to vote into.
+  const kind = /^sAMM/i.test(symbol) ? "s" : /^CL-/i.test(symbol) ? "c" : "v";
   const badge = document.createElement("span");
-  badge.className = "badge " + (stable ? "s" : "v");
-  badge.textContent = stable ? "sAMM" : "vAMM";
-  badge.title = stable
-    ? "Stable pool — a flatter curve for pairs meant to hold the same value"
+  badge.className = "badge " + kind;
+  badge.textContent = kind === "s" ? "sAMM" : kind === "c" ? "CL" : "vAMM";
+  badge.title =
+    kind === "s" ? "Stable pool — a flatter curve for pairs meant to hold the same value"
+    : kind === "c" ? "Concentrated-liquidity pool — liquidity is placed in a price range rather than across the whole curve"
     : "Volatile pool — plain x·y=k, for tokens whose prices move independently";
 
   const name = document.createElement("span");
@@ -1661,7 +1669,7 @@ function renderAccuracy() {
     "“" + (closest.name === "previous" ? "last epoch's final weight" : "the live weight") + "” wins, on " +
     closest.closestOn.toLocaleString("en-US") + " readings against " +
     (closest === previous ? current : previous).closestOn.toLocaleString("en-US") + ". Payout moves with weight, " +
-    "so this is also where the range under “Expected next epoch” comes from. Observations inside one pool " +
+    "so this is also where the range under “You would earn next week” comes from. Observations inside one pool " +
     "are not independent, and only epochs the scan history reaches can be scored at all." +
     (typical
       ? " The third option, “the weight it usually settles at”, is the least accurate of the three here — " +

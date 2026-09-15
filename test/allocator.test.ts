@@ -559,12 +559,15 @@ test("voteBasisCaveat says nothing to a large position using the default basis",
 // The one surviving caveat, kept because its reason is structural rather than a
 // replay that can move: past this size the budget is large enough to shift the
 // very weight "typical" assumes will arrive.
-test("voteBasisCaveat still warns a large position that chose typical, for the structural reason", () => {
+test("voteBasisCaveat tells a large position what the setting costs, in money", () => {
   const caveat = voteBasisCaveat(2_000_000, "typical");
   assert.ok(caveat);
   assert.match(caveat, /20,000 veAERO/);
-  assert.match(caveat, /weight will stay away/);
-  assert.doesNotMatch(caveat, /replaying past epochs/);
+  // It has to name the loss, not describe the mechanism: "dilution rather than
+  // pool-picking decides the outcome" is true and tells a holder nothing about
+  // whether to act on it.
+  assert.match(caveat, /24% less at 100,000/);
+  assert.match(caveat, /earned less/);
 });
 
 test("voteBasisCaveat says nothing to a small position that already chose typical", () => {

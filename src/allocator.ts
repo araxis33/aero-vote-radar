@@ -383,9 +383,10 @@ export function voteBasisCaveat(veAeroBudget: number, voteBasis: VoteBasis): str
 
   if (voteBasis === "typical" && !belowCrossover) {
     return (
-      `Above ~${VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US")} veAERO, dilution rather than pool-picking ` +
-      `decides the outcome, and "typical" prices every pool as though its weight will stay away — on a budget ` +
-      `large enough to move that weight itself.`
+      `At your size, replaying the last five epochs, this setting earned less than "last epoch's final ` +
+      `weight" — about 4% less at 25,000 veAERO and 24% less at 100,000. Above roughly ` +
+      `${VOTE_BASIS_CROSSOVER_VEAERO.toLocaleString("en-US")} veAERO your vote is big enough to move a pool's weight itself, ` +
+      `so assuming the weight will arrive anyway starts costing you.`
     );
   }
 
