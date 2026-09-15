@@ -540,14 +540,12 @@ test("a cap of 1 or above changes nothing", () => {
  * unfavoured one: a caveat that fires on every run is noise, and one that never
  * fires is the silence it was written to break.
  */
-// The small-budget warning is gone on purpose. It rested on a replay in which
-// "typical" earned meaningfully more; re-measured on 2026-09-15 the sign
-// alternates (+4% at 2,000, -11% at 5,000, +4% at 25,000, -3% at 100,000), so
-// the page was telling every small voter their setting was wrong on the
-// strength of a difference it could no longer measure.
-test("voteBasisCaveat says nothing to a small position on any basis, now the replay edge is gone", () => {
+// Below the crossover the page's default basis is the one the replay favours
+// outright — "typical" won every single epoch at 2,000, 5,000 and 10,000 veAERO
+// — so there is nothing to warn a small holder about, whichever basis they pick.
+test("voteBasisCaveat says nothing to a position below the crossover, on any basis", () => {
   for (const basis of ["previous", "current", "typical"] as const) {
-    for (const budget of [2_000, 5_000, 25_000, 100_000]) {
+    for (const budget of [2_000, 5_000, 10_000]) {
       assert.equal(voteBasisCaveat(budget, basis), null, `expected silence for ${basis} at ${budget} veAERO`);
     }
   }
@@ -564,13 +562,22 @@ test("voteBasisCaveat says nothing to a large position using the default basis",
 test("voteBasisCaveat still warns a large position that chose typical, for the structural reason", () => {
   const caveat = voteBasisCaveat(2_000_000, "typical");
   assert.ok(caveat);
-  assert.match(caveat, /1,000,000 veAERO/);
+  assert.match(caveat, /20,000 veAERO/);
   assert.match(caveat, /weight will stay away/);
   assert.doesNotMatch(caveat, /replaying past epochs/);
 });
 
 test("voteBasisCaveat says nothing to a small position that already chose typical", () => {
-  assert.equal(voteBasisCaveat(25_000, "typical"), null);
+  assert.equal(voteBasisCaveat(VOTE_BASIS_CROSSOVER_VEAERO - 1, "typical"), null);
+});
+
+// The crossover is a measurement, not decoration: at 25,000 veAERO "typical"
+// already loses (-4.4%), and by 100,000 it loses 23.7%. A holder that size on
+// that basis has to be told.
+test("voteBasisCaveat warns a position at or above the crossover that chose typical", () => {
+  for (const budget of [VOTE_BASIS_CROSSOVER_VEAERO, 25_000, 100_000]) {
+    assert.ok(voteBasisCaveat(budget, "typical"), `expected a caveat for typical at ${budget} veAERO`);
+  }
 });
 
 test("voteBasisCaveat is silent rather than wrong on a budget that is not a positive number", () => {
