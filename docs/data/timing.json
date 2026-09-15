@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-10T07:28:41.712Z",
+  "generatedAt": "2026-09-15T20:31:21.877Z",
   "epochs": [
     "2026-08-06",
     "2026-08-13",
@@ -10,13 +10,14 @@
   "scans": 131,
   "pools": 114,
   "observations": 13423,
+  "medianPoolsPerScan": 102,
   "trust": [
     {
       "label": "Thursday–Friday",
       "fromHours": 120,
       "toHours": 168,
       "scans": 31,
-      "keptAll": 2,
+      "keptAll": 3,
       "keptThick": 2,
       "keptRich": 7
     },
@@ -25,18 +26,18 @@
       "fromHours": 72,
       "toHours": 120,
       "scans": 39,
-      "keptAll": 2,
-      "keptThick": 3,
-      "keptRich": 6
+      "keptAll": 3,
+      "keptThick": 2,
+      "keptRich": 7
     },
     {
       "label": "Monday–Tuesday",
       "fromHours": 24,
       "toHours": 72,
       "scans": 39,
-      "keptAll": 2,
+      "keptAll": 3,
       "keptThick": 2,
-      "keptRich": 6
+      "keptRich": 7
     },
     {
       "label": "Wednesday",
@@ -45,7 +46,7 @@
       "scans": 17,
       "keptAll": 3,
       "keptThick": 3,
-      "keptRich": 6
+      "keptRich": 7
     },
     {
       "label": "final hours",
@@ -285,23 +286,23 @@
     "overall": [
       {
         "name": "previous",
-        "observations": 13048,
-        "medianAbsError": 0.285122717142517,
-        "medianBias": 0.00004130988450645745,
-        "closestOn": 6069
+        "observations": 12926,
+        "medianAbsError": 0.28812765698416265,
+        "medianBias": 0.000026674173353224973,
+        "closestOn": 5990
       },
       {
         "name": "current",
-        "observations": 13048,
-        "medianAbsError": 0.26506607618976563,
+        "observations": 12926,
+        "medianAbsError": 0.27239163883641626,
         "medianBias": 0,
-        "closestOn": 5323
+        "closestOn": 5280
       },
       {
         "name": "typical",
-        "observations": 13048,
+        "observations": 12926,
         "medianAbsError": 0.3631763046333156,
-        "medianBias": 0.10227539046685896,
+        "medianBias": 0.09969610121966554,
         "closestOn": 1656
       }
     ],
@@ -311,22 +312,22 @@
         "bases": [
           {
             "name": "previous",
-            "observations": 1587,
-            "medianAbsError": 0.256977684086664,
-            "medianBias": 0.000004362131407198433,
-            "closestOn": 1041
+            "observations": 1488,
+            "medianAbsError": 0.2931106808577473,
+            "medianBias": 0,
+            "closestOn": 985
           },
           {
             "name": "current",
-            "observations": 1587,
-            "medianAbsError": 0.22202294084788887,
+            "observations": 1488,
+            "medianAbsError": 0.25168164665575876,
             "medianBias": 0,
-            "closestOn": 313
+            "closestOn": 270
           },
           {
             "name": "typical",
-            "observations": 1587,
-            "medianAbsError": 0.5434725859516614,
+            "observations": 1488,
+            "medianAbsError": 0.6056176706922853,
             "medianBias": 0.23761466923907504,
             "closestOn": 233
           }
@@ -337,23 +338,23 @@
         "bases": [
           {
             "name": "previous",
-            "observations": 4411,
-            "medianAbsError": 0.2149198338169338,
-            "medianBias": 1.3476344595808598e-7,
-            "closestOn": 2449
+            "observations": 4388,
+            "medianAbsError": 0.21595158346615784,
+            "medianBias": 1.393420454576244e-7,
+            "closestOn": 2426
           },
           {
             "name": "current",
-            "observations": 4411,
+            "observations": 4388,
             "medianAbsError": 0.18641481907127866,
             "medianBias": 0,
             "closestOn": 1398
           },
           {
             "name": "typical",
-            "observations": 4411,
-            "medianAbsError": 0.3336497024091831,
-            "medianBias": 0.04834633857498449,
+            "observations": 4388,
+            "medianAbsError": 0.33095769634860006,
+            "medianBias": 0.045470857967166545,
             "closestOn": 564
           }
         ]

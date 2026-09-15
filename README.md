@@ -507,6 +507,14 @@ Three details that keep the number honest:
   part was which. In the same stretch `vAMM-USDC/AERO` swung $7,259.27 on pure
   price, with amounts that never budged at all.
 
+**One caveat on the scope, not the method.** Every scan this was measured over
+predates the 2026-09-15 coverage fix, so each covered about 102 pools against
+the 359 that exist — concentrated-liquidity pools were being dropped in
+discovery. The mechanism it found is a fact about how an epoch's incentives are
+posted, not about which pools were in the sample, so it is unlikely to change.
+But "unlikely" is not "measured", and this will be worth re-running once a few
+weeks of full-coverage scans have accumulated.
+
 Tokens the scan had no price for count as $0 on both sides, exactly as they did
 in the scan's own totals, and `withUnpriced` per window says how many rows that
 touches (52 of 5,094 at 48 hours) so the figure is never quietly better than its
