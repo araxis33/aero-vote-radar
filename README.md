@@ -411,6 +411,71 @@ figures were made of. History before 2026-08-28 has the totals only, so the
 measurement above cannot be redone on it — which is the reason the fields went in
 before the question became urgent rather than after.
 
+## What the amounts turned out to say
+
+The section above ends by saying the fix is data and the data is now being
+published. It is, and `npm run accrual` is the reader it was published for. The
+answer it came back with is not the one the field was added in anticipation of,
+so it is worth writing down plainly.
+
+```
+npm run accrual                       # walks the committed history, writes docs/data/accrual.json
+npm run accrual some/dir out.json     # or a directory of snapshot JSON files, to another path
+```
+
+The method has no modelling in it. Take two scans inside the same epoch, value
+**both** sets of raw amounts at the **later** scan's prices, and the difference
+is accrual with the price move removed by construction. Value each at its own
+scan's prices instead and you get the naive figure the dollar series would have
+shown. The gap between the two is what the repricing was worth, and it is
+reported rather than quietly applied. Pairs that straddle an epoch boundary are
+skipped, because amounts reset there and the reset would read as a pool losing
+everything it had earned.
+
+Over the 69 scans carrying amounts, 2026-08-27 to 2026-09-15:
+
+| window | pool-windows | any accrual at all | negative, naive | negative, accrual | median accrual where it moved |
+|---|---|---|---|---|---|
+| 48h | 5,094 | **4%** | 53% | **0%** | $477.59 |
+| 72h | 4,140 | 7% | 53% | 0% | $482.25 |
+| 96h | 2,973 | 8% | 50% | 0% | $500.47 |
+| 120h | 1,915 | **10%** | 50% | 0% | $558.22 |
+
+Read the first two number columns together, because that is the finding: about
+half of all 48-hour windows moved *down* in dollars, and only four in a hundred
+had any change in the underlying amounts at all. The dollar series was not a
+signal buried in noise. Inside an epoch there was, for 96% of pool-windows,
+nothing underneath it to find — the incentives for the epoch a scan is reporting
+are essentially fixed by the time the scan can see them, so every cent of
+movement between two scans is the reward tokens repricing.
+
+That is a sharper statement than the earlier section's, and it changes the
+advice rather than just quantifying it. "Follow the money that is flowing right
+now" does not fail because the flow is hard to measure. Within an epoch there is
+mostly no flow: there is a pot, set near the start, and a price moving on top of
+it.
+
+Three details that keep the number honest:
+
+- **Nothing un-earns.** Once the price move is removed, not one pool-window in
+  the whole history came out negative, and no raw amount ever fell inside an
+  epoch. A method that produced negative earnings would be reporting its own
+  bug; this one does not, which is the main reason to trust the rest of it.
+- **When amounts do move, they move a lot.** The median is not a rounding
+  artefact at roughly $480 to $560. The pools this happens to are real and few,
+  and `didAccrue` in the JSON names them.
+- **The two can happen at once, and only this separates them.** Over the longest
+  window `vAMM-WETH/VVV` earned $7,197.51 while its reward tokens fell $1,242.74
+  — a dollar reader would have seen about $5,955 and had no way to know which
+  part was which. In the same stretch `vAMM-USDC/AERO` swung $7,259.27 on pure
+  price, with amounts that never budged at all.
+
+Tokens the scan had no price for count as $0 on both sides, exactly as they did
+in the scan's own totals, and `withUnpriced` per window says how many rows that
+touches (52 of 5,094 at 48 hours) so the figure is never quietly better than its
+inputs.
+
+
 ## Install
 
 Requires Node.js 18.18 or newer (the test suite's `node --import tsx` invocation depends on the `--import` flag, added in 18.18).
@@ -580,11 +645,14 @@ src/
   settled.ts       the committed scan history + the settled on-chain answer, shared by both measurements
   timing.ts        pure scoring for how much of a ranking survives to the epoch's close
   timing-cli.ts    entrypoint for `npm run timing`, writes docs/data/timing.json
+  accrual.ts       pure separation of real accrual from reward-token repricing, using the published raw amounts
+  accrual-cli.ts   entrypoint for `npm run accrual`, writes docs/data/accrual.json
 docs/              the web app, served by GitHub Pages
   index.html       static page: reads the snapshot, runs the allocator client-side
   data/
     snapshot.json  latest scan, refreshed every 6 hours by CI
     timing.json    survival + accuracy measurement, refreshed weekly by CI
+    accrual.json   accrual-vs-repricing measurement, refreshed weekly by CI
 test/
   allocator.test.ts    unit tests for the greedy marginal-allocation algorithm and percentage rounding
   backtest.test.ts     unit tests for the backtester, including that it never peeks at the epoch under test
@@ -603,6 +671,7 @@ test/
   predict-cli.test.ts  unit tests for snapshotsFromDir, including that a malformed file is skipped rather than crashing the run
   timing.test.ts       unit tests for top-ten survival, the window a scan falls in, and the late-mover threshold
   timing-cli.test.ts   unit tests for buildAccuracyReport, including that an empty pool-size bucket is dropped rather than published as NaN
+  accrual.test.ts      unit tests for revaluing at one price vector, the epoch-boundary skip, and the pools-that-only-repriced split
   site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
 ```
 
