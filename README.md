@@ -629,6 +629,10 @@ Total voting power: 11,470,610.348 veAERO
 
 ## As an MCP server
 
+There is also a [`SKILL.md`](SKILL.md) at the repo root: the short version an
+agent should read before using any of this, including which command to run first
+and the four ways to misread the output.
+
 ```bash
 npx aero-vote-radar-mcp        # from a clone: npx tsx src/mcp-server.ts
 ```

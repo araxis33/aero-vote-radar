@@ -28,7 +28,8 @@
     "aero-vote-radar-mcp": "dist/mcp-server.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "SKILL.md"
   ],
   "scripts": {
     "prepare": "npm run build",
