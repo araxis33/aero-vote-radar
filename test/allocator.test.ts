@@ -540,12 +540,16 @@ test("a cap of 1 or above changes nothing", () => {
  * unfavoured one: a caveat that fires on every run is noise, and one that never
  * fires is the silence it was written to break.
  */
-test("voteBasisCaveat warns a small position that the default is the unfavoured basis", () => {
-  for (const basis of ["previous", "current"] as const) {
-    const caveat = voteBasisCaveat(25_000, basis);
-    assert.ok(caveat, `expected a caveat for ${basis} at 25,000 veAERO`);
-    assert.match(caveat, /1,000,000 veAERO/);
-    assert.match(caveat, /"typical"/);
+// The small-budget warning is gone on purpose. It rested on a replay in which
+// "typical" earned meaningfully more; re-measured on 2026-09-15 the sign
+// alternates (+4% at 2,000, -11% at 5,000, +4% at 25,000, -3% at 100,000), so
+// the page was telling every small voter their setting was wrong on the
+// strength of a difference it could no longer measure.
+test("voteBasisCaveat says nothing to a small position on any basis, now the replay edge is gone", () => {
+  for (const basis of ["previous", "current", "typical"] as const) {
+    for (const budget of [2_000, 5_000, 25_000, 100_000]) {
+      assert.equal(voteBasisCaveat(budget, basis), null, `expected silence for ${basis} at ${budget} veAERO`);
+    }
   }
 });
 
@@ -554,10 +558,15 @@ test("voteBasisCaveat says nothing to a large position using the default basis",
   assert.equal(voteBasisCaveat(5_000_000, "current"), null);
 });
 
-test("voteBasisCaveat warns the other way round when a large position uses typical", () => {
+// The one surviving caveat, kept because its reason is structural rather than a
+// replay that can move: past this size the budget is large enough to shift the
+// very weight "typical" assumes will arrive.
+test("voteBasisCaveat still warns a large position that chose typical, for the structural reason", () => {
   const caveat = voteBasisCaveat(2_000_000, "typical");
   assert.ok(caveat);
-  assert.match(caveat, /favoured the default vote basis/);
+  assert.match(caveat, /1,000,000 veAERO/);
+  assert.match(caveat, /weight will stay away/);
+  assert.doesNotMatch(caveat, /replaying past epochs/);
 });
 
 test("voteBasisCaveat says nothing to a small position that already chose typical", () => {

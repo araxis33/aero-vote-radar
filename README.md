@@ -13,6 +13,16 @@ Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and ge
 
 ### What it does for you
 
+The page opens on one question -- how much veAERO you have -- with the four
+expert controls folded behind *Settings* on defaults that work, and it prices
+the suggestion against **the weight each pool usually settles at** rather than
+the weight showing at this moment. That last choice is why there is no longer a
+paragraph under the allocation explaining that the dollars above are about to
+fall: they are already the post-refill ones. Replaying past epochs, the three
+bases earn within a few percent of each other with no consistent winner
+(measured 2026-09-15, see below), so among equals the page now shows the figure
+it does not have to disclaim.
+
 - **Hands you a castable vote, not a leaderboard.** Whole percentages summing to exactly 100 — the only form Aerodrome's UI accepts — with a copy button and a link straight to the voting page.
 - **Prices your own dilution.** The moment you add votes to a pool, your own $/vote there falls. The allocator models that explicitly instead of dumping everything into whatever shows the highest APR.
 - **Tells you how much of itself to believe.** Of the ten pools a list like this puts on top, roughly six were still on top when the epoch closed — and only two once near-empty gauges are counted in. Measured, from the scan history, and printed on the page above the ranking rather than left as a warning that the numbers "move".
@@ -210,23 +220,40 @@ budget grows, dilution rather than pool-picking decides the outcome, that
 protection turns into an over-estimate on every pool at once, and the default
 pulls ahead. The crossover sits near 1,000,000 veAERO.
 
-**So the tool now says so — and lets you act on it.** Below that size,
-`recommend` closes with a line saying the basis it just used is the one the
-backtest does not favour, and the web page carries the same note under its
-allocation; above it, a run using `--vote-basis typical` gets the warning
-pointing the other way. The page's *"Vote weight to expect"* dropdown offers all
-three, `typical` included, so a visitor the caveat has just warned can switch
-basis on the spot instead of being sent to a command line they will not open.
-Nothing switches by itself: two honest measurements disagree, and the choice
-belongs to the person whose veAERO it is. `VOTE_BASIS_CROSSOVER_VEAERO` in `src/constants.ts` holds the
-threshold and the reasoning.
+**Re-measured 2026-09-15, and the advantage is gone.** The same command, the
+same five-epoch depth, against a fresh live scan:
 
-**Take the table as a shape, not as numbers.** It moves week to week — the run
-the day before this one put the 1,000,000 figure at -30.7% rather than -4%. The
-direction (typical ahead when small, behind when large) has held; the crossover
-itself wanders, which is precisely why the tool points at
-`backtest --veaero <your amount>` instead of publishing a figure and letting it
-go stale.
+| veAERO | default $ | typical $ | difference | typical ahead in |
+|---|---|---|---|---|
+| 2,000 | 27.65 | 28.81 | +4.2% | 3 of 5 epochs |
+| 5,000 | 62.66 | 55.50 | **-11.4%** | 2 of 5 epochs |
+| 25,000 | 293.69 | 305.44 | +4.0% | 3 of 5 epochs |
+| 100,000 | 1,223.77 | 1,185.47 | -3.1% | 2 of 5 epochs |
+
+The sign alternates and neither basis wins a majority of epochs at any size.
+This README already says to treat a single-digit uplift as noise rather than
+proof, and that is what this is. The clean ladder above -- +114%, +99%, +64% --
+did not survive three weeks.
+
+**So the warning came out.** Below the crossover the page and `recommend` now
+say nothing about the vote basis, because there is nothing left to say: telling
+a voter that the setting they are on is the wrong one, on the strength of a
+difference the tool can no longer measure, spends their trust and pays them no
+money. It was also the second of two amber blocks a first-time visitor met
+before any number, which is its own kind of dishonesty -- a page that spends its
+opening explaining why not to believe it.
+
+The dropdown still offers all three, `backtest --veaero <your amount>` still
+scores them against each other on your own size, and the large-budget caveat
+stays -- its reason is structural rather than a replay that can move, since past
+that size a budget is big enough to shift the very weight `typical` assumes will
+arrive. `VOTE_BASIS_CROSSOVER_VEAERO` in `src/constants.ts` carries both
+measurements and both dates.
+
+**The lesson is about measurement, not about `typical`.** A number quoted as
+settled fact in prose goes stale silently; the same number recomputed weekly in
+CI announces when it moves. That is why `timing.json` exists, and the vote-basis
+dollars are the next thing that belongs in it.
 
 ## How much of the ranking survives the week
 
