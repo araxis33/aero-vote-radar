@@ -312,7 +312,13 @@ export async function backtestLive(
   trendEpochs = TREND_EPOCHS,
   minConsistency = 0,
 ): Promise<BacktestReport> {
-  const pools = await fetchActivePools();
+  // Pools Aerodrome is migrating are left out here too, the same as `recommend`
+  // (see `withoutMigrating`'s use in cli.ts/mcp-server.ts): its vote page hides
+  // them from the default list a real voter picks from, whether that voter is
+  // running this tool's allocation or just chasing the highest current $/vote.
+  // Without this, the backtest could credit either strategy with a pool nobody
+  // running it live could actually have found and voted for.
+  const pools = (await fetchActivePools()).filter((p) => !p.migrating);
   const depth = testEpochs + trendEpochs + 1;
 
   let epochFetchFailures = 0;
