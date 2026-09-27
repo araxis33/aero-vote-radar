@@ -2,7 +2,7 @@
 
 ### You hold veAERO. Where does this week's vote go?
 
-> **Coming change:** Aerodrome becomes Aero on **October 22, 2026, 00:00 UTC**, with a new rewards system (sAERO and Predictive Allocation). See [Aero's announcement](https://aero.xyz/articles/aero-launch-update-all-systems-go/). How veAERO carries over has not been published yet; this tool covers the current weekly veAERO vote.
+> **Coming change:** Aerodrome becomes Aero on **October 22, 2026, 00:00 UTC**, with a new rewards system (sAERO and Predictive Allocation). See [Aero's announcement](https://aero.xyz/articles/aero-launch-update-all-systems-go/). Official migration steps have not been published yet; the site's wallet lookup previews what each veAERO lock becomes, read from Aerodrome's published migration contract (1:1 by locked AERO; permanent stays permanent, ended locks come back as plain AERO, the rest become sAERO stakes for their remaining weeks; a lock with an active vote or inside a Relay has to be reset or withdrawn first). This tool covers the current weekly veAERO vote.
 
 Type your balance into **[aero.deftools.xyz](https://aero.deftools.xyz)** and get back whole percentages you can paste straight into Aerodrome's voting UI — ranked by what each pool really pays per vote, and priced *after* your own vote dilutes it.
 
