@@ -730,6 +730,7 @@ docs/              the web app, served by GitHub Pages
   data/
     snapshot.json    latest scan, refreshed every 6 hours by CI
     fee-stream.json  raw per-pool fee counters, refreshed every 6 hours by CI, best-effort (src/feeStream.ts)
+    fee-rate.json    trailing 96-hour fee USD per day per pool and per 10k votes, built from those counters (src/feeRate.ts)
     timing.json      survival + accuracy measurement, refreshed weekly by CI
     accrual.json     accrual-vs-repricing measurement, refreshed weekly by CI
 test/
