@@ -709,6 +709,8 @@ src/
   veAero.ts        VotingEscrow wrapper for a user's voting power
   util.ts          address/concurrency helpers + shared error-message formatting
   feeStream.ts     raw, continuously-growing per-pool fee counters (see "What a snapshot cannot currently tell you")
+  feeRate.ts       trailing 96-hour fee USD per day per pool and per 10k votes, from those counters
+  v3.ts            reader for Aero (MetaDEX v3) gauges, weights, incentive streams and FeesCollected; idle until launch (2026-10-22)
   llms.ts          renders docs/llms.txt, the site's answer as plain text for AI assistants
   snapshot.ts      builds the JSON snapshot the web app reads
   mcp-server.ts    MCP stdio server entrypoint
