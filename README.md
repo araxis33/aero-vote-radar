@@ -759,7 +759,7 @@ test/
   voted.test.ts        unit tests for scoring a cast vote against settled weight, including the unscorable-pool and zero-weight cases
   accrual.test.ts      unit tests for revaluing at one price vector, the epoch-boundary skip, and the pools-that-only-repriced split
   accrual-cli.test.ts  unit tests for formatReport's rendering of the accrual report, including NaN-as-"n/a" and the data-notes/pool-list sections
-  feeStream.test.ts    unit tests for accruedBetween: CL gauge-fee growth/reset, v2 index growth, and the changed-kind refusal
+  feeStream.test.ts    unit tests for accruedBetween (CL gauge-fee growth/reset, v2 index growth, changed-kind refusal) and buildFeeCounters (CL/classic classification and index alignment across the filtered classic-only arrays, partial-failure drops)
   llms.test.ts         unit tests for renderLlmsTxt's rendering of docs/llms.txt
   site-parity.test.ts  runs docs/index.html's hand-ported allocator/countdown/vote-basis logic against src/ on the same inputs
   migration-site.test.ts  pins docs/index.html's ported migrationOutcome() against Aerodrome's migration-contract rules
