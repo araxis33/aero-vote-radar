@@ -36,7 +36,7 @@ it does not have to disclaim.
 
 | | |
 |---|---|
-| **Hosted page** | **[aero.deftools.xyz](https://aero.deftools.xyz)** — nothing to install. A scheduled job re-scans the chain every 6 hours; the allocation itself runs in your browser. |
+| **Hosted page** | **[aero.deftools.xyz](https://aero.deftools.xyz)** — nothing to install. A scheduled job re-scans the chain every 4 hours; the allocation itself runs in your browser. |
 | **CLI** | `npx aero-vote-radar recommend --veaero 25000 --vote-ready` — a live scan off Base mainnet, nothing to clone. No API keys, no backend, no database. |
 | **MCP server** | `npx aero-vote-radar-mcp` — five tools for Claude or any MCP-capable agent: *"recommend an allocation for my 25,000 veAERO."* |
 
@@ -115,7 +115,7 @@ It exists because the two halves of this tool have very different costs. The **s
 
 So they're split:
 
-- A scheduled job (`.github/workflows/snapshot.yml`, every 6 hours) runs `npm run snapshot`, which performs the full live scan and writes [`docs/data/snapshot.json`](docs/data/snapshot.json). If the file changed, the job commits it. A scan that returns zero pools throws instead of publishing, so a rate-limited run can't blank out yesterday's perfectly good data.
+- A scheduled job (`.github/workflows/snapshot.yml`, every 4 hours) runs `npm run snapshot`, which performs the full live scan and writes [`docs/data/snapshot.json`](docs/data/snapshot.json). If the file changed, the job commits it. A scan that returns zero pools throws instead of publishing, so a rate-limited run can't blank out yesterday's perfectly good data.
 - [`docs/index.html`](docs/index.html) fetches that JSON and runs `allocateAcrossCandidates` + `toWholePercentWeights` — ported verbatim from `src/allocator.ts` — in the browser, per keystroke.
 
 Nothing is sent anywhere: the page is a static file plus a JSON file, with no backend and no analytics. Because the personalised half runs client-side, changing your veAERO amount doesn't trigger a re-scan, and the snapshot can be shared by every visitor.
@@ -730,14 +730,14 @@ scripts/
   aero-chains.mjs  which of Aero's chains have published pool/allocation contracts, read from dromos-labs/metadex-public, written to docs/data/aero-chains.json; run by the snapshot workflow
 docs/              the web app, served by GitHub Pages
   index.html       static page: reads the snapshot, runs the allocator client-side
-  llms.txt         plain-text summary for AI assistants/crawlers, refreshed every 6 hours by CI (src/llms.ts)
+  llms.txt         plain-text summary for AI assistants/crawlers, refreshed every 4 hours by CI (src/llms.ts)
   data/
-    snapshot.json    latest scan, refreshed every 6 hours by CI
-    fee-stream.json  raw per-pool fee counters, refreshed every 6 hours by CI, best-effort (src/feeStream.ts)
+    snapshot.json    latest scan, refreshed every 4 hours by CI
+    fee-stream.json  raw per-pool fee counters, refreshed every 4 hours by CI, best-effort (src/feeStream.ts)
     fee-rate.json    trailing 96-hour fee USD per day per pool and per 10k votes, built from those counters (src/feeRate.ts)
     timing.json      survival + accuracy measurement, refreshed weekly by CI
     accrual.json     accrual-vs-repricing measurement, refreshed weekly by CI
-    aero-chains.json which of Aero's chains have published pool/allocation contracts, refreshed every 6 hours by CI (scripts/aero-chains.mjs)
+    aero-chains.json which of Aero's chains have published pool/allocation contracts, refreshed every 4 hours by CI (scripts/aero-chains.mjs)
 test/
   allocator.test.ts    unit tests for the greedy marginal-allocation algorithm and percentage rounding
   backtest.test.ts     unit tests for the backtester, including that it never peeks at the epoch under test
