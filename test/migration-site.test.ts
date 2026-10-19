@@ -86,3 +86,12 @@ test("a lock deposited into a Relay, or a Relay's own veNFT, cannot be moved as 
 test("an emptied lock carries nothing over", () => {
   assert.deepEqual(migrationOutcome(normal({ amount: 0, end: LAUNCH + WEEK }), LAUNCH), { kind: "empty" });
 });
+
+test("the page and the CLI/MCP stop suggesting a vote at the same instant", async () => {
+  const { LAST_WEEKLY_VOTE_CLOSE_TS, weeklyVoteEnded } = await import("../src/constants.js");
+  const pageTs = new Function(`${extractConst(siteSource, "LAST_WEEKLY_VOTE_CLOSE_TS")} return LAST_WEEKLY_VOTE_CLOSE_TS;`)();
+  assert.equal(pageTs, LAST_WEEKLY_VOTE_CLOSE_TS);
+  assert.equal(LAST_WEEKLY_VOTE_CLOSE_TS, Date.parse("2026-10-21T22:59:00Z") / 1000);
+  assert.equal(weeklyVoteEnded(LAST_WEEKLY_VOTE_CLOSE_TS - 1), false);
+  assert.equal(weeklyVoteEnded(LAST_WEEKLY_VOTE_CLOSE_TS), true);
+});
