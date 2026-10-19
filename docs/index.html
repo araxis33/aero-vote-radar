@@ -260,6 +260,7 @@
   </div>
 </header>
 
+<div class="note" id="voteEndedNote" hidden><b>The weekly veAERO vote has ended.</b> The last vote closed on October 21, 22:59 UTC, Aero launched on October 22 and the old gauges are switched off, so this page no longer suggests a vote. Upgrade your veAERO to sAERO at <a href="https://aero.xyz/aero-upgrade" target="_blank" rel="noreferrer">aero.xyz/aero-upgrade</a>; look up your wallet below to see what each lock becomes. Ranking for sAERO allocation will follow once Aero publishes its contract addresses. The figures further down are the last weekly scan, kept for reference.</div>
 <p class="meta" id="meta"><span class="dot"></span> Loading the latest scan…</p>
 <div class="note" id="aeroLaunchNote">Aerodrome becomes <b>Aero</b> on <b>October 22, 00:00 UTC</b>, with a new rewards system (sAERO and Predictive Allocation). Official steps and dates are in <a href="https://aero.xyz/aero-upgrade" target="_blank" rel="noreferrer">aero.xyz/aero-upgrade</a> (see "Before Aero, Oct 22" below); look up your wallet below to preview what each veAERO lock becomes, read from Aerodrome's published migration contract. This page covers the current weekly veAERO vote. <a href="https://aero.xyz/articles/aero-launch-update-all-systems-go/" target="_blank" rel="noreferrer">Aero's announcement</a></div>
 
@@ -340,10 +341,10 @@
     <tbody>
       <tr><td>By Oct 20</td><td>Withdraw your lock from Relay or any other vault</td></tr>
       <tr><td>Oct 21, 22:59 UTC</td><td>Last vote closes</td></tr>
-      <tr><td>Before you upgrade</td><td>Claim rewards and rebase, then reset your vote: a lock with active votes cannot be upgraded</td></tr>
+      <tr><td>Before you upgrade</td><td>Claim rewards and rebase, then reset your vote: a lock with active votes cannot be upgraded, and rewards left unclaimed cannot be recovered after it</td></tr>
       <tr><td>Oct 22, 00:00 UTC</td><td>Aero launches. Each veAERO becomes 1 AERO in sAERO with the same lock time left (rounded up to a full week). If you voted in the last week, you can upgrade from 01:00 UTC</td></tr>
       <tr><td>Oct 22, 16:00 UTC</td><td>First Autopilot allocation. sAERO added after that waits for the next one</td></tr>
-      <tr><td>After that</td><td>You can move your allocation every 47 hours, across 7 chains</td></tr>
+      <tr><td>After that</td><td>You can move your allocation every 47 hours, across 7 chains in one transaction, with gas paid on Base only. sAERO positions can be merged, not split</td></tr>
     </tbody>
   </table>
   </div>
@@ -466,12 +467,12 @@
 
 <div class="rowhead">
   <div>
-    <h2>Suggested allocation</h2>
-    <p class="h2note">Whole percentages that add up to exactly 100 — the form Aerodrome's UI accepts.</p>
+    <h2 id="allocTitle">Suggested allocation</h2>
+    <p class="h2note" id="allocSub">Whole percentages that add up to exactly 100 — the form Aerodrome's UI accepts.</p>
   </div>
   <div style="display:flex; gap:8px">
     <button id="copyBtn" type="button">Copy weights</button>
-    <a href="https://aerodrome.finance/vote" target="_blank" rel="noopener noreferrer"><button class="primary" type="button">Vote on Aerodrome ↗</button></a>
+    <a id="voteLink" href="https://aerodrome.finance/vote" target="_blank" rel="noopener noreferrer"><button class="primary" type="button">Vote on Aerodrome ↗</button></a>
   </div>
 </div>
 
@@ -1045,7 +1046,7 @@ async function renderMigration(ids, truncated) {
     } else {
       totals[out.kind] += lock.amount;
       becomes =
-        out.kind === "permanent" ? "Permanent sAERO stake"
+        out.kind === "permanent" ? "sAERO stake at the maximum duration (permanent lock)"
         : out.kind === "liquid" ? "Plain AERO (the lock has ended)"
         : "sAERO stake for " + out.weeks + " week" + (out.weeks === 1 ? "" : "s");
       if (lock.voted) {
@@ -1486,6 +1487,29 @@ function formatDuration(seconds) {
   return minutes + "m";
 }
 
+// The last weekly veAERO vote closes here (aero.xyz/aero-upgrade); same instant
+// as LAST_WEEKLY_VOTE_CLOSE_TS in src/constants.ts. From then on the gauges this
+// page ranks stop paying, so it stops suggesting a vote and says why.
+const LAST_WEEKLY_VOTE_CLOSE_TS = Date.UTC(2026, 9, 21, 22, 59) / 1000;
+
+function weeklyVoteEnded(nowSec) {
+  return nowSec >= LAST_WEEKLY_VOTE_CLOSE_TS;
+}
+
+function applyVoteEnded() {
+  if (!weeklyVoteEnded(Math.floor(Date.now() / 1000))) return;
+  document.getElementById("voteEndedNote").hidden = false;
+  document.getElementById("aeroLaunchNote").hidden = true;
+  document.getElementById("voteLink").hidden = true;
+  document.getElementById("copyBtn").hidden = true;
+  el.calldataBox.hidden = true;
+  document.querySelector("header .sub").textContent =
+    "Built to show where to vote veAERO each week. The weekly vote has ended with the Aero launch.";
+  document.getElementById("allocTitle").textContent = "Last weekly suggestion (for reference)";
+  document.getElementById("allocSub").textContent =
+    "From the final veAERO week. The weekly vote has ended, so this is no longer something to cast.";
+}
+
 function renderMeta() {
   const scanned = new Date(snapshot.generatedAt);
   const ageHours = (Date.now() - scanned.getTime()) / 3600000;
@@ -1502,7 +1526,9 @@ function renderMeta() {
   text.innerHTML =
     "<strong>" + snapshot.poolCount + "</strong> live-gauge pools · scanned <strong>" + age +
     "</strong> · epoch of " + new Date(snapshot.latestEpochTs * 1000).toISOString().slice(0, 10) +
-    " · voting closes in <strong>" + formatDuration(remaining) + "</strong>";
+    (weeklyVoteEnded(nowSec)
+      ? " · <strong>weekly voting ended Oct 21, 22:59 UTC</strong>"
+      : " · voting closes in <strong>" + formatDuration(remaining) + "</strong>");
   el.meta.append(dot, text);
 }
 
@@ -1511,7 +1537,9 @@ function renderMeta() {
 // page honest if someone leaves the tab open across the Thursday boundary.
 setInterval(function () {
   if (snapshot) renderMeta();
+  applyVoteEnded();
 }, 60000);
+applyVoteEnded();
 
 /** One line in the movers panel: name, its history, and the size of the move. */
 function moverRow(p) {
