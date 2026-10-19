@@ -95,3 +95,15 @@ test("the page and the CLI/MCP stop suggesting a vote at the same instant", asyn
   assert.equal(weeklyVoteEnded(LAST_WEEKLY_VOTE_CLOSE_TS - 1), false);
   assert.equal(weeklyVoteEnded(LAST_WEEKLY_VOTE_CLOSE_TS), true);
 });
+
+test("per-day figures price your own stake after it dilutes the pool, so size changes the ranking", () => {
+  const dilutedPerDay = new Function(`${extractFunction(siteSource, "dilutedPerDay")} return dilutedPerDay;`)();
+  // The DM example: a small pool paying $14 a day to 10k drops hard at 100k; a big pool barely moves.
+  const small = { usdPerDay: 140 * 1.1, votes: 100_000 };
+  const big = { usdPerDay: 10 * 100.1, votes: 1_000_000 };
+  const at = (pool: { usdPerDay: number; votes: number }, amount: number) => dilutedPerDay(pool.usdPerDay, pool.votes, amount);
+  assert.ok(at(small, 10_000) > at(big, 10_000));
+  assert.ok(at(small, 100_000) < at(big, 100_000));
+  assert.equal(at(small, 0), 0);
+  assert.ok(Math.abs(at({ usdPerDay: 100, votes: 90_000 }, 10_000) - 10) < 1e-9);
+});
