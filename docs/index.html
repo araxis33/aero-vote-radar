@@ -248,6 +248,9 @@
   .ar-callout { margin-top: 16px; padding: 12px 14px; border: 1px solid rgba(53, 208, 127, 0.4); background: rgba(53, 208, 127, 0.07); border-radius: 10px; font-size: 14px; }
   .ar-mine { font-weight: 660; color: var(--good); }
   #arBody .badge { margin-right: 8px; }
+  .ar-nets { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .ar-net { font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; }
+  .ar-net.on { background: var(--aero); border-color: var(--aero); color: #fff; }
   .ar-chip { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
   .ar-split { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
   .ar-split a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 14px; text-decoration: none; }
@@ -298,7 +301,7 @@
     <div class="totals ar-totals">
       <div class="stat hi"><div class="n num c-good" id="arBest">&mdash;</div><div class="l">Best pool for your sAERO, per day</div></div>
       <div class="stat"><div class="n num" id="arTimer">47 h</div><div class="l" id="arTimerLabel">Between moves of one stake (enter a wallet for yours)</div></div>
-      <div class="stat"><div class="n num" id="arCurrent">&mdash;</div><div class="l">What your current split pays per day</div></div>
+      <div class="stat"><div class="n num" id="arCurrent">&mdash;</div><div class="l">What your current split on Base pays per day</div></div>
       <div class="stat"><div class="n num">1.7&times;</div><div class="l">Switching every 47 h vs weekly (backtest)</div></div>
     </div>
     <div class="ar-callout" id="arCallout" hidden></div>
@@ -306,6 +309,7 @@
 
   <h2>Where to point your sAERO now</h2>
   <p class="h2note">Ranked by what <b>your</b> amount earns per day, pools with at least 100,000 sAERO. Fees are what the pool actually swept to allocators; incentives are what projects are streaming right now. <span id="arEarly"></span></p>
+  <div class="ar-nets" id="arChains"></div>
   <div class="scroll"><table>
     <thead><tr><th>Pool</th><th class="num">Your split</th><th class="num">Per day for you</th><th class="num">Fees / day</th><th class="num">Incentives / day</th><th class="num">sAERO in pool</th><th class="num">Last 24 h</th></tr></thead>
     <tbody id="arBody"></tbody>
@@ -2693,10 +2697,36 @@ const AR_MAX_POOLS = 3;
 const AR_STEPS = 20;
 const AR_MAX_STAKES = 20;
 
+const AR_CHAIN_NAMES = { base: "Base", ethereum: "Ethereum", optimism: "OP Mainnet", arbitrum: "Arbitrum", ink: "Ink", robinhood: "Robinhood Chain", arc: "Arc" };
+
 let arData = null;
 let arWallet = null;
+let arChain = "all";
 const arEl = (id) => document.getElementById(id);
 const arPerDay = (g) => g.feesUsdPerDay + g.incentivesUsdPerDay;
+const arChainOf = (g) => g.chain || "base";
+// Pools worth ranking on the chosen network, best for `amount` first.
+const arPools = (amount) =>
+  arData.gauges
+    .filter((g) => g.weight >= AR_MIN_WEIGHT && arPerDay(g) > 0 && (arChain === "all" || arChainOf(g) === arChain))
+    .map((g) => ({ g, mine: dilutedPerDay(arPerDay(g), g.weight, amount) }))
+    .sort((a, b) => b.mine - a.mine);
+
+// One button per network that has rankable pools, plus "All networks".
+function arRenderChains() {
+  const box = arEl("arChains");
+  box.innerHTML = "";
+  const counts = {};
+  for (const g of arData.gauges) if (g.weight >= AR_MIN_WEIGHT && arPerDay(g) > 0) counts[arChainOf(g)] = (counts[arChainOf(g)] || 0) + 1;
+  for (const key of ["all", ...Object.keys(AR_CHAIN_NAMES).filter((k) => counts[k])]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "ar-net" + (key === arChain ? " on" : "");
+    b.textContent = key === "all" ? "All networks" : AR_CHAIN_NAMES[key] + " " + counts[key];
+    b.addEventListener("click", () => { arChain = key; arRenderChains(); arRender(); });
+    box.append(b);
+  }
+}
 const arName = (g) => (g.symbol0 ? g.symbol0 + "/" + g.symbol1 : g.pool.slice(0, 6) + "…" + g.pool.slice(-4));
 
 // Greedy in 5% steps: each step goes where it adds the most after dilution,
@@ -2740,10 +2770,7 @@ function arCell(row, text, cls) {
 function arRender() {
   if (!arData) return;
   const amount = Math.max(0, parseFloat(arEl("arAmount").value) || 0);
-  const pools = arData.gauges
-    .filter((g) => g.weight >= AR_MIN_WEIGHT && arPerDay(g) > 0)
-    .map((g) => ({ g, mine: dilutedPerDay(arPerDay(g), g.weight, amount) }))
-    .sort((a, b) => b.mine - a.mine);
+  const pools = arPools(amount);
   const split = arSplit(pools.map((x) => x.g), amount);
   const splitPays = split.reduce((a, s) => a + s.perDay, 0);
   arEl("arBest").textContent = pools.length && amount > 0 ? usd(pools[0].mine) : "—";
@@ -2760,7 +2787,7 @@ function arRender() {
     badge.textContent = g.kind ? g.kind.replace(/^CL\d+$/, "CL") : "?";
     const chip = document.createElement("span");
     chip.className = "ar-chip";
-    chip.textContent = "Base";
+    chip.textContent = AR_CHAIN_NAMES[arChainOf(g)] || arChainOf(g);
     name.append(badge, document.createTextNode(arName(g)), chip);
     tr.append(name);
     const s = shares.get(g);
@@ -2791,7 +2818,8 @@ function arRender() {
   const next = Math.min(...arWallet.stakes.map((s) => s.readyAt));
   timer.textContent = next <= nowSec ? "now" : "in " + Math.ceil((next - nowSec) / 3600) + " h";
   timerLabel.textContent = arWallet.stakes.length > 1 ? "Your first stake can move again" : "You can move your sAERO again";
-  const byGauge = new Map(arData.gauges.map((g) => [g.gauge.toLowerCase(), g]));
+  // The wallet is read on Base, so only its Base allocations are matched.
+  const byGauge = new Map(arData.gauges.filter((g) => arChainOf(g) === "base").map((g) => [g.gauge.toLowerCase(), g]));
   let pays = 0, placed = 0;
   for (const st of arWallet.stakes) {
     for (const a of st.allocs) {
@@ -2860,9 +2888,8 @@ arEl("arLookup").addEventListener("click", async () => {
 arEl("arAmount").addEventListener("input", arRender);
 arEl("arCopy").addEventListener("click", () => {
   const amount = Math.max(0, parseFloat(arEl("arAmount").value) || 0);
-  const pools = arData.gauges.filter((g) => g.weight >= AR_MIN_WEIGHT && arPerDay(g) > 0)
-    .sort((a, b) => dilutedPerDay(arPerDay(b), b.weight, amount) - dilutedPerDay(arPerDay(a), a.weight, amount));
-  const text = arSplit(pools, amount).map((s) => arName(s.g) + " (" + (s.g.kind || "?") + ", Base) " + Math.round(s.share * 100) + "%").join("\n");
+  const pools = arPools(amount).map((x) => x.g);
+  const text = arSplit(pools, amount).map((s) => arName(s.g) + " (" + (s.g.kind || "?") + ", " + (AR_CHAIN_NAMES[arChainOf(s.g)] || arChainOf(s.g)) + ") " + Math.round(s.share * 100) + "%").join("\n");
   navigator.clipboard.writeText(text).then(() => { arEl("arCopy").textContent = "Copied"; setTimeout(() => (arEl("arCopy").textContent = "Copy percentages"), 1500); });
 });
 
@@ -2873,9 +2900,11 @@ fetch("data/v3.json", { cache: "no-cache" })
     arData = data;
     const ago = Math.max(0, Math.round((Date.now() - Date.parse(data.checkedAt)) / 3600000));
     const hours = Math.round(data.windowHours);
-    arEl("arMeta").innerHTML = '<span class="dot"></span> Live from Aero\'s contracts on Base · updated <strong>' +
-      (ago === 0 ? "under an hour ago" : ago + " h ago") + "</strong> · fees from the last " + hours + " h" +
-      (data.windowHours < 96 ? " (since launch)" : "") + " · rescanned every 4 h";
+    const nets = new Set(data.gauges.map(arChainOf)).size;
+    arEl("arMeta").innerHTML = '<span class="dot"></span> Live from Aero\'s contracts on ' + (nets > 1 ? nets + " networks" : "Base") +
+      " · updated <strong>" + (ago === 0 ? "under an hour ago" : ago + " h ago") + "</strong> · fees from the last " + hours + " h" +
+      (data.windowHours < 96 ? " (since launch)" : "") + " · rescanned every hour";
+    arRenderChains();
     if (data.windowHours < 48) arEl("arEarly").textContent = "Aero launched " + hours + " h ago and fees arrive in lumps, so these figures are rough for the first days.";
     arEl("aeroRadar").hidden = false;
     arRender();
