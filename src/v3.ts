@@ -251,6 +251,8 @@ export function registryFromDeployment(file: Record<string, unknown>): Address |
 }
 
 export interface V3ScanGauge extends V3GaugeYield {
+  /** Network the gauge lives on ("base", "optimism", …). */
+  chain: string;
   gauge: Address;
   pool: Address;
   /** Allocation weight right now, in sAERO. */
@@ -262,8 +264,8 @@ export interface V3ScanGauge extends V3GaugeYield {
   kind?: string;
 }
 
-/** Base blocks in 24 h. */
-const DAY_BLOCKS = BigInt(86_400 / BASE_BLOCK_TIME_SEC);
+/** Smallest block span a refused getLogs call is split down to before splitting its addresses instead. */
+export const V3_LOG_MIN_BLOCKS = 50n;
 
 export interface V3ScanFile {
   checkedAt: string;
@@ -275,6 +277,8 @@ export interface V3ScanFile {
   /** Hours of fees actually behind the figures — shorter than V3_WINDOW_HOURS in the first days after launch. */
   windowHours: number;
   gauges: V3ScanGauge[];
+  /** Per network, when several are scanned into one file; `error` is why a network has no rows this time. */
+  chains?: Record<string, { status: V3ScanFile["status"] | "error"; windowHours: number; gauges: number; error?: string }>;
 }
 
 const ZERO = /^0x0*$/;
@@ -287,7 +291,15 @@ const ZERO = /^0x0*$/;
 export async function scanV3(
   c: V3Client & { getBlockNumber(): Promise<bigint> },
   registry: Address,
-  opts: { chain: string; now: Date; priceOf: (tokens: string[]) => Promise<(token: string) => TokenPrice | undefined> },
+  opts: {
+    chain: string;
+    now: Date;
+    priceOf: (tokens: string[]) => Promise<(token: string) => TokenPrice | undefined>;
+    /** Seconds per block on this chain (Base 2, Arbitrum ~0.27, Robinhood ~0.1, Ethereum 12). */
+    blockTimeSec?: number;
+    /** Blocks per getLogs call to start from; refused calls are split further. */
+    logStep?: bigint;
+  },
 ): Promise<V3ScanFile> {
   const base = { checkedAt: opts.now.toISOString(), chain: opts.chain, registry };
   const { leafVoter, gauges } = await readV3Gauges(c, registry);
@@ -296,12 +308,14 @@ export async function scanV3(
   const nowSec = Math.floor(opts.now.getTime() / 1000);
   const windowSec = Math.max(0, Math.min(V3_WINDOW_HOURS * 3600, nowSec - AERO_LAUNCH_TS));
   const latest = await c.getBlockNumber();
-  const span = BigInt(Math.ceil(windowSec / BASE_BLOCK_TIME_SEC));
+  const blockTime = opts.blockTimeSec ?? BASE_BLOCK_TIME_SEC;
+  const span = BigInt(Math.ceil(windowSec / blockTime));
+  const dayBlocks = BigInt(Math.ceil(86_400 / blockTime));
   const fees: Awaited<ReturnType<typeof readFeesCollected>> = [];
   if (windowSec > 0) {
     const rewards = gauges.map((g) => g.rewards);
     for (let i = 0; i < rewards.length; i += V3_LOG_ADDRESS_CHUNK) {
-      fees.push(...(await readFeesCollected(c, rewards.slice(i, i + V3_LOG_ADDRESS_CHUNK), latest > span ? latest - span : 0n, latest, V3_LOG_BLOCK_STEP)));
+      fees.push(...(await readFeesCollected(c, rewards.slice(i, i + V3_LOG_ADDRESS_CHUNK), latest > span ? latest - span : 0n, latest, opts.logStep ?? V3_LOG_BLOCK_STEP)));
     }
   }
 
@@ -323,7 +337,7 @@ export async function scanV3(
   const tokens = [...fees.map((f) => f.token), ...rows.flatMap((r) => r.programs.map((p) => p.token))];
   const priceOf = await opts.priceOf(tokens);
 
-  const dayStart = latest > DAY_BLOCKS ? latest - DAY_BLOCKS : 0n;
+  const dayStart = latest > dayBlocks ? latest - dayBlocks : 0n;
   const out: V3ScanGauge[] = rows.map(({ g, point, programs, meta }) => {
     const weight = gaugeWeightAt(point, nowSec);
     const mine = fees.filter((f) => f.gauge.toLowerCase() === g.gauge.toLowerCase());
@@ -341,7 +355,7 @@ export async function scanV3(
       weight,
       priceOf,
     });
-    return { gauge: g.gauge, pool: g.pool, weight: Number(weight / 10n ** 12n) / 1e6, ...y, fees24hUsdPerDay: day.feesUsdPerDay, ...meta };
+    return { chain: opts.chain, gauge: g.gauge, pool: g.pool, weight: Number(weight / 10n ** 12n) / 1e6, ...y, fees24hUsdPerDay: day.feesUsdPerDay, ...meta };
   });
   out.sort((a, b) => (b.usdPerDayPer10k ?? -1) - (a.usdPerDayPer10k ?? -1));
   return { ...base, status: "live", leafVoter, windowHours: windowSec / 3600, gauges: out };
@@ -357,9 +371,27 @@ export async function readFeesCollected(
 ): Promise<{ rewards: Address; gauge: Address; token: Address; amount: bigint; block?: bigint }[]> {
   if (rewards.length === 0) return [];
   const out: { rewards: Address; gauge: Address; token: Address; amount: bigint; block?: bigint }[] = [];
+  // Each public node caps getLogs its own way (block span, address count, result
+  // count, or a plain 400/403), so a refused call is split in half — the range
+  // first, then the address list — until it is accepted or cannot shrink.
+  const get = async (addrs: readonly Address[], from: bigint, to: bigint): Promise<Awaited<ReturnType<V3Client["getLogs"]>>> => {
+    try {
+      return await c.getLogs({ address: [...addrs], event: FEES_COLLECTED, fromBlock: from, toBlock: to });
+    } catch (err) {
+      if (to - from + 1n > V3_LOG_MIN_BLOCKS) {
+        const mid = from + (to - from) / 2n;
+        return [...(await get(addrs, from, mid)), ...(await get(addrs, mid + 1n, to))];
+      }
+      if (addrs.length > 1) {
+        const half = Math.ceil(addrs.length / 2);
+        return [...(await get(addrs.slice(0, half), from, to)), ...(await get(addrs.slice(half), from, to))];
+      }
+      throw err;
+    }
+  };
   for (let from = fromBlock; from <= toBlock; from += step) {
     const to = from + step - 1n < toBlock ? from + step - 1n : toBlock;
-    const logs = await c.getLogs({ address: [...rewards], event: FEES_COLLECTED, fromBlock: from, toBlock: to });
+    const logs = await get(rewards, from, to);
     for (const l of logs) {
       if (!l.args._gauge || !l.args._token || l.args._amount === undefined) continue;
       out.push({
