@@ -18,6 +18,10 @@ import { registryFromDeployment, scanV3, type V3ScanFile, type V3Client } from "
  */
 const RAW = "https://raw.githubusercontent.com/dromos-labs/metadex-public/main/deployment-addresses/";
 const BASE_REGISTRY = "0x7b2A2c12dC5Ea2a31455952a05031C3E4BB28F3E";
+// The new AERO (app.aero.xyz/docs/security) has no DefiLlama price yet on launch
+// day; it upgrades 1:1 from the old AERO, so it is priced as the old one.
+const NEW_AERO = "0x3f5bf3edac59d650d8fdf9657a71f2f904a3a4ee";
+const OLD_AERO = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
 
 async function registryAddress(): Promise<string | undefined> {
   if (process.env.V3_REGISTRY) return process.env.V3_REGISTRY;
@@ -47,9 +51,9 @@ async function main() {
       chain: "base",
       now,
       priceOf: async (tokens) => {
-        const prices = await getTokenPrices(tokens);
+        const prices = await getTokenPrices([...tokens, OLD_AERO]);
         return (t) => {
-          const p = prices.get(t.toLowerCase());
+          const p = prices.get((t.toLowerCase() === NEW_AERO ? OLD_AERO : t).toLowerCase());
           return p && p.price > 0 ? { decimals: p.decimals, priceUsd: p.price } : undefined;
         };
       },

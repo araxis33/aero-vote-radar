@@ -46,6 +46,14 @@ export const REWARDS_ABI = parseAbi([
   "function incentives(uint256[] programIds) view returns (IncentiveProgram[])",
 ]);
 
+export const POOL_META_ABI = parseAbi([
+  "function token0() view returns (address)",
+  "function token1() view returns (address)",
+  "function tickSpacing() view returns (int24)",
+  "function stable() view returns (bool)",
+  "function symbol() view returns (string)",
+]);
+
 export const FEES_COLLECTED = parseAbiItem("event FeesCollected(address indexed _gauge, address indexed _token, uint256 _amount)");
 
 export interface V3Gauge {
@@ -146,7 +154,7 @@ export function v3GaugeYield(input: {
 export interface V3Client {
   readContract(args: { address: Address; abi: readonly unknown[]; functionName: string; args?: readonly unknown[] }): Promise<unknown>;
   getLogs(args: { address: Address | Address[]; event: typeof FEES_COLLECTED; fromBlock: bigint; toBlock: bigint }): Promise<
-    readonly { address?: Address; args: { _gauge?: Address; _token?: Address; _amount?: bigint } }[]
+    readonly { address?: Address; blockNumber?: bigint | null; args: { _gauge?: Address; _token?: Address; _amount?: bigint } }[]
   >;
 }
 
@@ -166,6 +174,37 @@ export async function readV3Gauges(c: V3Client, registry: Address): Promise<{ le
     }
   }
   return { leafVoter, gauges };
+}
+
+export interface PoolMeta {
+  symbol0: string;
+  symbol1: string;
+  /** "CL<tickSpacing>" for Slipstream pools, "sAMM" / "vAMM" for basic stable / volatile pools. */
+  kind: string;
+}
+
+/** Token symbols and pool type, for display; undefined when the pool does not answer like either pool kind. */
+export async function readPoolMeta(c: V3Client, pool: Address, symbols: Map<string, string>): Promise<PoolMeta | undefined> {
+  try {
+    const [t0, t1, kind] = await Promise.all([
+      read<Address>(c, pool, POOL_META_ABI, "token0"),
+      read<Address>(c, pool, POOL_META_ABI, "token1"),
+      // Aero's basic pools have no `stable()`; their LP symbol starts "sAMM" / "vAMM" ("vAMMV2-AERO/WETH").
+      read<number>(c, pool, POOL_META_ABI, "tickSpacing").then(
+        (ts) => `CL${ts}`,
+        () => read<string>(c, pool, POOL_META_ABI, "symbol").then((s) => (s.startsWith("sAMM") ? "sAMM" : "vAMM")),
+      ),
+    ]);
+    const sym = async (t: Address) => {
+      const k = t.toLowerCase();
+      if (!symbols.has(k)) symbols.set(k, await read<string>(c, t, POOL_META_ABI, "symbol").catch(() => "?"));
+      return symbols.get(k)!;
+    };
+    const [symbol0, symbol1] = await Promise.all([sym(t0), sym(t1)]);
+    return { symbol0, symbol1, kind };
+  } catch {
+    return undefined;
+  }
 }
 
 /** The LeafVoter's weight point for a gauge. */
@@ -198,6 +237,8 @@ export const V3_WINDOW_HOURS = 96;
 export const BASE_BLOCK_TIME_SEC = 2;
 /** Rewards contracts per getLogs filter, so a public RPC is not handed hundreds of addresses at once. */
 export const V3_LOG_ADDRESS_CHUNK = 100;
+/** Gauges whose per-gauge reads run together. */
+export const V3_READ_GROUP = 10;
 /** Blocks per getLogs call: the cap of the logs RPC (V3_LOGS_RPC_URL). */
 export const V3_LOG_BLOCK_STEP = 1_000n;
 
@@ -214,7 +255,15 @@ export interface V3ScanGauge extends V3GaugeYield {
   pool: Address;
   /** Allocation weight right now, in sAERO. */
   weight: number;
+  /** Fees per day over the last 24 h only, to show whether a pool is cooling or rising against the window. */
+  fees24hUsdPerDay: number;
+  symbol0?: string;
+  symbol1?: string;
+  kind?: string;
 }
+
+/** Base blocks in 24 h. */
+const DAY_BLOCKS = BigInt(86_400 / BASE_BLOCK_TIME_SEC);
 
 export interface V3ScanFile {
   checkedAt: string;
@@ -256,23 +305,43 @@ export async function scanV3(
     }
   }
 
-  const rows: { g: V3Gauge; point: GaugePoint; programs: IncentiveProgram[] }[] = [];
-  for (const g of gauges) {
-    rows.push({ g, point: await readGaugePoint(c, leafVoter, g.gauge), programs: await readIncentivePrograms(c, g.rewards) });
+  const rows: { g: V3Gauge; point: GaugePoint; programs: IncentiveProgram[]; meta?: PoolMeta }[] = [];
+  const symbols = new Map<string, string>();
+  // A few gauges at a time: the batching transport folds their calls into one request.
+  for (let i = 0; i < gauges.length; i += V3_READ_GROUP) {
+    rows.push(
+      ...(await Promise.all(
+        gauges.slice(i, i + V3_READ_GROUP).map(async (g) => ({
+          g,
+          point: await readGaugePoint(c, leafVoter, g.gauge),
+          programs: await readIncentivePrograms(c, g.rewards),
+          meta: await readPoolMeta(c, g.pool, symbols),
+        })),
+      )),
+    );
   }
   const tokens = [...fees.map((f) => f.token), ...rows.flatMap((r) => r.programs.map((p) => p.token))];
   const priceOf = await opts.priceOf(tokens);
 
-  const out: V3ScanGauge[] = rows.map(({ g, point, programs }) => {
+  const dayStart = latest > DAY_BLOCKS ? latest - DAY_BLOCKS : 0n;
+  const out: V3ScanGauge[] = rows.map(({ g, point, programs, meta }) => {
     const weight = gaugeWeightAt(point, nowSec);
+    const mine = fees.filter((f) => f.gauge.toLowerCase() === g.gauge.toLowerCase());
     const y = v3GaugeYield({
-      feesCollected: fees.filter((f) => f.gauge.toLowerCase() === g.gauge.toLowerCase()),
+      feesCollected: mine,
       windowHours: windowSec / 3600,
       incentiveRates: incentiveRatesNow(programs, nowSec),
       weight,
       priceOf,
     });
-    return { gauge: g.gauge, pool: g.pool, weight: Number(weight / 10n ** 12n) / 1e6, ...y };
+    const day = v3GaugeYield({
+      feesCollected: mine.filter((f) => f.block === undefined || f.block >= dayStart),
+      windowHours: Math.min(24, windowSec / 3600),
+      incentiveRates: new Map(),
+      weight,
+      priceOf,
+    });
+    return { gauge: g.gauge, pool: g.pool, weight: Number(weight / 10n ** 12n) / 1e6, ...y, fees24hUsdPerDay: day.feesUsdPerDay, ...meta };
   });
   out.sort((a, b) => (b.usdPerDayPer10k ?? -1) - (a.usdPerDayPer10k ?? -1));
   return { ...base, status: "live", leafVoter, windowHours: windowSec / 3600, gauges: out };
@@ -285,15 +354,21 @@ export async function readFeesCollected(
   fromBlock: bigint,
   toBlock: bigint,
   step = 10_000n,
-): Promise<{ rewards: Address; gauge: Address; token: Address; amount: bigint }[]> {
+): Promise<{ rewards: Address; gauge: Address; token: Address; amount: bigint; block?: bigint }[]> {
   if (rewards.length === 0) return [];
-  const out: { rewards: Address; gauge: Address; token: Address; amount: bigint }[] = [];
+  const out: { rewards: Address; gauge: Address; token: Address; amount: bigint; block?: bigint }[] = [];
   for (let from = fromBlock; from <= toBlock; from += step) {
     const to = from + step - 1n < toBlock ? from + step - 1n : toBlock;
     const logs = await c.getLogs({ address: [...rewards], event: FEES_COLLECTED, fromBlock: from, toBlock: to });
     for (const l of logs) {
       if (!l.args._gauge || !l.args._token || l.args._amount === undefined) continue;
-      out.push({ rewards: (l.address ?? rewards[0]) as Address, gauge: l.args._gauge, token: l.args._token, amount: l.args._amount });
+      out.push({
+        rewards: (l.address ?? rewards[0]) as Address,
+        gauge: l.args._gauge,
+        token: l.args._token,
+        amount: l.args._amount,
+        ...(l.blockNumber != null ? { block: l.blockNumber } : {}),
+      });
     }
   }
   return out;
