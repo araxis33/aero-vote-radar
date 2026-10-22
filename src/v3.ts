@@ -197,7 +197,9 @@ export const V3_WINDOW_HOURS = 96;
 /** Base produces a block every 2 s; used to turn the fee window into a block range. */
 export const BASE_BLOCK_TIME_SEC = 2;
 /** Rewards contracts per getLogs filter, so a public RPC is not handed hundreds of addresses at once. */
-export const V3_LOG_ADDRESS_CHUNK = 50;
+export const V3_LOG_ADDRESS_CHUNK = 100;
+/** Blocks per getLogs call: the cap of the logs RPC (V3_LOGS_RPC_URL). */
+export const V3_LOG_BLOCK_STEP = 1_000n;
 
 /** The FactoryRegistry address in one of Aero's deployment files (`deployment-addresses/<chain>.json`). */
 export function registryFromDeployment(file: Record<string, unknown>): Address | undefined {
@@ -250,7 +252,7 @@ export async function scanV3(
   if (windowSec > 0) {
     const rewards = gauges.map((g) => g.rewards);
     for (let i = 0; i < rewards.length; i += V3_LOG_ADDRESS_CHUNK) {
-      fees.push(...(await readFeesCollected(c, rewards.slice(i, i + V3_LOG_ADDRESS_CHUNK), latest > span ? latest - span : 0n, latest)));
+      fees.push(...(await readFeesCollected(c, rewards.slice(i, i + V3_LOG_ADDRESS_CHUNK), latest > span ? latest - span : 0n, latest, V3_LOG_BLOCK_STEP)));
     }
   }
 

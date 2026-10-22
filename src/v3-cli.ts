@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync } from "node:fs";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
 import { client } from "./chain.js";
+import { V3_LOGS_RPC_URL } from "./constants.js";
 import { getTokenPrices } from "./prices.js";
 import { formatError } from "./util.js";
 import { registryFromDeployment, scanV3, type V3ScanFile, type V3Client } from "./v3.js";
@@ -38,7 +41,9 @@ async function main() {
   if (!registry) {
     out = { checkedAt: now.toISOString(), chain: "base", status: "no-addresses", windowHours: 0, gauges: [] };
   } else {
-    out = await scanV3(client as unknown as V3Client & { getBlockNumber(): Promise<bigint> }, registry as `0x${string}`, {
+    const c = client as unknown as V3Client & { getBlockNumber(): Promise<bigint> };
+    const logs = createPublicClient({ chain: base, transport: http(V3_LOGS_RPC_URL, { retryCount: 6, retryDelay: 1500 }) });
+    out = await scanV3({ readContract: c.readContract, getBlockNumber: c.getBlockNumber, getLogs: logs.getLogs as unknown as V3Client["getLogs"] }, registry as `0x${string}`, {
       chain: "base",
       now,
       priceOf: async (tokens) => {
