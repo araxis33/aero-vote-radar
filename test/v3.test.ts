@@ -169,7 +169,7 @@ test("scan: fee window cut at launch, gauges ranked by per-10k, fees matched to 
   });
   assert.equal(r.status, "live");
   assert.equal(r.windowHours, 24);
-  // 24 h of 2 s blocks back from block 1,000,000, in one 50-address chunk
+  // 24 h of 2 s blocks back from block 1,000,000, in one 100-address chunk
   assert.equal(c.ranges[0][0], 1_000_000n - 43_200n);
   assert.deepEqual(r.gauges.map((g) => g.gauge), ["0xG2", "0xG1"]); // $20 over 10k beats $100 over 100k
   assert.ok(Math.abs((r.gauges[0].usdPerDayPer10k ?? 0) - 20) < 1e-9);
