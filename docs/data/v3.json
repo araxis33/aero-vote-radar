@@ -1,1432 +1,2168 @@
 {
- "checkedAt": "2026-10-22T13:45:32.397Z",
+ "checkedAt": "2026-10-22T14:31:58.759Z",
  "chain": "base",
  "registry": "0x7b2A2c12dC5Ea2a31455952a05031C3E4BB28F3E",
  "status": "live",
  "leafVoter": "0x382409fad8503FbCdbB27A4211551fa03e884078",
- "windowHours": 13.758888888888889,
+ "windowHours": 14.532777777777778,
  "gauges": [
   {
    "gauge": "0xd0E8164D38D89D09Ffb7D73d70c3D9a0ae080330",
    "pool": "0x086A1447D0851F0aeA9D09D6c547fEC8E97be413",
    "weight": 0.093102,
-   "feesUsdPerDay": 0.6462978115555176,
+   "feesUsdPerDay": 0.6118816315984535,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 69417.92075848406,
-   "partial": false
+   "usdPerDayPer10k": 65721.32824284628,
+   "partial": false,
+   "fees24hUsdPerDay": 0.6118816315984535,
+   "symbol0": "USDC",
+   "symbol1": "AVGOc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x29c8Fe7c1670429D195abF2Fd3cec7f9D849a09E",
    "pool": "0x51Aafd05945d8D50E0250aDd0f195341358E1d74",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.41449896001687847,
+   "feesUsdPerDay": 0.3944993710112086,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 26251.600801068973,
-   "partial": false
+   "usdPerDayPer10k": 24984.960164043212,
+   "partial": false,
+   "fees24hUsdPerDay": 0.3944993710112086,
+   "symbol0": "BIO",
+   "symbol1": "WETH",
+   "kind": "CL50"
   },
   {
    "gauge": "0xA5D0c11d4aF13519b3881F43Bc8dde4Fab087015",
    "pool": "0x52CaF25736F78EE7738dA2EcDe7c7555C50cE0c7",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.37961880876079074,
+   "feesUsdPerDay": 0.3593993585830276,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 24042.52455485008,
-   "partial": false
+   "usdPerDayPer10k": 22761.959376925082,
+   "partial": false,
+   "fees24hUsdPerDay": 0.3593993585830276,
+   "symbol0": "wtSGOV",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xC31a01d1F98e7a3640a46A9D30DB5979AaEDEBAE",
    "pool": "0xaFb8Cd4AFD7d9a086cb2FAf3C5f467643978d1eD",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.34412851828426627,
+   "feesUsdPerDay": 0.32629321589512866,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 21794.806158003532,
-   "partial": false
+   "usdPerDayPer10k": 20665.23700669148,
+   "partial": false,
+   "fees24hUsdPerDay": 0.32629321589512866,
+   "symbol0": "WETH",
+   "symbol1": "POD",
+   "kind": "CL200"
   },
   {
    "gauge": "0xC3957C2a5667653d7fBC631F83dbe00276126453",
    "pool": "0xDe2BfE5409aD9e825cdB3562A06EDaFb9d753DFc",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.3427707080192585,
+   "feesUsdPerDay": 0.3245143677276903,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 21708.81150788637,
-   "partial": false
+   "usdPerDayPer10k": 20552.57662275372,
+   "partial": false,
+   "fees24hUsdPerDay": 0.3245143677276903,
+   "symbol0": "USDC",
+   "symbol1": "BEc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x06534b8284C3588722d81F126E03602eC9E08fA0",
    "pool": "0x543a2D9Db17A574b194256b7e9F856d2bA5B4C60",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.3139189160797218,
+   "feesUsdPerDay": 0.2970726648729695,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 19881.531351715712,
-   "partial": false
+   "usdPerDayPer10k": 18814.602108621402,
+   "partial": false,
+   "fees24hUsdPerDay": 0.2970726648729695,
+   "symbol0": "EURC",
+   "symbol1": "USDT",
+   "kind": "CL1"
   },
   {
    "gauge": "0x423f8D49763C2e12B7b88029c06c367ef2BEeb23",
    "pool": "0x3661657bF106b84d473353f7f077139307367b5C",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.310378443088462,
+   "feesUsdPerDay": 0.2938484981542814,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 19657.301395602597,
-   "partial": false
+   "usdPerDayPer10k": 18610.40488310449,
+   "partial": false,
+   "fees24hUsdPerDay": 0.2938484981542814,
+   "symbol0": "USDC",
+   "symbol1": "VALEc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xBE5F29737833910b59DB4F9eFF012b2b50800841",
    "pool": "0xBb5A2557B98c216d6f7D7A59FEA85d86E336d3b6",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.24246400764962017,
+   "feesUsdPerDay": 0.23057912777111303,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 15356.05381780928,
-   "partial": false
+   "usdPerDayPer10k": 14603.34475883716,
+   "partial": false,
+   "fees24hUsdPerDay": 0.23057912777111303,
+   "symbol0": "WETH",
+   "symbol1": "cbADA",
+   "kind": "CL200"
   },
   {
    "gauge": "0x9487B81c6728B99D4E3cbd9afD4D6415c710f657",
    "pool": "0x41D7793FAa4Ca181B6f021423fF3F9015C00b2ff",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.22116975503691885,
+   "feesUsdPerDay": 0.20939218445828708,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 14007.417819004862,
-   "partial": false
+   "usdPerDayPer10k": 13261.505015691517,
+   "partial": false,
+   "fees24hUsdPerDay": 0.20939218445828708,
+   "symbol0": "USDC",
+   "symbol1": "HIMSc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x97b12fEe6d05649f24daf83186985C16c4Bc524E",
    "pool": "0x0e85532219b9Da15564d9EdBA3E7980EC65382aC",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.2145344787483561,
+   "feesUsdPerDay": 0.2041601289688372,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 13587.183654062554,
-   "partial": false
+   "usdPerDayPer10k": 12930.14150135969,
+   "partial": false,
+   "fees24hUsdPerDay": 0.2041601289688372,
+   "symbol0": "cbADA",
+   "symbol1": "cbBTC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xa1Fd757B6a6Ee90C0C1f20e50b20720f7F4B7f91",
    "pool": "0x84d49d46b133C613e53A8bBE0D822410D07C9A9c",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.20119961652320706,
+   "feesUsdPerDay": 0.19096458009656822,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 12742.642379803116,
-   "partial": false
+   "usdPerDayPer10k": 12094.423406115988,
+   "partial": false,
+   "fees24hUsdPerDay": 0.19096458009656822,
+   "symbol0": "WETH",
+   "symbol1": "cbLTC",
+   "kind": "CL200"
   },
   {
    "gauge": "0xf66C67b34dA58d12F10c6b55a995E04BE19faCF6",
    "pool": "0x57828A9a1700d7aAeeB817E8bF3346ce7799AbC1",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.16031107991241914,
+   "feesUsdPerDay": 0.151774311139989,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 10153.03506111988,
-   "partial": false
+   "usdPerDayPer10k": 9612.37303886597,
+   "partial": false,
+   "fees24hUsdPerDay": 0.151774311139989,
+   "symbol0": "USDC",
+   "symbol1": "DUOLc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xd3EA30E09f1c163dB9d1243424cebF322a6E9135",
    "pool": "0xfa392398B6FeeC9bc816c9fC60ed3473247eaE1F",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.14879938555468908,
+   "feesUsdPerDay": 0.1409472340471042,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 9423.96108513031,
-   "partial": false
+   "usdPerDayPer10k": 8926.6581563166,
+   "partial": false,
+   "fees24hUsdPerDay": 0.1409472340471042,
+   "symbol0": "tBTC",
+   "symbol1": "USDC",
+   "kind": "CL200"
   },
   {
    "gauge": "0x19d322f3374D69B46701eA530575Fde6A5569a07",
    "pool": "0xF59bA5bD7F8BdCf68618694092395420b4097d92",
    "weight": 0.512155,
-   "feesUsdPerDay": 0.44418291028532125,
+   "feesUsdPerDay": 0.42708615055383486,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 8672.818486909944,
-   "partial": false
+   "usdPerDayPer10k": 8338.99858877328,
+   "partial": false,
+   "fees24hUsdPerDay": 0.42708615055383486,
+   "symbol0": "WETH",
+   "symbol1": "SERV",
+   "kind": "CL200"
   },
   {
    "gauge": "0x668446fBa4998443a2f515F43056bc69CFF95586",
    "pool": "0xe501c69Fa9254fde5d49596bC836ed0a11E53438",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.11301117711506341,
+   "feesUsdPerDay": 0.10699190569111942,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 7157.374550620683,
-   "partial": false
+   "usdPerDayPer10k": 6776.154027104231,
+   "partial": false,
+   "fees24hUsdPerDay": 0.10699190569111942,
+   "symbol0": "USDC",
+   "symbol1": "ASTSc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x33b7f97D0661d307Ca2d2Cb1AD02ac6D5c2aAC8C",
    "pool": "0xB86bD8fD90AC803c79473e9372B0E976Fae3Fef9",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.08967100886038962,
+   "feesUsdPerDay": 0.08487163765898761,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 5679.163894491343,
-   "partial": false
+   "usdPerDayPer10k": 5375.203718402549,
+   "partial": false,
+   "fees24hUsdPerDay": 0.08487163765898761,
+   "symbol0": "cbBTC",
+   "symbol1": "LBTC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xe8E681f4AC22378066784b2835AE9bC8EAFD673C",
    "pool": "0xFEC155cD70C04bc64623c12a6daAa05cd01b840d",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.07973606655971639,
+   "feesUsdPerDay": 0.07549001966504591,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 5049.950882115371,
-   "partial": false
+   "usdPerDayPer10k": 4781.034578786242,
+   "partial": false,
+   "fees24hUsdPerDay": 0.07549001966504591,
+   "symbol0": "USDC",
+   "symbol1": "QUBTc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7e300f85e7cE29670e1386AA37918e13426cBF63",
    "pool": "0x8963dbac7EC963878e416187599a6576590fC7b5",
    "weight": 0.360612,
-   "feesUsdPerDay": 0.1454161249508877,
+   "feesUsdPerDay": 0.13762873218980617,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 4032.478970082212,
-   "partial": false
+   "usdPerDayPer10k": 3816.5297584563523,
+   "partial": false,
+   "fees24hUsdPerDay": 0.13762873218980617,
+   "symbol0": "USDC",
+   "symbol1": "LINK",
+   "kind": "CL200"
   },
   {
    "gauge": "0x904acD06Fb1bA2D33bF452f55dd1E74F71dEE8B2",
    "pool": "0x6bA1d1F6E3Bd44ef9365120B05925BfACb96Fd6E",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.06040681593579722,
+   "feesUsdPerDay": 0.057302754459358424,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3825.7650092671574,
-   "partial": false
+   "usdPerDayPer10k": 3629.1744490927003,
+   "partial": false,
+   "fees24hUsdPerDay": 0.057302754459358424,
+   "symbol0": "CP",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x485AEb8df4A349D80a7bC961722d858BDDBD0398",
    "pool": "0x469d00fa2D589C1C505a28eF94FeB183Aea36Dc6",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.058549541452280605,
+   "feesUsdPerDay": 0.055341756763993985,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3708.1376253111052,
-   "partial": false
-  },
-  {
-   "gauge": "0xe073EeC4bf23278336E800525990Eb40666E5F9b",
-   "pool": "0xb0157f553Ba209D34694FA493E8142af3701c429",
-   "weight": 0.157894,
-   "feesUsdPerDay": 0.05538929677128378,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3507.9887955146396,
-   "partial": false
+   "usdPerDayPer10k": 3504.977928386286,
+   "partial": false,
+   "fees24hUsdPerDay": 0.055341756763993985,
+   "symbol0": "XSGD",
+   "symbol1": "WETH",
+   "kind": "CL100"
   },
   {
    "gauge": "0x615483848a81d71F7deEC076420580007A49De59",
    "pool": "0xc62b82c30AedDc2dbE34b076AF0AF864677B8B89",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.05514227770827286,
+   "feesUsdPerDay": 0.05252018466374129,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3492.3442548572816,
-   "partial": false
+   "usdPerDayPer10k": 3326.2783620369487,
+   "partial": false,
+   "fees24hUsdPerDay": 0.05252018466374129,
+   "symbol0": "LCAP",
+   "symbol1": "USDC",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0xe073EeC4bf23278336E800525990Eb40666E5F9b",
+   "pool": "0xb0157f553Ba209D34694FA493E8142af3701c429",
+   "weight": 0.157894,
+   "feesUsdPerDay": 0.052439746314370345,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 3321.183933243455,
+   "partial": false,
+   "fees24hUsdPerDay": 0.052439746314370345,
+   "symbol0": "USDC",
+   "symbol1": "WENc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x2eC6e92E8d04d1D714d9DD73C72f15Af48818A33",
    "pool": "0x2D3645F61be44938752c53726fe647b7c6deBe8E",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.03649206467434163,
+   "feesUsdPerDay": 0.0344962529494709,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2311.1640960416366,
-   "partial": false
+   "usdPerDayPer10k": 2184.762686799824,
+   "partial": false,
+   "fees24hUsdPerDay": 0.0344962529494709,
+   "symbol0": "WETH",
+   "symbol1": "BID",
+   "kind": "CL50"
   },
   {
    "gauge": "0x6388Fa745605d8742bc350189815877b1e56bb76",
    "pool": "0xdB753B8271Be0D43468DB23E8c158a231eda8294",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.03385429914513971,
+   "feesUsdPerDay": 0.03205115039655562,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2144.105612525515,
-   "partial": false
-  },
-  {
-   "gauge": "0x8901f15131491296e76a60eE70e43150B7ae75C6",
-   "pool": "0x08537Fb017485dAb8bdd9AF3fb7d9Cd56e98CB61",
-   "weight": 1.069492,
-   "feesUsdPerDay": 0.2143498907876238,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2004.220013575321,
-   "partial": false
+   "usdPerDayPer10k": 2029.9061917818563,
+   "partial": false,
+   "fees24hUsdPerDay": 0.03205115039655562,
+   "symbol0": "USDC",
+   "symbol1": "SONYc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x5c0BC3e0D9D8710e5a2703729281BF7261057AE5",
    "pool": "0x79aB6854c53b5A8e30f187f901a416a4f26E2306",
    "weight": 22.112151,
-   "feesUsdPerDay": 3.1552416901285074,
+   "feesUsdPerDay": 3.00577365382255,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1426.9266084730525,
-   "partial": false
+   "usdPerDayPer10k": 1359.3311786876086,
+   "partial": false,
+   "fees24hUsdPerDay": 3.00577365382255,
+   "symbol0": "CLANKER",
+   "symbol1": "WETH",
+   "kind": "CL200"
   },
   {
    "gauge": "0x40d709c0f40eef113E8C81f6A61d0b7B152da8E2",
    "pool": "0xf2ADA40abCaa2f5054CEf81f9e5BE4e13f48344d",
    "weight": 0.512155,
-   "feesUsdPerDay": 0.07181099025643785,
+   "feesUsdPerDay": 0.06798649030171769,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1402.13337667423,
-   "partial": false
+   "usdPerDayPer10k": 1327.4587479516233,
+   "partial": false,
+   "fees24hUsdPerDay": 0.06798649030171769,
+   "symbol0": "USDC",
+   "symbol1": "USDbC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xAa63309011DB42aB09331f1c86298D6194C4E551",
    "pool": "0x6249aF7ca9887b98cF7f2d9d42e8486fA3AcfA37",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.020391448686165926,
+   "feesUsdPerDay": 0.019097242955641885,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1291.4584167905086,
-   "partial": false
+   "usdPerDayPer10k": 1209.4920538573192,
+   "partial": false,
+   "fees24hUsdPerDay": 0.019097242955641885,
+   "symbol0": "USDC",
+   "symbol1": "EDEL",
+   "kind": "CL200"
   },
   {
    "gauge": "0x5F57A6A328345Ff9CaBd438C208e2070dC84310d",
    "pool": "0x07Ae95FEF27C2C90F2fbF512dBC4DeA7c56Fa767",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.016306266660225513,
+   "feesUsdPerDay": 0.015427255473287889,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1032.7302218142825,
-   "partial": false
+   "usdPerDayPer10k": 977.059513308233,
+   "partial": false,
+   "fees24hUsdPerDay": 0.015427255473287889,
+   "symbol0": "TIG",
+   "symbol1": "WETH",
+   "kind": "CL50"
   },
   {
    "gauge": "0x4B04159458e5dB5F5ff18FC05c9d16da583dA2F5",
    "pool": "0x67Ba8dBeDC6D7f93f0F5967Aa2420715f1edC756",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.01432709027507287,
+   "feesUsdPerDay": 0.013564100814918342,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 907.3823840879485,
-   "partial": false
+   "usdPerDayPer10k": 859.0597182781618,
+   "partial": false,
+   "fees24hUsdPerDay": 0.013564100814918342,
+   "symbol0": "USDC",
+   "symbol1": "NFLXc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x80F5b40bc0c3A97e86bb81473a7aa64a91678B40",
    "pool": "0xE8E05F76c989Cb94984F75C2D19fcfCe14AcE181",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.014133439570817988,
+   "feesUsdPerDay": 0.01338081594903774,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 895.1178394851394,
-   "partial": false
+   "usdPerDayPer10k": 847.4516767723902,
+   "partial": false,
+   "fees24hUsdPerDay": 0.01338081594903774,
+   "symbol0": "USDC",
+   "symbol1": "ARMc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xc1a82758ea05866E8F198BC8547E7b7e93eB6063",
    "pool": "0x6FB7875218297858130f88E7Ffb14A08271006b1",
    "weight": 22.157894,
-   "feesUsdPerDay": 1.980465633200913,
+   "feesUsdPerDay": 1.8752582085955394,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 893.7968415871103,
-   "partial": false
+   "usdPerDayPer10k": 846.3160561357541,
+   "partial": false,
+   "fees24hUsdPerDay": 1.8752582085955394,
+   "symbol0": "USDC",
+   "symbol1": "eUSD",
+   "kind": "CL1"
   },
   {
    "gauge": "0xbb2c468f58EEB4eDA3CeBBFE31EC1297Acf44f92",
    "pool": "0xBc9050D78d2D8d88F7536AF49d4007aEf469d7B4",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.012299848640620807,
+   "feesUsdPerDay": 0.011627320309308912,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 778.9904139059845,
-   "partial": false
+   "usdPerDayPer10k": 736.3969529228978,
+   "partial": false,
+   "fees24hUsdPerDay": 0.011627320309308912,
+   "symbol0": "WETH",
+   "symbol1": "AAPLc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xDFf4ae8C0984Bb59E757e1018d217290c084df40",
    "pool": "0xe1Fd00F24731A01bc6bAaB51217E3A84239b2D46",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.011303291120036052,
+   "feesUsdPerDay": 0.01068401173231191,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 715.8751042689499,
-   "partial": false
+   "usdPerDayPer10k": 676.6540763797543,
+   "partial": false,
+   "fees24hUsdPerDay": 0.01068401173231191,
+   "symbol0": "tBTC",
+   "symbol1": "WETH",
+   "kind": "CL50"
   },
   {
    "gauge": "0xe53c13BDd028a9cD65A8a45700031EF4336EFa92",
    "pool": "0x8803B6E002f0E9c779F611EB7189Dec4a65e3502",
    "weight": 22.157894,
-   "feesUsdPerDay": 1.571805088993245,
+   "feesUsdPerDay": 1.4885956421570827,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 709.365717122842,
-   "partial": false
+   "usdPerDayPer10k": 671.8127601183983,
+   "partial": false,
+   "fees24hUsdPerDay": 1.4885956421570827,
+   "symbol0": "WETH",
+   "symbol1": "ENA",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0x65cecbAbdFeACAB9ec65f1d40bc49d880d5D91AC",
+   "pool": "0x089262b9d991D7Bc4a55b7Cff0B7F26bde407985",
+   "weight": 109.569633,
+   "feesUsdPerDay": 7.176819501806131,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 655.0007753740841,
+   "partial": false,
+   "fees24hUsdPerDay": 7.176819501806131,
+   "symbol0": "wtCOIN",
+   "symbol1": "USDC",
+   "kind": "CL200"
   },
   {
    "gauge": "0x247FCba46f02214626665CD2729897e198C22986",
    "pool": "0x4ae3780242F43ef63C471Fb8c2E9D30ec5fd5821",
    "weight": 22.157894,
-   "feesUsdPerDay": 1.2748475610342387,
+   "feesUsdPerDay": 1.2069503911904815,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 575.3468802767347,
-   "partial": false
+   "usdPerDayPer10k": 544.7044520812149,
+   "partial": false,
+   "fees24hUsdPerDay": 1.2069503911904815,
+   "symbol0": "USDC",
+   "symbol1": "MRNAc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xC7dD1cdE3fe2E86196835A6935F19cB7D0bF970E",
    "pool": "0x37607D455d791470ab53Bb48b929730A226E166f",
    "weight": 22.157894,
-   "feesUsdPerDay": 1.2561474342890624,
+   "feesUsdPerDay": 1.1892525305657147,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 566.9073931470828,
-   "partial": false
+   "usdPerDayPer10k": 536.7172940795386,
+   "partial": false,
+   "fees24hUsdPerDay": 1.1892525305657147,
+   "symbol0": "USDC",
+   "symbol1": "NOKc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7841946E69390a8449D3634739380F7E1A9EdeE9",
    "pool": "0x39449c01De2D20aE6c3165142306d3b1F962Ba60",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.008748795873716934,
+   "feesUsdPerDay": 0.008282910027313732,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 554.0904053354059,
-   "partial": false
-  },
-  {
-   "gauge": "0x65cecbAbdFeACAB9ec65f1d40bc49d880d5D91AC",
-   "pool": "0x089262b9d991D7Bc4a55b7Cff0B7F26bde407985",
-   "weight": 109.670505,
-   "feesUsdPerDay": 5.37235422895267,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 489.863176998106,
-   "partial": false
-  },
-  {
-   "gauge": "0x9B83239a7bB691B6F408bAaf1208f2fec6eFbC36",
-   "pool": "0x351C957385e9Fe0966EB9436Ab7BC82918c30f54",
-   "weight": 118.317093,
-   "feesUsdPerDay": 5.651810457671762,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 477.6833419819291,
-   "partial": false
+   "usdPerDayPer10k": 524.5843017298697,
+   "partial": false,
+   "fees24hUsdPerDay": 0.008282910027313732,
+   "symbol0": "USDC",
+   "symbol1": "PDDc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x32572d54b8BecE88176De4ebCC92a8d60c19c1bF",
    "pool": "0x7DDf8Cc2ea379fA2287b3F0891d33aC4FD0DC9cf",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.007254437535299705,
+   "feesUsdPerDay": 0.006868129515624927,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 459.44771056898134,
-   "partial": false
+   "usdPerDayPer10k": 434.98153598957873,
+   "partial": false,
+   "fees24hUsdPerDay": 0.006868129515624927,
+   "symbol0": "USDC",
+   "symbol1": "MAG7",
+   "kind": "CL10"
   },
   {
    "gauge": "0x1191C3230BcF9Fb2F112acdb4e07fcC64734B024",
    "pool": "0xFA1050b3D5Fcd8438570bA7F8E65396c91483C39",
    "weight": 0.512155,
-   "feesUsdPerDay": 0.019751279528194107,
+   "feesUsdPerDay": 0.018908228301557792,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 385.65027664439754,
-   "partial": false
+   "usdPerDayPer10k": 369.18942213046114,
+   "partial": false,
+   "fees24hUsdPerDay": 0.018908228301557792,
+   "symbol0": "WETH",
+   "symbol1": "SYRUP",
+   "kind": "CL100"
   },
   {
    "gauge": "0xf9d247695616803E48Effd46016e7eA57F4AeA0F",
    "pool": "0xD9CA199152cCbE421b56414e30becC80baF5269E",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.005278252248953148,
+   "feesUsdPerDay": 0.00499717860765219,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 334.28930910036604,
-   "partial": false
+   "usdPerDayPer10k": 316.48797848463875,
+   "partial": false,
+   "fees24hUsdPerDay": 0.00499717860765219,
+   "symbol0": "USDC",
+   "symbol1": "BUDc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x57Da41EA26AeF9d6ac3a93789655F32FCc02DA9F",
    "pool": "0x43C51923760047b120f82FE9713e9a98320F3Fd9",
    "weight": 0.184116,
-   "feesUsdPerDay": 0.005921891702918704,
+   "feesUsdPerDay": 0.0056064762332897426,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 321.6387318151221,
-   "partial": true
+   "usdPerDayPer10k": 304.50741014702595,
+   "partial": true,
+   "fees24hUsdPerDay": 0.0056064762332897426,
+   "symbol0": "USDC",
+   "symbol1": "TRX",
+   "kind": "CL10"
   },
   {
    "gauge": "0x46E7903B9Dfc4f194BDfb393cb0d55e1Ce703061",
    "pool": "0x96807fB4f728cb28d92287bAb0DE16E6053E9451",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.0037075208667714785,
+   "feesUsdPerDay": 0.0035100906680860288,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 234.809654895527,
-   "partial": false
+   "usdPerDayPer10k": 222.30574231211517,
+   "partial": false,
+   "fees24hUsdPerDay": 0.0035100906680860288,
+   "symbol0": "USDC",
+   "symbol1": "NVOc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x47B47A61eD91BFbb998AaFE0E4735b5B2736551c",
    "pool": "0x3ECA1A7D881E12D2C7D8111269CEa0bcbF12192a",
    "weight": 0.512155,
-   "feesUsdPerDay": 0.011585677915285288,
+   "feesUsdPerDay": 0.011002089547720813,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 226.21419978208252,
-   "partial": false
+   "usdPerDayPer10k": 214.81944355495168,
+   "partial": false,
+   "fees24hUsdPerDay": 0.011002089547720813,
+   "symbol0": "ICP",
+   "symbol1": "WETH",
+   "kind": "CL50"
   },
   {
    "gauge": "0x97281A8EFE589eDc986E79c6f5e0BD620B76DDEb",
    "pool": "0xd0147CCBd2881E7987F2F205b66c1caDa27B1a4a",
    "weight": 17.120614,
-   "feesUsdPerDay": 0.32217183043882386,
+   "feesUsdPerDay": 0.304814987501948,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 188.17772183736187,
-   "partial": false
-  },
-  {
-   "gauge": "0xB4c58198B94BC5e85d95AADe3AF6f6F906Ab063D",
-   "pool": "0xF43582278505bE181418c6D5a6Ec2df479A2f260",
-   "weight": 170.012425,
-   "feesUsdPerDay": 3.149803886011923,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 185.26904041790297,
-   "partial": false
+   "usdPerDayPer10k": 178.03974311432637,
+   "partial": false,
+   "fees24hUsdPerDay": 0.304814987501948,
+   "symbol0": "MAMO",
+   "symbol1": "USDC",
+   "kind": "CL50"
   },
   {
    "gauge": "0x352265a85B014271b526F0671A26651B2707C135",
    "pool": "0xda7cd4C73Bdaf49dC9A02b427B2108dF60029c2d",
    "weight": 78.670254,
-   "feesUsdPerDay": 1.4567043212586952,
+   "feesUsdPerDay": 1.3863173483478461,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 185.16583210042538,
-   "partial": false
+   "usdPerDayPer10k": 176.21874365024092,
+   "partial": false,
+   "fees24hUsdPerDay": 1.3863173483478461,
+   "symbol0": "BIO",
+   "symbol1": "USDC",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0xB4c58198B94BC5e85d95AADe3AF6f6F906Ab063D",
+   "pool": "0xF43582278505bE181418c6D5a6Ec2df479A2f260",
+   "weight": 170.012425,
+   "feesUsdPerDay": 2.9867095472412086,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 175.67595693234648,
+   "partial": false,
+   "fees24hUsdPerDay": 2.9867095472412086,
+   "symbol0": "WETH",
+   "symbol1": "PENDLE",
+   "kind": "CL100"
   },
   {
    "gauge": "0x9cE9F01445d390c9D828a600A924F7860E2c80b2",
    "pool": "0x9C8DbAEFa1A13a6A20e4BbC56786Bf5B2A65e6Ba",
-   "weight": 81.437665,
-   "feesUsdPerDay": 1.3059927496726549,
+   "weight": 81.4358,
+   "feesUsdPerDay": 1.2377399832433427,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 160.3671635867053,
-   "partial": false
+   "usdPerDayPer10k": 151.98966275946006,
+   "partial": false,
+   "fees24hUsdPerDay": 1.2377399832433427,
+   "symbol0": "USDC",
+   "symbol1": "Basecat",
+   "kind": "CL200"
   },
   {
    "gauge": "0xD3d2A7084e971f9bbCd16EC25bBFB246540734d6",
    "pool": "0x8e1917c82D73d9B1f65C66Cc6Bf7f6e85F47Cf79",
-   "weight": 2.507076,
-   "feesUsdPerDay": 0.039324243928339234,
+   "weight": 2.507068,
+   "feesUsdPerDay": 0.03728026172859018,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 156.8529603436753,
-   "partial": false
+   "usdPerDayPer10k": 148.70063750019838,
+   "partial": false,
+   "fees24hUsdPerDay": 0.03728026172859018,
+   "symbol0": "VFY",
+   "symbol1": "ZEN",
+   "kind": "CL50"
   },
   {
    "gauge": "0x4F30e5938e40B48879AE507D813E0749C59Be641",
    "pool": "0xdAEF6B74B841a393b5F9C5443840B5E39A9b09dA",
-   "weight": 13.34792,
-   "feesUsdPerDay": 0.1934286788541378,
+   "weight": 13.3478,
+   "feesUsdPerDay": 0.18380392274353685,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 144.91297121829547,
-   "partial": false
+   "usdPerDayPer10k": 137.70352565624086,
+   "partial": false,
+   "fees24hUsdPerDay": 0.18380392274353685,
+   "symbol0": "cbLTC",
+   "symbol1": "cbBTC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xf6c03fe364E637Db636627046da1759944138F04",
    "pool": "0x60D2616466d555E86d561054c5625a3a2965C4EB",
-   "weight": 28.968641,
-   "feesUsdPerDay": 0.29163313082864467,
+   "weight": 28.967999,
+   "feesUsdPerDay": 0.27610255030955766,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 100.67200918482814,
-   "partial": false
+   "usdPerDayPer10k": 95.3129496711681,
+   "partial": false,
+   "fees24hUsdPerDay": 0.27610255030955766,
+   "symbol0": "USDC",
+   "symbol1": "INFYc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x02E21a6f0667711e3c3722B1513bd1883999cf58",
    "pool": "0x4532c5031aA91E2B079c00d7834062744F184CB4",
    "weight": 176.386207,
-   "feesUsdPerDay": 1.5867358225295065,
+   "feesUsdPerDay": 1.5022311492770974,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 89.9580442822075,
-   "partial": false
+   "usdPerDayPer10k": 85.16715531974927,
+   "partial": false,
+   "fees24hUsdPerDay": 1.5022311492770974,
+   "symbol0": "USDC",
+   "symbol1": "AAA",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0x8901f15131491296e76a60eE70e43150B7ae75C6",
+   "pool": "0x08537Fb017485dAb8bdd9AF3fb7d9Cd56e98CB61",
+   "weight": 25.347965,
+   "feesUsdPerDay": 0.20293056136707277,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 80.05792733873344,
+   "partial": false,
+   "fees24hUsdPerDay": 0.20293056136707277,
+   "symbol0": "XSGD",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x8808ACeF598Dd44905B5Cc34f068804b2FA7660d",
    "pool": "0xCc8C6092fB6Aeddad8D55B95655A91c6c4CDC90C",
-   "weight": 171.655478,
-   "feesUsdPerDay": 1.3102090285979189,
+   "weight": 171.65,
+   "feesUsdPerDay": 1.2398561414974099,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 76.32783070339548,
-   "partial": false
+   "usdPerDayPer10k": 72.23164206724212,
+   "partial": false,
+   "fees24hUsdPerDay": 1.2398561414974099,
+   "symbol0": "EURC",
+   "symbol1": "cbBTC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xF557b6361cF77296e1B326e9E705d579c4fd1652",
    "pool": "0x0B8517E6B85DEc9D61Df27a250cFE42b2Afddc28",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.0011225233388616946,
+   "feesUsdPerDay": 0.0010651047388774513,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 71.09314479457399,
-   "partial": false
+   "usdPerDayPer10k": 67.45663346223859,
+   "partial": false,
+   "fees24hUsdPerDay": 0.0010651047388774513,
+   "symbol0": "WETH",
+   "symbol1": "bsdETH",
+   "kind": "CL1"
   },
   {
    "gauge": "0xE1431f2a15CEb49c218d6E3673D8434679bFb71c",
    "pool": "0xe530b3f533193d00BA65D16F19FE227779fAb2fc",
    "weight": 0.157894,
-   "feesUsdPerDay": 0.0010164449170228752,
+   "feesUsdPerDay": 0.0009624354891410099,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 64.3748447447821,
-   "partial": false
+   "usdPerDayPer10k": 60.9542476455973,
+   "partial": false,
+   "fees24hUsdPerDay": 0.0009624354891410099,
+   "symbol0": "tGBP",
+   "symbol1": "USDC",
+   "kind": "CL10"
   },
   {
    "gauge": "0x9c72c13ad36471Cc4a0E1454D6C7167d93169361",
    "pool": "0xf8437eb78Cf351060c23cEC52Ae5Fc8b603F4428",
    "weight": 73.77349,
-   "feesUsdPerDay": 0.4042036727900795,
+   "feesUsdPerDay": 0.38277409862546524,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 54.789826497296126,
-   "partial": false
+   "usdPerDayPer10k": 51.88504673048799,
+   "partial": false,
+   "fees24hUsdPerDay": 0.38277409862546524,
+   "symbol0": "USDC",
+   "symbol1": "CHECK",
+   "kind": "CL1"
   },
   {
    "gauge": "0x902DFB374CF4a509cb6EFc145c87628dfa64757E",
    "pool": "0x5F829d89c86c47e53d5fa99224AF8bD24F80C53f",
    "weight": 3268.480289,
-   "feesUsdPerDay": 17.430086477714017,
+   "feesUsdPerDay": 16.489151476908923,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 53.32780048252391,
-   "partial": false
+   "usdPerDayPer10k": 50.44898550624053,
+   "partial": false,
+   "fees24hUsdPerDay": 16.489151476908923,
+   "symbol0": "WETH",
+   "symbol1": "RSC",
+   "kind": "CL50"
   },
   {
    "gauge": "0xDD64E392B5EeE57800fBF56BA08294c30e47E0dF",
    "pool": "0x181B0848076c13119BA2F4bE4f5555572330D2Fe",
-   "weight": 259.129535,
-   "feesUsdPerDay": 1.3004957836385966,
+   "weight": 259.123797,
+   "feesUsdPerDay": 1.2352745445425761,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 50.1870920295514,
-   "partial": false
+   "usdPerDayPer10k": 47.67121180588291,
+   "partial": false,
+   "fees24hUsdPerDay": 1.2352745445425761,
+   "symbol0": "USDC",
+   "symbol1": "LMTS",
+   "kind": "CL10"
   },
   {
    "gauge": "0x4837e918825d4d31a05876a2c4C9D0fD1ade2Cd5",
    "pool": "0xFA9C1d85B8A9879b2cFE0153E9D25aeCAF6e6E2F",
-   "weight": 1801.820129,
-   "feesUsdPerDay": 8.507587514942212,
+   "weight": 1801.815098,
+   "feesUsdPerDay": 8.067142353063915,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 47.21663041737313,
-   "partial": false
+   "usdPerDayPer10k": 44.77230964868316,
+   "partial": false,
+   "fees24hUsdPerDay": 8.067142353063915,
+   "symbol0": "WETH",
+   "symbol1": "BRETT",
+   "kind": "CL200"
   },
   {
    "gauge": "0x4C63246d82c172bCA48EaA57Fd9378bAfB3d0002",
    "pool": "0xef1f924C11c30b55C6eBF643191cDbE2b417Fd8D",
-   "weight": 85.955058,
-   "feesUsdPerDay": 0.3730367092089459,
+   "weight": 85.953155,
+   "feesUsdPerDay": 0.3534844119700306,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 43.39904076033082,
-   "partial": false
+   "usdPerDayPer10k": 41.125239724775874,
+   "partial": false,
+   "fees24hUsdPerDay": 0.3534844119700306,
+   "symbol0": "USDC",
+   "symbol1": "PROS",
+   "kind": "CL1"
   },
   {
    "gauge": "0xA85Fb7551bC8f6246fE6c71B4d59F12F0A290957",
    "pool": "0x72b070Ccc1675b466cbD04551e73282444fE8c80",
    "weight": 623.103257,
-   "feesUsdPerDay": 2.70063708503552,
+   "feesUsdPerDay": 2.5574917899596388,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 43.341726305510115,
-   "partial": false
-  },
-  {
-   "gauge": "0xeFa2D4Dd3bc0bd02D006BD4BDf14e4288d99AafD",
-   "pool": "0xf37e6b5547d1C641567722Cf67B1deAc7Ba51096",
-   "weight": 2550.222446,
-   "feesUsdPerDay": 10.310501372421408,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 40.42981186561446,
-   "partial": false
+   "usdPerDayPer10k": 41.044429776673205,
+   "partial": false,
+   "fees24hUsdPerDay": 2.5574917899596388,
+   "symbol0": "tBTC",
+   "symbol1": "cbBTC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xB7B3Cd23b92d004c96dE70474A543645B78f73d0",
    "pool": "0xb97b8b4076a703B36Be173cdb5177290bF6696Ae",
    "weight": 567.2333,
-   "feesUsdPerDay": 1.9036690807503862,
+   "feesUsdPerDay": 1.8093234221907744,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 33.560601567351675,
-   "partial": false
-  },
-  {
-   "gauge": "0x58c012eC3Dd4d44aF2415A111EFfF69f879fe0F6",
-   "pool": "0xbAC7394c3C4b2D188d4180275ef6Dd629f4C56fF",
-   "weight": 118705.581763,
-   "feesUsdPerDay": 376.3099022913338,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 31.70111267735907,
-   "partial": false
+   "usdPerDayPer10k": 31.897341346052894,
+   "partial": false,
+   "fees24hUsdPerDay": 1.8093234221907744,
+   "symbol0": "VIRTUAL",
+   "symbol1": "MAMO",
+   "kind": "CL100"
   },
   {
    "gauge": "0xA1671ce478048118a515C59AAcb625cA51e9E832",
    "pool": "0x67b3cf9f0B878eAC7aa6cC118Cd17f4FcE7bCEaC",
    "weight": 390.018985,
-   "feesUsdPerDay": 1.0856175182643946,
+   "feesUsdPerDay": 1.0260838426465475,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 27.83499156070365,
-   "partial": false
+   "usdPerDayPer10k": 26.30856136726893,
+   "partial": false,
+   "fees24hUsdPerDay": 1.0260838426465475,
+   "symbol0": "AVNT",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xc4b5393D65A94B35442512E6b94670267a59aCC5",
    "pool": "0x138Cb591C4A7D854D796E1906af8228d84CB7642",
-   "weight": 357.710457,
-   "feesUsdPerDay": 0.9515956774592879,
+   "weight": 357.696839,
+   "feesUsdPerDay": 0.9009180182717368,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 26.60240028726115,
-   "partial": false
+   "usdPerDayPer10k": 25.186636254461533,
+   "partial": false,
+   "fees24hUsdPerDay": 0.9009180182717368,
+   "symbol0": "USDC",
+   "symbol1": "AMDc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7C0a05C1739963D9beF70E0c6fe4271EcE47A4f2",
    "pool": "0x17e81a9f161109aC3c304C6283dF17DEbA02F896",
-   "weight": 917.113616,
-   "feesUsdPerDay": 2.381554880761203,
+   "weight": 917.08974,
+   "feesUsdPerDay": 2.26328329043775,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 25.96793720715557,
-   "partial": false
+   "usdPerDayPer10k": 24.6789729654089,
+   "partial": false,
+   "fees24hUsdPerDay": 2.26328329043775,
+   "symbol0": "USDC",
+   "symbol1": "MORPHO",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x58c012eC3Dd4d44aF2415A111EFfF69f879fe0F6",
+   "pool": "0xbAC7394c3C4b2D188d4180275ef6Dd629f4C56fF",
+   "weight": 149694.520479,
+   "feesUsdPerDay": 356.0451259495334,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 23.784780151567134,
+   "partial": false,
+   "fees24hUsdPerDay": 356.0451259495334,
+   "symbol0": "msUSD",
+   "symbol1": "USDC",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0xeFa2D4Dd3bc0bd02D006BD4BDf14e4288d99AafD",
+   "pool": "0xf37e6b5547d1C641567722Cf67B1deAc7Ba51096",
+   "weight": 5209.698215,
+   "feesUsdPerDay": 9.761454068939507,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 18.737081621386423,
+   "partial": false,
+   "fees24hUsdPerDay": 9.761454068939507,
+   "symbol0": "wtSPYM",
+   "symbol1": "USDC",
+   "kind": "CL100"
   },
   {
    "gauge": "0x31c55a683dB9f6887bdb628531700c9A7d9B6f96",
    "pool": "0x257F103Bfe3dD812eF753303F7739EBB922eEC66",
    "weight": 384.409598,
-   "feesUsdPerDay": 0.7223085193603062,
+   "feesUsdPerDay": 0.6890224721848283,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 18.7900749984275,
-   "partial": false
+   "usdPerDayPer10k": 17.924174477992914,
+   "partial": false,
+   "fees24hUsdPerDay": 0.6890224721848283,
+   "symbol0": "USDC",
+   "symbol1": "VELVET",
+   "kind": "CL1"
   },
   {
    "gauge": "0x181268aD602c66162eAd2AE4006e2D11bc4b1573",
    "pool": "0x0b4bdb67D9E755bD8d15328ef809Edf03C28aDB8",
-   "weight": 28027.038008,
-   "feesUsdPerDay": 52.660335854024304,
+   "weight": 28026.988835,
+   "feesUsdPerDay": 49.71176257820612,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 18.78911922044183,
-   "partial": false
+   "usdPerDayPer10k": 17.737104356575525,
+   "partial": false,
+   "fees24hUsdPerDay": 49.71176257820612,
+   "symbol0": "USDC",
+   "symbol1": "TAO",
+   "kind": "CL100"
   },
   {
    "gauge": "0xD93B157F6b6aedb853896d7CceDfc78aaf240fB3",
    "pool": "0x7fC0FBcb5Cd277Ea391a70d55e6a732C762c7FC8",
-   "weight": 3747.658166,
-   "feesUsdPerDay": 6.434345054324822,
+   "weight": 3747.629794,
+   "feesUsdPerDay": 6.103202636246759,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 17.1689753145736,
-   "partial": false
+   "usdPerDayPer10k": 16.285500357617174,
+   "partial": false,
+   "fees24hUsdPerDay": 6.103202636246759,
+   "symbol0": "FLOCK",
+   "symbol1": "USDC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xe0fA8CeC2386eC254926DfacAF5D57481369EE8C",
    "pool": "0xCfddb3690Fa5782c0De447eD62A502Da65E9ce00",
-   "weight": 1529.653605,
-   "feesUsdPerDay": 2.5506283352676364,
+   "weight": 1529.633972,
+   "feesUsdPerDay": 2.4079380920660083,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 16.67454857707727,
-   "partial": false
+   "usdPerDayPer10k": 15.74192346672028,
+   "partial": false,
+   "fees24hUsdPerDay": 2.4079380920660083,
+   "symbol0": "BNKR",
+   "symbol1": "WETH",
+   "kind": "CL200"
   },
   {
    "gauge": "0xEb70faB13B3882e447Beed9Fa4EA13235a829023",
    "pool": "0xBdc59e363f13ceF326f31d55e23588D1c87cC753",
-   "weight": 3217.33855,
-   "feesUsdPerDay": 5.328957834934872,
+   "weight": 3217.327504,
+   "feesUsdPerDay": 5.044514088113323,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 16.563248630766847,
-   "partial": false
+   "usdPerDayPer10k": 15.679206050328016,
+   "partial": false,
+   "fees24hUsdPerDay": 5.044514088113323,
+   "symbol0": "USDC",
+   "symbol1": "SAPIEN",
+   "kind": "CL50"
   },
   {
    "gauge": "0x5Aa337B53C6b866D255542f834Ae80109cE292b4",
    "pool": "0xc6D8E2Ec135fF406A4abe0571476aee128fD7359",
-   "weight": 300.208177,
-   "feesUsdPerDay": 0.4945197663996243,
+   "weight": 300.205357,
+   "feesUsdPerDay": 0.46441468223552357,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 16.472561501430963,
-   "partial": false
+   "usdPerDayPer10k": 15.469899860649207,
+   "partial": false,
+   "fees24hUsdPerDay": 0.46441468223552357,
+   "symbol0": "UP",
+   "symbol1": "cbBTC",
+   "kind": "CL100"
   },
   {
    "gauge": "0x4A870ac2a047909c1aB791F8d7176d33bC2d60eb",
    "pool": "0xf69cD40Bc4c661D0DbAbb3d74b4F2a228aD63270",
-   "weight": 32826.038258,
-   "feesUsdPerDay": 52.20638492725818,
+   "weight": 32826.036112,
+   "feesUsdPerDay": 49.63750848618046,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 15.903955425747533,
-   "partial": false
+   "usdPerDayPer10k": 15.121383622365066,
+   "partial": false,
+   "fees24hUsdPerDay": 49.63750848618046,
+   "symbol0": "USDC",
+   "symbol1": "DIEM",
+   "kind": "CL100"
   },
   {
    "gauge": "0xE028AB34C8c534f6Efa073d9D470Bf1bee0C74aB",
    "pool": "0xf6C259eB2aC81E4269Eb6159e921faebCaF0F4f0",
    "weight": 1518.798149,
-   "feesUsdPerDay": 2.3460549839250953,
+   "feesUsdPerDay": 2.2224176071616504,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 15.446785895879277,
-   "partial": false
-  },
-  {
-   "gauge": "0x7C9ed6DF00a0732f62b9F388bb68AB5bfBCd7CD6",
-   "pool": "0x4Cd38b038513Dc5A73FBa933dAfA39F7233c44FA",
-   "weight": 1754.937562,
-   "feesUsdPerDay": 2.563577986678892,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 14.607801678523314,
-   "partial": false
-  },
-  {
-   "gauge": "0x4E054a8542D5B772aB1bDA187F14208274c9867A",
-   "pool": "0xCe56168C09f4B7FCa30523822C48008705C01156",
-   "weight": 23842.705628,
-   "feesUsdPerDay": 32.38035413962465,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 13.580822010625855,
-   "partial": false
-  },
-  {
-   "gauge": "0x2e82B394AAa198aEF7F689c1B183c66B9A6dDDb4",
-   "pool": "0x042adAF267E0ddB89cd1b264a16ada127E0285Ce",
-   "weight": 25620.040708,
-   "feesUsdPerDay": 32.70277702846473,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 12.764529689984728,
-   "partial": false
+   "usdPerDayPer10k": 14.632738441459482,
+   "partial": false,
+   "fees24hUsdPerDay": 2.2224176071616504,
+   "symbol0": "SOL",
+   "symbol1": "WETH",
+   "kind": "CL10"
   },
   {
    "gauge": "0x6dCa50a328aC12bF9A475F81C9d351CcF77F61D2",
    "pool": "0x8fC836D9650a9839E8e5c4EDC22912378779aD03",
-   "weight": 43744.818012,
-   "feesUsdPerDay": 52.69435014425542,
+   "weight": 46468.984094,
+   "feesUsdPerDay": 57.77619102316747,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 12.045849665869488,
-   "partial": false
+   "usdPerDayPer10k": 12.43328042330515,
+   "partial": false,
+   "fees24hUsdPerDay": 57.77619102316747,
+   "symbol0": "VVV",
+   "symbol1": "DIEM",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0x25D0DaF0Efc41400e385b69Cd5376C3dd609a5b8",
+   "pool": "0xC04Ba378E83ff61cDb542ee4dA88e1241cC54E60",
+   "weight": 226831.951498,
+   "feesUsdPerDay": 273.68330148597107,
+   "incentivesUsdPerDay": 0.05818788161412173,
+   "usdPerDayPer10k": 12.06803043219007,
+   "partial": false,
+   "fees24hUsdPerDay": 273.68330148597107,
+   "symbol0": "AERO",
+   "symbol1": "WETH",
+   "kind": "vAMM"
+  },
+  {
+   "gauge": "0x2e82B394AAa198aEF7F689c1B183c66B9A6dDDb4",
+   "pool": "0x042adAF267E0ddB89cd1b264a16ada127E0285Ce",
+   "weight": 25620.009155,
+   "feesUsdPerDay": 30.89916360663736,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 12.060559158615584,
+   "partial": false,
+   "fees24hUsdPerDay": 30.89916360663736,
+   "symbol0": "HYPE",
+   "symbol1": "WETH",
+   "kind": "CL50"
   },
   {
    "gauge": "0x7DF01565a8F49CB9205898087f40cfD7f42b4C2c",
    "pool": "0xdc65a7a69E1d647b12E87de6C1C7a84Db80C0703",
-   "weight": 1945.6132,
-   "feesUsdPerDay": 2.2929456498172964,
+   "weight": 1945.61281,
+   "feesUsdPerDay": 2.1698975006272163,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 11.785208127627993,
-   "partial": false
+   "usdPerDayPer10k": 11.152771452671583,
+   "partial": false,
+   "fees24hUsdPerDay": 2.1698975006272163,
+   "symbol0": "EURC",
+   "symbol1": "USDC",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0x4E054a8542D5B772aB1bDA187F14208274c9867A",
+   "pool": "0xCe56168C09f4B7FCa30523822C48008705C01156",
+   "weight": 29229.128051,
+   "feesUsdPerDay": 30.56943612186268,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 10.458552190912647,
+   "partial": false,
+   "fees24hUsdPerDay": 30.56943612186268,
+   "symbol0": "WETH",
+   "symbol1": "NVDAc",
+   "kind": "CL50"
   },
   {
    "gauge": "0xb5310276F435774b666Fd19b0959EfE7943C4290",
    "pool": "0xF0b593cC024bd446D11c24570b4866a704C138BE",
-   "weight": 458.509251,
-   "feesUsdPerDay": 0.5016299728223577,
+   "weight": 458.497312,
+   "feesUsdPerDay": 0.4766004189234447,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 10.940454781608393,
-   "partial": false
+   "usdPerDayPer10k": 10.394835598102338,
+   "partial": false,
+   "fees24hUsdPerDay": 0.4766004189234447,
+   "symbol0": "USDC",
+   "symbol1": "DRV",
+   "kind": "CL200"
   },
   {
-   "gauge": "0x8971783F2b9ECE611663b7E33e5B2Ea96d73b9F3",
-   "pool": "0x0086BCBA6fF176d7A478973c1eA86A0DCaDFF6E8",
-   "weight": 23165.448965,
-   "feesUsdPerDay": 20.781206262423424,
+   "gauge": "0xB3b8d636D59B71EAb86CD36AB4C94c1C2dfbCE70",
+   "pool": "0x0f21A72A02DC78217c2987826D061500AECF7707",
+   "weight": 779253.566593,
+   "feesUsdPerDay": 296.45875346233527,
+   "incentivesUsdPerDay": 488.8528664295215,
+   "usdPerDayPer10k": 10.077741746174835,
+   "partial": false,
+   "fees24hUsdPerDay": 296.45875346233527,
+   "symbol0": "WETH",
+   "symbol1": "ZRO",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0x347f2eEDD83Dc6b14116f0260403d67A21f47C30",
+   "pool": "0xe6A7317DF4A9a7540663B99A07d1e019CAa8Afa4",
+   "weight": 7606029.845611,
+   "feesUsdPerDay": 5084.848251133216,
+   "incentivesUsdPerDay": 2304.5580374259216,
+   "usdPerDayPer10k": 9.715194968401418,
+   "partial": false,
+   "fees24hUsdPerDay": 5084.848251133216,
+   "symbol0": "AERO",
+   "symbol1": "cbBTC",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x9B83239a7bB691B6F408bAaf1208f2fec6eFbC36",
+   "pool": "0x351C957385e9Fe0966EB9436Ab7BC82918c30f54",
+   "weight": 5665.607489,
+   "feesUsdPerDay": 5.349644558249941,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 8.970776389310155,
-   "partial": false
+   "usdPerDayPer10k": 9.442314117141242,
+   "partial": false,
+   "fees24hUsdPerDay": 5.349644558249941,
+   "symbol0": "DRB",
+   "symbol1": "WETH",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0xC59DB322A2d505d955935B4D83d94bac0a935a0f",
+   "pool": "0xbc461ef5225f1BBD2001EeAd75f56335aA781a69",
+   "weight": 2371616.767862,
+   "feesUsdPerDay": 960.8051869563221,
+   "incentivesUsdPerDay": 1238.7950020507099,
+   "usdPerDayPer10k": 9.274686445187864,
+   "partial": false,
+   "fees24hUsdPerDay": 960.8051869563221,
+   "symbol0": "USDC",
+   "symbol1": "BLUECHIP",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x4A3B6A77B545584d870D4A6de446AAc4610c60D5",
+   "pool": "0xD0Acf293547457Fb4fE9eE32CA93e89497626816",
+   "weight": 11060514.57956,
+   "feesUsdPerDay": 7555.878101541174,
+   "incentivesUsdPerDay": 2367.385304288669,
+   "usdPerDayPer10k": 8.97179180448607,
+   "partial": false,
+   "fees24hUsdPerDay": 7555.878101541174,
+   "symbol0": "AERO",
+   "symbol1": "USDC",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x45eca41693d06c50784b9564457b7741f2914BD3",
+   "pool": "0xd072410fa13D242e1d53721Bcf7AF02e3455DC96",
+   "weight": 3517548.848912,
+   "feesUsdPerDay": 2063.107837461151,
+   "incentivesUsdPerDay": 1049.1835171574562,
+   "usdPerDayPer10k": 8.847898034396902,
+   "partial": false,
+   "fees24hUsdPerDay": 2063.107837461151,
+   "symbol0": "USDC",
+   "symbol1": "METAc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x230ec639aE09B4CDEA38b5665910E3B10f1B8eb8",
+   "pool": "0xF668e21993f0ACd7ab00BB1cFbAeD0df28A3C8EC",
+   "weight": 2476890.491986,
+   "feesUsdPerDay": 1323.7984470793242,
+   "incentivesUsdPerDay": 840.2661485064967,
+   "usdPerDayPer10k": 8.737021691460646,
+   "partial": false,
+   "fees24hUsdPerDay": 1323.7984470793242,
+   "symbol0": "USDC",
+   "symbol1": "NVDAc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x81189366762Ce456DB7CF81181785bf22B5baEC6",
+   "pool": "0xc01c2800186207270BA5386532a8173C5b7dD194",
+   "weight": 887995.730423,
+   "feesUsdPerDay": 338.1343062218701,
+   "incentivesUsdPerDay": 437.60031696195273,
+   "usdPerDayPer10k": 8.735792263482027,
+   "partial": false,
+   "fees24hUsdPerDay": 338.1343062218701,
+   "symbol0": "SOL",
+   "symbol1": "cbBTC",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x9d32ce3252b817BA708E959562c1a43ffE70C893",
+   "pool": "0x7A33000372f3F028f074182CCb9d16cBEEfBF920",
+   "weight": 1631554.799656,
+   "feesUsdPerDay": 882.713626221165,
+   "incentivesUsdPerDay": 534.4061398257254,
+   "usdPerDayPer10k": 8.685701309847605,
+   "partial": false,
+   "fees24hUsdPerDay": 882.713626221165,
+   "symbol0": "USDC",
+   "symbol1": "TSLAc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xc721F925AaB587F3DF2Da32baB5CDa403573292A",
    "pool": "0x7f5964d8130D4F0c2ed9e7A4d6516bDdC218ce95",
-   "weight": 436.105973,
-   "feesUsdPerDay": 0.39068020268850623,
+   "weight": 436.10191,
+   "feesUsdPerDay": 0.36948071834412954,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 8.958377694032515,
-   "partial": false
+   "usdPerDayPer10k": 8.472348088096373,
+   "partial": false,
+   "fees24hUsdPerDay": 0.36948071834412954,
+   "symbol0": "WETH",
+   "symbol1": "wstETH",
+   "kind": "CL1"
+  },
+  {
+   "gauge": "0x1DD07350114bAf9fa8d9Caf91CD5a3480D34Ec6f",
+   "pool": "0xc4D5E62261648a3Ceb127924F741C0929f040f13",
+   "weight": 1448004.281162,
+   "feesUsdPerDay": 327.45617982485925,
+   "incentivesUsdPerDay": 845.7820920192602,
+   "usdPerDayPer10k": 8.102450297330035,
+   "partial": false,
+   "fees24hUsdPerDay": 327.45617982485925,
+   "symbol0": "USDC",
+   "symbol1": "POD",
+   "kind": "CL200"
   },
   {
    "gauge": "0x08B0d09B2eF246044CB44c1De1b7A0347f5c5a6D",
    "pool": "0xE371bd344739a7DbE25a3CF6dc36176f9A735025",
    "weight": 4051.009327,
-   "feesUsdPerDay": 3.446403210988151,
+   "feesUsdPerDay": 3.256167391857815,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 8.507517343160444,
-   "partial": false
+   "usdPerDayPer10k": 8.037916303624032,
+   "partial": false,
+   "fees24hUsdPerDay": 3.256167391857815,
+   "symbol0": "AVNT",
+   "symbol1": "USDC",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x0CcF7cb21169934F4686cb895518Aa179bfCEa53",
+   "pool": "0x880dB7Dda4407D99508574E680d067D1164B3cFE",
+   "weight": 1819276.106548,
+   "feesUsdPerDay": 854.5726675530168,
+   "incentivesUsdPerDay": 597.0745115992871,
+   "usdPerDayPer10k": 7.979257100818739,
+   "partial": false,
+   "fees24hUsdPerDay": 854.5726675530168,
+   "symbol0": "USDC",
+   "symbol1": "SPCXc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x196E13C9867357c3c6aF53aa47F771999A26354e",
    "pool": "0x9Bac71187FE11601C521B62cd9207BAD13F01D0b",
-   "weight": 2982.176521,
-   "feesUsdPerDay": 2.4693284708077474,
+   "weight": 2982.174874,
+   "feesUsdPerDay": 2.3380209283409457,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 8.280289423530933,
-   "partial": false
+   "usdPerDayPer10k": 7.839986005851098,
+   "partial": false,
+   "fees24hUsdPerDay": 2.3380209283409457,
+   "symbol0": "TIG",
+   "symbol1": "USDC",
+   "kind": "CL200"
   },
   {
-   "gauge": "0x5Fa8B95631734Fcd2BeFCed4c16E91aA57D04cB1",
-   "pool": "0x0C8A391bca09C7627726AB910AD04ba5E393F33f",
-   "weight": 19684.289688,
-   "feesUsdPerDay": 15.652018008255165,
+   "gauge": "0x48D58E28AB528f735f0d3E6746BEA74a757954b7",
+   "pool": "0x108c5c97155D35847c61683F1a254D9c0470A591",
+   "weight": 154912.157968,
+   "feesUsdPerDay": 32.234207193259465,
+   "incentivesUsdPerDay": 86.20296090817514,
+   "usdPerDayPer10k": 7.645440464752565,
+   "partial": false,
+   "fees24hUsdPerDay": 32.234207193259465,
+   "symbol0": "USDC",
+   "symbol1": "PAXG",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x8971783F2b9ECE611663b7E33e5B2Ea96d73b9F3",
+   "pool": "0x0086BCBA6fF176d7A478973c1eA86A0DCaDFF6E8",
+   "weight": 25824.924734,
+   "feesUsdPerDay": 19.454566419305195,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 7.95152797289434,
-   "partial": false
+   "usdPerDayPer10k": 7.533251933708628,
+   "partial": false,
+   "fees24hUsdPerDay": 19.454566419305195,
+   "symbol0": "USDC",
+   "symbol1": "LAPTOP",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x89D6eEF2f1403a4Bc045dC9F994e30F518ECbfe4",
+   "pool": "0x16c70F04C3080a127486Cdf5a4C33c066bBF47C3",
+   "weight": 1936267.427537,
+   "feesUsdPerDay": 693.0759945172537,
+   "incentivesUsdPerDay": 765.1110413785632,
+   "usdPerDayPer10k": 7.530917553834943,
+   "partial": false,
+   "fees24hUsdPerDay": 693.0759945172537,
+   "symbol0": "USDC",
+   "symbol1": "GOOGLc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x75d8F2FE351B97771348b1Ff4c3f8f388D506158",
+   "pool": "0x361FE0318Ac98F15720021CB8924b727C3E57D6F",
+   "weight": 1022373.716723,
+   "feesUsdPerDay": 150.08952485940677,
+   "incentivesUsdPerDay": 613.6517095614278,
+   "usdPerDayPer10k": 7.47027453785473,
+   "partial": false,
+   "fees24hUsdPerDay": 150.08952485940677,
+   "symbol0": "WETH",
+   "symbol1": "TIBBIR",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x9e2fC63b3AA22b9524000449D58d9beBaae8eF83",
+   "pool": "0x8Ea1727d4EDE95a7Eb006A97aa315f122Fe0af5B",
+   "weight": 675308.695818,
+   "feesUsdPerDay": 81.41009051193181,
+   "incentivesUsdPerDay": 416.2259238383228,
+   "usdPerDayPer10k": 7.369015347083988,
+   "partial": false,
+   "fees24hUsdPerDay": 81.41009051193181,
+   "symbol0": "WETH",
+   "symbol1": "REI",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xfA66E7f39CD27F2C16ad25080E57e30BA2abf043",
+   "pool": "0x5e3C5083F27654FaC92126CB3fBD8773306cD90D",
+   "weight": 603506.284224,
+   "feesUsdPerDay": 183.2940370347633,
+   "incentivesUsdPerDay": 253.40082874974692,
+   "usdPerDayPer10k": 7.235962196239752,
+   "partial": false,
+   "fees24hUsdPerDay": 183.2940370347633,
+   "symbol0": "cbETH",
+   "symbol1": "cbBTC",
+   "kind": "CL10"
   },
   {
    "gauge": "0xfCE8Ac4C22847314F93228064cd75d2C921D426C",
    "pool": "0xE9E5266e4b0E2497Da01Cbb3e0C460F6E14Cd655",
    "weight": 10523.569541,
-   "feesUsdPerDay": 8.01540351621237,
+   "feesUsdPerDay": 7.606479557995469,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 7.616620467764074,
-   "partial": false
+   "usdPerDayPer10k": 7.228041329656534,
+   "partial": false,
+   "fees24hUsdPerDay": 7.606479557995469,
+   "symbol0": "ZORA",
+   "symbol1": "USDC",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0x5c7974887d29Ad70aEf991Dc4D5eD51a60d108a9",
+   "pool": "0x883E9C376F4119F9c475b3E80aF4002f00f6964a",
+   "weight": 740168.670837,
+   "feesUsdPerDay": 146.66929928176003,
+   "incentivesUsdPerDay": 386.81890895302524,
+   "usdPerDayPer10k": 7.207657244272846,
+   "partial": false,
+   "fees24hUsdPerDay": 146.66929928176003,
+   "symbol0": "msUSD",
+   "symbol1": "msETH",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x9f4594cc94c373141242FA2cA199C5f78E1662E5",
+   "pool": "0x868Eed6BAD4bD368cd053b766F84CC727697589A",
+   "weight": 982763.04157,
+   "feesUsdPerDay": 253.808783593823,
+   "incentivesUsdPerDay": 450.4709061337566,
+   "usdPerDayPer10k": 7.166322500302987,
+   "partial": false,
+   "fees24hUsdPerDay": 253.808783593823,
+   "symbol0": "SOL",
+   "symbol1": "USDC",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x9376BBEF9bCB2558C4d9fC2EadAa3cf7356A6941",
+   "pool": "0x792f465e0434fB1028EA3BfeB05240CB839C4e04",
+   "weight": 565975.903705,
+   "feesUsdPerDay": 121.32098147073697,
+   "incentivesUsdPerDay": 280.16530499820885,
+   "usdPerDayPer10k": 7.093699287203159,
+   "partial": false,
+   "fees24hUsdPerDay": 121.32098147073697,
+   "symbol0": "VIRTUAL",
+   "symbol1": "WETH",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xCBa7452690663D6789C0115fe889C9da85Bf8c56",
+   "pool": "0xE7030bE388b8E247aBe0C9fa876673e83fBcBD3C",
+   "weight": 3107940.03238,
+   "feesUsdPerDay": 1325.3887355354764,
+   "incentivesUsdPerDay": 858.882529142228,
+   "usdPerDayPer10k": 7.02803542513964,
+   "partial": false,
+   "fees24hUsdPerDay": 1325.3887355354764,
+   "symbol0": "USDC",
+   "symbol1": "cbZEC",
+   "kind": "CL200"
   },
   {
    "gauge": "0x12a984598a52F7c7890e1FAB8E360eE2b432e918",
    "pool": "0xD448990883e3Bf9cDD8ebCA368A3ECF9D629aAf7",
-   "weight": 5408.750031,
-   "feesUsdPerDay": 3.999345996426001,
+   "weight": 5408.657025,
+   "feesUsdPerDay": 3.78614810360693,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 7.39421488037815,
-   "partial": false
+   "usdPerDayPer10k": 7.0001630454117985,
+   "partial": false,
+   "fees24hUsdPerDay": 3.78614810360693,
+   "symbol0": "USDC",
+   "symbol1": "USDT",
+   "kind": "CL1"
   },
   {
-   "gauge": "0xe300153B7A51C02a47cb8b78C76f97E7bc5ddBe7",
-   "pool": "0xf0844016F0E92099D3D56ee13c6A50Df59E08781",
-   "weight": 80163.662651,
-   "feesUsdPerDay": 58.32411717940055,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 7.2756302856519355,
-   "partial": false
+   "gauge": "0x4262b2d1415345b98E656a56c2f12cDBb1118539",
+   "pool": "0x784E539F15Ca2D19449a6311c5dAb6cF37d8f1ba",
+   "weight": 5536863.698145,
+   "feesUsdPerDay": 1942.1227747006965,
+   "incentivesUsdPerDay": 1805.5609473645468,
+   "usdPerDayPer10k": 6.768603899931034,
+   "partial": false,
+   "fees24hUsdPerDay": 1942.1227747006965,
+   "symbol0": "USDC",
+   "symbol1": "cbBTC",
+   "kind": "CL100"
   },
   {
-   "gauge": "0x25D0DaF0Efc41400e385b69Cd5376C3dd609a5b8",
-   "pool": "0xC04Ba378E83ff61cDb542ee4dA88e1241cC54E60",
-   "weight": 218797.379291,
-   "feesUsdPerDay": 156.92662675209584,
+   "gauge": "0x5Fa8B95631734Fcd2BeFCed4c16E91aA57D04cB1",
+   "pool": "0x0C8A391bca09C7627726AB910AD04ba5E393F33f",
+   "weight": 22332.987198,
+   "feesUsdPerDay": 14.909836628058736,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 7.172235209581998,
-   "partial": true
+   "usdPerDayPer10k": 6.676149722208008,
+   "partial": false,
+   "fees24hUsdPerDay": 14.909836628058736,
+   "symbol0": "WETH",
+   "symbol1": "cbDOGE",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xb1b27a2fa4E67a6d0Ee1aA9De97c8b1DDF54FDD4",
+   "pool": "0xc85D5CB72d1aaD6f152A8decAd228AE4A59Ac9B3",
+   "weight": 17913120.934191,
+   "feesUsdPerDay": 7828.89814862663,
+   "incentivesUsdPerDay": 4077.9108649130094,
+   "usdPerDayPer10k": 6.646976290330726,
+   "partial": false,
+   "fees24hUsdPerDay": 7828.89814862663,
+   "symbol0": "AERO",
+   "symbol1": "WETH",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x74a30B3357121a822aDB91A539F4B11b5fb7cb3F",
+   "pool": "0x42609aA1E58C5dD7E5a012DC74118fFf975F0Eac",
+   "weight": 4904428.84275,
+   "feesUsdPerDay": 1825.4280481512412,
+   "incentivesUsdPerDay": 1408.1812521131192,
+   "usdPerDayPer10k": 6.593243380508757,
+   "partial": false,
+   "fees24hUsdPerDay": 1825.4280481512412,
+   "symbol0": "USDC",
+   "symbol1": "cbBTC",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0x25750d650F3fF6876BA80f9EAe47618A3dB95113",
+   "pool": "0x52C53a3232C84cB17b05349d68c9fd75df549e03",
+   "weight": 1212670.277945,
+   "feesUsdPerDay": 198.60132737662073,
+   "incentivesUsdPerDay": 585.8420218518958,
+   "usdPerDayPer10k": 6.468727431479806,
+   "partial": false,
+   "fees24hUsdPerDay": 198.60132737662073,
+   "symbol0": "WETH",
+   "symbol1": "AAVE",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0xFc8922E268CCcbe8160e5C1AD546Af9705Cf0A61",
+   "pool": "0xdeBAEbE5B2729f7D62072b2eA40472d78d2C1626",
+   "weight": 17192551.723887,
+   "feesUsdPerDay": 6964.584903336782,
+   "incentivesUsdPerDay": 4115.833170037965,
+   "usdPerDayPer10k": 6.444894423658875,
+   "partial": false,
+   "fees24hUsdPerDay": 6964.584903336782,
+   "symbol0": "WETH",
+   "symbol1": "VVV",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xFde616C287A8BB1E9fae41557CCF415AFfCa4140",
+   "pool": "0x5CA1da1ED90a6Cf15974C0A0D2808bfdE76314c1",
+   "weight": 971528.314469,
+   "feesUsdPerDay": 19.65806509511306,
+   "incentivesUsdPerDay": 600.321424487296,
+   "usdPerDayPer10k": 6.381486574800545,
+   "partial": false,
+   "fees24hUsdPerDay": 19.65806509511306,
+   "symbol0": "WETH",
+   "symbol1": "ZEN",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xAbb3fb6659e05847631896cB87A6D1b8bc0c6D8C",
+   "pool": "0xeC3c3755b9DED4a2960ef50C9b48C1694CE274C2",
+   "weight": 3890116.380341,
+   "feesUsdPerDay": 1359.232583332403,
+   "incentivesUsdPerDay": 1110.3188360892834,
+   "usdPerDayPer10k": 6.34827130597208,
+   "partial": false,
+   "fees24hUsdPerDay": 1359.232583332403,
+   "symbol0": "WETH",
+   "symbol1": "cbBTC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x56FA4641d7a8E183d7957c71f5b7c973BEdfb59A",
    "pool": "0xBAA8fB62bB146a0b1446FF09cf7441D2E7236064",
    "weight": 3373.693664,
-   "feesUsdPerDay": 2.2312629254556944,
+   "feesUsdPerDay": 2.1207595967603883,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 6.6137093276029155,
-   "partial": false
+   "usdPerDayPer10k": 6.286165277376716,
+   "partial": false,
+   "fees24hUsdPerDay": 2.1207595967603883,
+   "symbol0": "ALIGN",
+   "symbol1": "USDC",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xe300153B7A51C02a47cb8b78C76f97E7bc5ddBe7",
+   "pool": "0xf0844016F0E92099D3D56ee13c6A50Df59E08781",
+   "weight": 88143.497652,
+   "feesUsdPerDay": 55.23418983890833,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 6.266394153820327,
+   "partial": false,
+   "fees24hUsdPerDay": 55.23418983890833,
+   "symbol0": "WETH",
+   "symbol1": "cbXRP",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xd74c14699BFCAD53D01c2A5DB3c2c4743a3484F7",
+   "pool": "0x4d37A3470a837dfb8BEF2386F09dbD51BEA6cFD3",
+   "weight": 28275.67055,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 16.85844908792245,
+   "usdPerDayPer10k": 5.962174816713332,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "MXNB",
+   "kind": "CL10"
   },
   {
    "gauge": "0xd8C0E093327B5DfB3e654ec520Ff2100C3c20F76",
    "pool": "0x0cABC1f570FC7E80aF454b5bC839b4014B4AcFd1",
-   "weight": 6056.360011,
-   "feesUsdPerDay": 3.7267981706999884,
+   "weight": 6056.345859,
+   "feesUsdPerDay": 3.517680474473952,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 6.15352813141558,
-   "partial": false
+   "usdPerDayPer10k": 5.808255598239606,
+   "partial": false,
+   "fees24hUsdPerDay": 3.517680474473952,
+   "symbol0": "WETH",
+   "symbol1": "GOOGLc",
+   "kind": "CL50"
   },
   {
    "gauge": "0x165781eeAeff7658076F0b73A0C44a4D111b3534",
    "pool": "0x34b6D0C67db6ddEb231e6FeE78558B89157C5e7A",
-   "weight": 396728.49663,
-   "feesUsdPerDay": 241.72152715607362,
+   "weight": 396720.794772,
+   "feesUsdPerDay": 228.91917438882504,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 6.092870293141697,
-   "partial": false
+   "usdPerDayPer10k": 5.770284225213077,
+   "partial": false,
+   "fees24hUsdPerDay": 228.91917438882504,
+   "symbol0": "WETH",
+   "symbol1": "msETH",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0x82a22544534ad422F6588Fb44d38F86a0C9Bf20D",
+   "pool": "0xC3CBFbaab532a04E36b6F901D725EaA5113FD781",
+   "weight": 2815558.493627,
+   "feesUsdPerDay": 139.54875227096824,
+   "incentivesUsdPerDay": 1454.1476652875715,
+   "usdPerDayPer10k": 5.660320754002449,
+   "partial": false,
+   "fees24hUsdPerDay": 139.54875227096824,
+   "symbol0": "XDP",
+   "symbol1": "USDC",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0x14018f5AFaeCA44BB49d5036267d836723B57c91",
+   "pool": "0x2A430bEbD2082d8e05D56d64DEDE8944279bbC24",
+   "weight": 9191043.865025,
+   "feesUsdPerDay": 2573.016346615717,
+   "incentivesUsdPerDay": 2601.699303379834,
+   "usdPerDayPer10k": 5.6301718564164345,
+   "partial": false,
+   "fees24hUsdPerDay": 2573.016346615717,
+   "symbol0": "WETH",
+   "symbol1": "USDC",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0x2cD47Ba367766a8a5ab641825fbf4A3a29e92ec9",
+   "pool": "0x4dbdcB087992404Ea9B14fA83cc695b02797F39a",
+   "weight": 1120561.829162,
+   "feesUsdPerDay": 101.34585244651956,
+   "incentivesUsdPerDay": 524.2011840609697,
+   "usdPerDayPer10k": 5.582441059723272,
+   "partial": false,
+   "fees24hUsdPerDay": 101.34585244651956,
+   "symbol0": "WETH",
+   "symbol1": "EURC",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0xC9fbA11eFd440c8E99B8Cf9F24b99559e12bD178",
+   "pool": "0x6eaEc4F69c92BD16a4B018Ceb6FE7A446A113598",
+   "weight": 244592.846292,
+   "feesUsdPerDay": 43.324392540618234,
+   "incentivesUsdPerDay": 93.00044014439604,
+   "usdPerDayPer10k": 5.573541285102915,
+   "partial": false,
+   "fees24hUsdPerDay": 43.324392540618234,
+   "symbol0": "EURC",
+   "symbol1": "USDC",
+   "kind": "CL1"
+  },
+  {
+   "gauge": "0x2f68E89Ad5176d1fcA1b4CAc7265536A539807e7",
+   "pool": "0x2DBe0E264C7C246e05c6614794899937f264cf7b",
+   "weight": 1503629.176281,
+   "feesUsdPerDay": 102.17274315018709,
+   "incentivesUsdPerDay": 735.4626922542712,
+   "usdPerDayPer10k": 5.570758060680444,
+   "partial": false,
+   "fees24hUsdPerDay": 102.17274315018709,
+   "symbol0": "WETH",
+   "symbol1": "USDT",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0x1D12EF783D557393a2780CB39a9d288aDe8c13B6",
+   "pool": "0x800EB395B577B234C5065c8E0cCb0F3A1401B2c2",
+   "weight": 432184.13436,
+   "feesUsdPerDay": 51.02012733108665,
+   "incentivesUsdPerDay": 187.81620254423677,
+   "usdPerDayPer10k": 5.526263249543559,
+   "partial": false,
+   "fees24hUsdPerDay": 51.02012733108665,
+   "symbol0": "WETH",
+   "symbol1": "USDC",
+   "kind": "vAMM"
+  },
+  {
+   "gauge": "0xe7977774210874FC95e2975b799906Cc3Bbfa399",
+   "pool": "0xF5FCB9CDAFcE67d50AfEf298F88E709d2B946BA6",
+   "weight": 1468498.490597,
+   "feesUsdPerDay": 204.65312335684501,
+   "incentivesUsdPerDay": 592.9668195597725,
+   "usdPerDayPer10k": 5.431533964955452,
+   "partial": false,
+   "fees24hUsdPerDay": 204.65312335684501,
+   "symbol0": "USDC",
+   "symbol1": "AAPLc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x7C9ed6DF00a0732f62b9F388bb68AB5bfBCd7CD6",
+   "pool": "0x4Cd38b038513Dc5A73FBa933dAfA39F7233c44FA",
+   "weight": 4479.194737,
+   "feesUsdPerDay": 2.427084066185365,
+   "incentivesUsdPerDay": 0,
+   "usdPerDayPer10k": 5.418572328669063,
+   "partial": false,
+   "fees24hUsdPerDay": 2.427084066185365,
+   "symbol0": "WETH",
+   "symbol1": "B3",
+   "kind": "CL100"
+  },
+  {
+   "gauge": "0x2e45BbAeeBd8e00bbB838bC885E5332cd8829D4f",
+   "pool": "0x532e0F46d1e528507FC9454d5847C231f23bDDf6",
+   "weight": 1368589.046651,
+   "feesUsdPerDay": 94.95745684465184,
+   "incentivesUsdPerDay": 620.5466593181404,
+   "usdPerDayPer10k": 5.228042105944518,
+   "partial": false,
+   "fees24hUsdPerDay": 94.95745684465184,
+   "symbol0": "USDC",
+   "symbol1": "AMZNc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0xf443C8450D4C995e8b031a78f6e811DFae9D26CA",
+   "pool": "0x002Ae5AE3653A1E46387542c0f68c2dC2A687036",
+   "weight": 298540.407461,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 155.43407618473825,
+   "usdPerDayPer10k": 5.206466940487034,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "DRV",
+   "kind": "vAMM"
+  },
+  {
+   "gauge": "0xE8a338f95acF0015A01C3B0fC484C6333477d956",
+   "pool": "0x3093Ab396C617Af17C7ce56Fa19bf75e473315ee",
+   "weight": 2153627.648759,
+   "feesUsdPerDay": 323.4096506352091,
+   "incentivesUsdPerDay": 790.3925645513604,
+   "usdPerDayPer10k": 5.17174923821279,
+   "partial": false,
+   "fees24hUsdPerDay": 323.4096506352091,
+   "symbol0": "WETH",
+   "symbol1": "Basecat",
+   "kind": "CL200"
   },
   {
    "gauge": "0x310E615D63E5980fdB42fd13580d126742d88fb8",
    "pool": "0xb02FdA984EddfF593202eD2B5a6dE043B9b62Ea5",
    "weight": 955.835335,
-   "feesUsdPerDay": 0.508414711133242,
+   "feesUsdPerDay": 0.4813306201439482,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 5.319061687939427,
-   "partial": false
+   "usdPerDayPer10k": 5.035706490736914,
+   "partial": false,
+   "fees24hUsdPerDay": 0.4813306201439482,
+   "symbol0": "USDC",
+   "symbol1": "MUSD",
+   "kind": "CL10"
   },
   {
-   "gauge": "0x45eca41693d06c50784b9564457b7741f2914BD3",
-   "pool": "0xd072410fa13D242e1d53721Bcf7AF02e3455DC96",
-   "weight": 3187419.033089,
-   "feesUsdPerDay": 1644.3908096305074,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 5.159004174097619,
-   "partial": true
+   "gauge": "0xa958059616fAE8Cc0778662b3F033AFa582d7576",
+   "pool": "0x66DCd42E6314B287110922AE36cB2a8bdEECc153",
+   "weight": 4320668.936011,
+   "feesUsdPerDay": 897.7251659467124,
+   "incentivesUsdPerDay": 1275.338300931715,
+   "usdPerDayPer10k": 5.029460713285395,
+   "partial": false,
+   "fees24hUsdPerDay": 897.7251659467124,
+   "symbol0": "USDC",
+   "symbol1": "MSTRc",
+   "kind": "CL10"
   },
   {
-   "gauge": "0xFc8922E268CCcbe8160e5C1AD546Af9705Cf0A61",
-   "pool": "0xdeBAEbE5B2729f7D62072b2eA40472d78d2C1626",
-   "weight": 14463499.873351,
-   "feesUsdPerDay": 7332.213298980993,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 5.069459925457093,
-   "partial": true
+   "gauge": "0x0201fb8297B493c084d201721D816Fd414BbFcfa",
+   "pool": "0xcFC7dC24e9D302976f0B1EFB90a4D9B22b54b2A5",
+   "weight": 3233330.201685,
+   "feesUsdPerDay": 631.4664499910986,
+   "incentivesUsdPerDay": 990.8081658263502,
+   "usdPerDayPer10k": 5.017349032188551,
+   "partial": false,
+   "fees24hUsdPerDay": 631.4664499910986,
+   "symbol0": "WETH",
+   "symbol1": "VVV",
+   "kind": "vAMM"
+  },
+  {
+   "gauge": "0x81C1C1c657BeBcA536C4858661Bb0A55De80D768",
+   "pool": "0xA0473ceD0cd1bfB857e3E04B5FA4b6aF18C5e44d",
+   "weight": 1262065.081079,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 622.6593216486333,
+   "usdPerDayPer10k": 4.933654618795375,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "PLTRc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x8b5670678192519C9847D235011c82A34aee495d",
+   "pool": "0x41e21950362B1014bC629252ecFFF8fcA5F1646C",
+   "weight": 1786996.063362,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 873.3328902059145,
+   "usdPerDayPer10k": 4.887156206504466,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "MUc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x46a9dCa72D78366571bE583aa69C1DC16E6889fB",
+   "pool": "0x4A7af46bC8aBc00048c6c7920a1488DAF568366c",
+   "weight": 22064486.479821,
+   "feesUsdPerDay": 5167.040872265271,
+   "incentivesUsdPerDay": 5597.7904823035515,
+   "usdPerDayPer10k": 4.87880439203211,
+   "partial": false,
+   "fees24hUsdPerDay": 5167.040872265271,
+   "symbol0": "WETH",
+   "symbol1": "USDC",
+   "kind": "CL50"
+  },
+  {
+   "gauge": "0xfCb69Fa140Fb835169bC6C74eE9363F752EDCb7a",
+   "pool": "0xb9eE0db4a1C1c8072972e1b75d16d4e5C1065C03",
+   "weight": 245100.105388,
+   "feesUsdPerDay": 0.43288216847596045,
+   "incentivesUsdPerDay": 118.82320371681502,
+   "usdPerDayPer10k": 4.865607287113759,
+   "partial": false,
+   "fees24hUsdPerDay": 0.43288216847596045,
+   "symbol0": "USDC",
+   "symbol1": "WHUF",
+   "kind": "CL200"
   },
   {
    "gauge": "0xa06FD10Bb776E511c46243C03BAA3427f5bF656f",
    "pool": "0xd80F5C0c76818cC52F0056d51713faCC12311BC2",
-   "weight": 566114.126097,
-   "feesUsdPerDay": 279.4371485159213,
+   "weight": 566114.0834,
+   "feesUsdPerDay": 265.8549114309746,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 4.93605680611441,
-   "partial": false
+   "usdPerDayPer10k": 4.696136683867915,
+   "partial": false,
+   "fees24hUsdPerDay": 265.8549114309746,
+   "symbol0": "USDC",
+   "symbol1": "cbHYPE",
+   "kind": "CL100"
   },
   {
-   "gauge": "0x1E417f2Af612d2E9A951eDe32ca4B05A287B50de",
-   "pool": "0x422dF9aa896e883c9CDcBad309C0785b7364A1cF",
-   "weight": 65388.705561,
-   "feesUsdPerDay": 30.168355353792304,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 4.613695147329273,
-   "partial": true
+   "gauge": "0x512138372510Fd89240fA78d3834f01614204B63",
+   "pool": "0x2e8B5774887B71E4F806b6D4D9e6EB26CC4D17DA",
+   "weight": 5277531.299159,
+   "feesUsdPerDay": 449.51866241419737,
+   "incentivesUsdPerDay": 1979.3139826469333,
+   "usdPerDayPer10k": 4.602213624858543,
+   "partial": false,
+   "fees24hUsdPerDay": 449.51866241419737,
+   "symbol0": "WETH",
+   "symbol1": "DRV",
+   "kind": "CL200"
   },
   {
-   "gauge": "0x9d32ce3252b817BA708E959562c1a43ffE70C893",
-   "pool": "0x7A33000372f3F028f074182CCb9d16cBEEfBF920",
-   "weight": 1523238.700554,
-   "feesUsdPerDay": 686.9601562123524,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 4.509865433186916,
-   "partial": true
-  },
-  {
-   "gauge": "0x230ec639aE09B4CDEA38b5665910E3B10f1B8eb8",
-   "pool": "0xF668e21993f0ACd7ab00BB1cFbAeD0df28A3C8EC",
-   "weight": 2381149.300445,
-   "feesUsdPerDay": 1066.1010476451552,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 4.477254103494524,
-   "partial": true
+   "gauge": "0xd424BA8ca9d4E278753DE76651a0095451e65cD1",
+   "pool": "0xF634058dC94e6BF8e828E27621320C423bC8B18E",
+   "weight": 17204048.093211,
+   "feesUsdPerDay": 2085.601458675684,
+   "incentivesUsdPerDay": 5420.757806688589,
+   "usdPerDayPer10k": 4.363135481076715,
+   "partial": false,
+   "fees24hUsdPerDay": 2085.601458675684,
+   "symbol0": "AERO",
+   "symbol1": "USDC",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x8097eBcc6CB9f6e61134896717caB0f6c2640A26",
    "pool": "0x92DE3FC2E4E946684c000B186DA937D72F42Fb2E",
-   "weight": 11157606.195846,
+   "weight": 11157599.381548,
    "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 4679.840768469005,
-   "usdPerDayPer10k": 4.19430537906177,
-   "partial": false
+   "incentivesUsdPerDay": 4737.605471263713,
+   "usdPerDayPer10k": 4.2460795635829305,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "AERO",
+   "symbol1": "fBOMB",
+   "kind": "vAMM"
   },
   {
-   "gauge": "0xC59DB322A2d505d955935B4D83d94bac0a935a0f",
-   "pool": "0xbc461ef5225f1BBD2001EeAd75f56335aA781a69",
-   "weight": 2371633.244044,
-   "feesUsdPerDay": 935.5694183604103,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.9448317766239547,
-   "partial": true
+   "gauge": "0xdeF20C7f935b5BAab283302EB248D023575c1862",
+   "pool": "0x2836e062a3fe75943a7F4A552E2365b98E414E75",
+   "weight": 2046172.382042,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 834.0606611402417,
+   "usdPerDayPer10k": 4.076199387989715,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "SNDKc",
+   "kind": "CL10"
   },
   {
-   "gauge": "0xB3b8d636D59B71EAb86CD36AB4C94c1C2dfbCE70",
-   "pool": "0x0f21A72A02DC78217c2987826D061500AECF7707",
-   "weight": 779258.47224,
-   "feesUsdPerDay": 282.25348465798925,
+   "gauge": "0xb41eAc5BECD6c09ec40294185BCdE208fB3C6B7B",
+   "pool": "0x03bf20662F76312aEc31EF28d4a024E1ECa108Af",
+   "weight": 104244.018137,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 42.27291993263145,
+   "usdPerDayPer10k": 4.055189035085738,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "cbETH",
+   "symbol1": "WETH",
+   "kind": "CL1"
+  },
+  {
+   "gauge": "0x5b14d6D194E49330647eB4717010aDe1B1B3f8B5",
+   "pool": "0xbB5507DaaE822ba89C4dA61BbfDf4b49a1666BAc",
+   "weight": 19752700.286809,
+   "feesUsdPerDay": 1914.163575497831,
+   "incentivesUsdPerDay": 5314.177702877162,
+   "usdPerDayPer10k": 3.6594193064337555,
+   "partial": false,
+   "fees24hUsdPerDay": 1914.163575497831,
+   "symbol0": "WETH",
+   "symbol1": "cbBTC",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x694fDC6B6BFdF5186E04516F699D643dc4c5C9b4",
+   "pool": "0x3626a7c07CF4a7EdEF2eC5d5d4B25bc8ab2C03F2",
+   "weight": 3730308.979889,
+   "feesUsdPerDay": 51.936520431012546,
+   "incentivesUsdPerDay": 1295.7933429822058,
+   "usdPerDayPer10k": 3.6129175107986526,
+   "partial": false,
+   "fees24hUsdPerDay": 51.936520431012546,
+   "symbol0": "WETH",
+   "symbol1": "MORPHO",
+   "kind": "CL200"
+  },
+  {
+   "gauge": "0xf174d6dE66b1b5d5343b95a46B206A043b131283",
+   "pool": "0x2740C0faAb738F6e346e545fDE02aEF9B1A01ee7",
+   "weight": 1365282.156636,
+   "feesUsdPerDay": 70.9204722486449,
+   "incentivesUsdPerDay": 420.3629018386538,
+   "usdPerDayPer10k": 3.5984017787038427,
+   "partial": false,
+   "fees24hUsdPerDay": 70.9204722486449,
+   "symbol0": "USDC",
+   "symbol1": "MSFTc",
+   "kind": "CL10"
+  },
+  {
+   "gauge": "0x1E417f2Af612d2E9A951eDe32ca4B05A287B50de",
+   "pool": "0x422dF9aa896e883c9CDcBad309C0785b7364A1cF",
+   "weight": 174234.621102,
+   "feesUsdPerDay": 60.088168634655084,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.622077843392915,
-   "partial": true
+   "usdPerDayPer10k": 3.448692817445707,
+   "partial": false,
+   "fees24hUsdPerDay": 60.088168634655084,
+   "symbol0": "AERO",
+   "symbol1": "USDC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xe71f5c631fe1d95565b10d7756459074CA53E231",
    "pool": "0x448134560A0f4eB18E1A794E4984a895fAD35454",
-   "weight": 1385.650486,
-   "feesUsdPerDay": 0.49518474181641386,
+   "weight": 1385.649942,
+   "feesUsdPerDay": 0.47407736134694745,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.5736626717955953,
-   "partial": false
-  },
-  {
-   "gauge": "0xfA66E7f39CD27F2C16ad25080E57e30BA2abf043",
-   "pool": "0x5e3C5083F27654FaC92126CB3fBD8773306cD90D",
-   "weight": 580442.932019,
-   "feesUsdPerDay": 193.38954662479867,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.331758144630349,
-   "partial": true
-  },
-  {
-   "gauge": "0x89D6eEF2f1403a4Bc045dC9F994e30F518ECbfe4",
-   "pool": "0x16c70F04C3080a127486Cdf5a4C33c066bBF47C3",
-   "weight": 1935584.890794,
-   "feesUsdPerDay": 637.254326685534,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.2923088504989044,
-   "partial": true
-  },
-  {
-   "gauge": "0x89cdCc334A9A8D453551e1c7d8bB0fC62e1cfC6B",
-   "pool": "0xB305829bBB29f21f760c8EE23c021E603A2Db416",
-   "weight": 9013.814173,
-   "feesUsdPerDay": 2.8757350500732097,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.1903642506536682,
-   "partial": false
-  },
-  {
-   "gauge": "0x0CcF7cb21169934F4686cb895518Aa179bfCEa53",
-   "pool": "0x880dB7Dda4407D99508574E680d067D1164B3cFE",
-   "weight": 1807749.884486,
-   "feesUsdPerDay": 576.7231471292906,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.19028175345735,
-   "partial": true
-  },
-  {
-   "gauge": "0xAbb3fb6659e05847631896cB87A6D1b8bc0c6D8C",
-   "pool": "0xeC3c3755b9DED4a2960ef50C9b48C1694CE274C2",
-   "weight": 3862983.375409,
-   "feesUsdPerDay": 1213.5969464670957,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.1416054083808116,
-   "partial": true
-  },
-  {
-   "gauge": "0x81189366762Ce456DB7CF81181785bf22B5baEC6",
-   "pool": "0xc01c2800186207270BA5386532a8173C5b7dD194",
-   "weight": 882446.043715,
-   "feesUsdPerDay": 267.2307711584037,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 3.02829587215571,
-   "partial": true
-  },
-  {
-   "gauge": "0x14018f5AFaeCA44BB49d5036267d836723B57c91",
-   "pool": "0x2A430bEbD2082d8e05D56d64DEDE8944279bbC24",
-   "weight": 9190934.077999,
-   "feesUsdPerDay": 2719.7418669324593,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.959157191044001,
-   "partial": true
+   "usdPerDayPer10k": 3.4213356973783635,
+   "partial": false,
+   "fees24hUsdPerDay": 0.47407736134694745,
+   "symbol0": "WETH",
+   "symbol1": "ETHFI",
+   "kind": "CL200"
   },
   {
    "gauge": "0x232d0c6aCdfe5C8c834Bb51b70d579BEF2541a54",
    "pool": "0x1FB0642cFA71994B7572a104d99CfeC6B58615E4",
    "weight": 1819.520131,
-   "feesUsdPerDay": 0.5102561103021356,
+   "feesUsdPerDay": 0.4817643800488354,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.804344405889056,
-   "partial": false
-  },
-  {
-   "gauge": "0x9f4594cc94c373141242FA2cA199C5f78E1662E5",
-   "pool": "0x868Eed6BAD4bD368cd053b766F84CC727697589A",
-   "weight": 968471.242218,
-   "feesUsdPerDay": 267.12004970624895,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.7581619160346396,
-   "partial": true
-  },
-  {
-   "gauge": "0x74a30B3357121a822aDB91A539F4B11b5fb7cb3F",
-   "pool": "0x42609aA1E58C5dD7E5a012DC74118fFf975F0Eac",
-   "weight": 4893342.668818,
-   "feesUsdPerDay": 1349.150121196372,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.7571135162747034,
-   "partial": true
+   "usdPerDayPer10k": 2.6477551509031505,
+   "partial": false,
+   "fees24hUsdPerDay": 0.4817643800488354,
+   "symbol0": "O",
+   "symbol1": "USDC",
+   "kind": "CL200"
   },
   {
    "gauge": "0x77Bf070D246c5b2823C9c8059d0E26b88b614c91",
    "pool": "0x63E2f44e2AAEfD747FF32bEC73035e7c35090099",
    "weight": 385.665824,
-   "feesUsdPerDay": 0.1033337321808798,
+   "feesUsdPerDay": 0.09792038837398255,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.679359321936926,
-   "partial": false
-  },
-  {
-   "gauge": "0x347f2eEDD83Dc6b14116f0260403d67A21f47C30",
-   "pool": "0xe6A7317DF4A9a7540663B99A07d1e019CAa8Afa4",
-   "weight": 7492780.260636,
-   "feesUsdPerDay": 1887.8565596819058,
-   "incentivesUsdPerDay": 84.69137849224312,
-   "usdPerDayPer10k": 2.632598140555356,
-   "partial": true
-  },
-  {
-   "gauge": "0x4262b2d1415345b98E656a56c2f12cDBb1118539",
-   "pool": "0x784E539F15Ca2D19449a6311c5dAb6cF37d8f1ba",
-   "weight": 5536679.059244,
-   "feesUsdPerDay": 1442.2193735775888,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.604845536729529,
-   "partial": true
-  },
-  {
-   "gauge": "0x1DD07350114bAf9fa8d9Caf91CD5a3480D34Ec6f",
-   "pool": "0xc4D5E62261648a3Ceb127924F741C0929f040f13",
-   "weight": 1442877.251469,
-   "feesUsdPerDay": 345.36779813684694,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.393604846046834,
-   "partial": true
+   "usdPerDayPer10k": 2.538995736051237,
+   "partial": false,
+   "fees24hUsdPerDay": 0.09792038837398255,
+   "symbol0": "cbXRP",
+   "symbol1": "cbBTC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xF085b407403310c59ae8c918ba2ce796D1b9d92D",
    "pool": "0xC66146AE2b4DEa2350A39a4f1fe661605B3fEA7F",
    "weight": 8463.18648,
-   "feesUsdPerDay": 1.9972747756690932,
+   "feesUsdPerDay": 1.883662606566251,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.3599560050358854,
-   "partial": false
-  },
-  {
-   "gauge": "0x9376BBEF9bCB2558C4d9fC2EadAa3cf7356A6941",
-   "pool": "0x792f465e0434fB1028EA3BfeB05240CB839C4e04",
-   "weight": 565978.83705,
-   "feesUsdPerDay": 127.97569772565667,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.261139274969593,
-   "partial": true
-  },
-  {
-   "gauge": "0x48D58E28AB528f735f0d3E6746BEA74a757954b7",
-   "pool": "0x108c5c97155D35847c61683F1a254D9c0470A591",
-   "weight": 154913.585081,
-   "feesUsdPerDay": 34.09938151746138,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.201187294168388,
-   "partial": true
-  },
-  {
-   "gauge": "0xa958059616fAE8Cc0778662b3F033AFa582d7576",
-   "pool": "0x66DCd42E6314B287110922AE36cB2a8bdEECc153",
-   "weight": 4320682.291001,
-   "feesUsdPerDay": 935.76026883597,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.165769676666113,
-   "partial": true
-  },
-  {
-   "gauge": "0x5c7974887d29Ad70aEf991Dc4D5eD51a60d108a9",
-   "pool": "0x883E9C376F4119F9c475b3E80aF4002f00f6964a",
-   "weight": 721485.075044,
-   "feesUsdPerDay": 154.77441568319745,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.145219922583577,
-   "partial": true
-  },
-  {
-   "gauge": "0x4A3B6A77B545584d870D4A6de446AAc4610c60D5",
-   "pool": "0xD0Acf293547457Fb4fE9eE32CA93e89497626816",
-   "weight": 11016493.227241,
-   "feesUsdPerDay": 2274.406078834492,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.0645463414894785,
-   "partial": true
-  },
-  {
-   "gauge": "0x0201fb8297B493c084d201721D816Fd414BbFcfa",
-   "pool": "0xcFC7dC24e9D302976f0B1EFB90a4D9B22b54b2A5",
-   "weight": 3233342.235511,
-   "feesUsdPerDay": 665.1170450905669,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 2.0570573624580217,
-   "partial": true
-  },
-  {
-   "gauge": "0x46a9dCa72D78366571bE583aa69C1DC16E6889fB",
-   "pool": "0x4A7af46bC8aBc00048c6c7920a1488DAF568366c",
-   "weight": 19706913.769589,
-   "feesUsdPerDay": 3921.855430154732,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.9900911304573528,
-   "partial": true
-  },
-  {
-   "gauge": "0xb1b27a2fa4E67a6d0Ee1aA9De97c8b1DDF54FDD4",
-   "pool": "0xc85D5CB72d1aaD6f152A8decAd228AE4A59Ac9B3",
-   "weight": 15296514.67266,
-   "feesUsdPerDay": 2962.8140199843024,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.9369209806203225,
-   "partial": true
-  },
-  {
-   "gauge": "0xC9fbA11eFd440c8E99B8Cf9F24b99559e12bD178",
-   "pool": "0x6eaEc4F69c92BD16a4B018Ceb6FE7A446A113598",
-   "weight": 244594.09752,
-   "feesUsdPerDay": 45.78077823258282,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.8717041292769558,
-   "partial": true
+   "usdPerDayPer10k": 2.225713223829387,
+   "partial": false,
+   "fees24hUsdPerDay": 1.883662606566251,
+   "symbol0": "CTR",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xA3B93307AdbdA3C2CFCf2254C8ABf46384075E3B",
    "pool": "0xf06268948426073B3e400606C80f5db9362b1C5b",
    "weight": 103374.340358,
-   "feesUsdPerDay": 19.32839621009675,
+   "feesUsdPerDay": 18.298941561491002,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.8697479609685603,
-   "partial": false
+   "usdPerDayPer10k": 1.7701628371322273,
+   "partial": false,
+   "fees24hUsdPerDay": 18.298941561491002,
+   "symbol0": "USDC",
+   "symbol1": "alUSDb",
+   "kind": "CL10"
   },
   {
    "gauge": "0x809440F8CBe0c63F099eCB3B139c4d76C2203972",
    "pool": "0x9cd20a2E22106764fFf15d8A62365416279D36a6",
    "weight": 4736.076321,
-   "feesUsdPerDay": 0.819972735916462,
+   "feesUsdPerDay": 0.7790549545391754,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.731333450279526,
-   "partial": false
-  },
-  {
-   "gauge": "0x25750d650F3fF6876BA80f9EAe47618A3dB95113",
-   "pool": "0x52C53a3232C84cB17b05349d68c9fd75df549e03",
-   "weight": 1212680.600162,
-   "feesUsdPerDay": 209.68698325401104,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.7291196315493584,
-   "partial": true
+   "usdPerDayPer10k": 1.6449375001379127,
+   "partial": false,
+   "fees24hUsdPerDay": 0.7790549545391754,
+   "symbol0": "weETH",
+   "symbol1": "WETH",
+   "kind": "CL1"
   },
   {
    "gauge": "0xCE310cF319Ac2F5dCA81506f4F27AA68853e2767",
    "pool": "0xF23bc308756d2BbA65d7C0c68FF410278c4Ead59",
    "weight": 561.905463,
-   "feesUsdPerDay": 0.09039996790021422,
+   "feesUsdPerDay": 0.08553033035617859,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.6088109786540923,
-   "partial": false
-  },
-  {
-   "gauge": "0x75d8F2FE351B97771348b1Ff4c3f8f388D506158",
-   "pool": "0x361FE0318Ac98F15720021CB8924b727C3E57D6F",
-   "weight": 1014785.523389,
-   "feesUsdPerDay": 157.26232598336884,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.5497099865797195,
-   "partial": true
-  },
-  {
-   "gauge": "0xe7977774210874FC95e2975b799906Cc3Bbfa399",
-   "pool": "0xF5FCB9CDAFcE67d50AfEf298F88E709d2B946BA6",
-   "weight": 1467696.795354,
-   "feesUsdPerDay": 216.04518051684383,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.472001446079994,
-   "partial": true
+   "usdPerDayPer10k": 1.5221480458579388,
+   "partial": false,
+   "fees24hUsdPerDay": 0.08553033035617859,
+   "symbol0": "MAMO",
+   "symbol1": "cbBTC",
+   "kind": "CL50"
   },
   {
    "gauge": "0x8c769E75893905aB968A346FACE014Fe23F3AFA0",
    "pool": "0x8FF6507b35733EE6c62f451676B1638aCd42Ced1",
    "weight": 1180.857324,
-   "feesUsdPerDay": 0.1673061632320303,
+   "feesUsdPerDay": 0.1586099802824546,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.4168194558277158,
-   "partial": false
-  },
-  {
-   "gauge": "0x9e2fC63b3AA22b9524000449D58d9beBaae8eF83",
-   "pool": "0x8Ea1727d4EDE95a7Eb006A97aa315f122Fe0af5B",
-   "weight": 675311.791125,
-   "feesUsdPerDay": 86.25284289970004,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.2772299259869961,
-   "partial": true
-  },
-  {
-   "gauge": "0x1D12EF783D557393a2780CB39a9d288aDe8c13B6",
-   "pool": "0x800EB395B577B234C5065c8E0cCb0F3A1401B2c2",
-   "weight": 432187.221064,
-   "feesUsdPerDay": 53.97269754965328,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.248826779670802,
-   "partial": true
+   "usdPerDayPer10k": 1.3431764951837095,
+   "partial": false,
+   "fees24hUsdPerDay": 0.1586099802824546,
+   "symbol0": "cbBTC",
+   "symbol1": "ZEN",
+   "kind": "CL200"
   },
   {
    "gauge": "0x79fc4cbD860e3528f092Bd7d9261e0Cd141a4803",
    "pool": "0x988B949de9d3A3d2172F22C19694c7a5148c9E87",
-   "weight": 40631.646849,
-   "feesUsdPerDay": 4.930519765668118,
+   "weight": 40630.02394,
+   "feesUsdPerDay": 4.731530538202156,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.2134678625936282,
-   "partial": false
+   "usdPerDayPer10k": 1.1645404258563636,
+   "partial": false,
+   "fees24hUsdPerDay": 4.731530538202156,
+   "symbol0": "MSTRc",
+   "symbol1": "cbBTC",
+   "kind": "CL10"
   },
   {
-   "gauge": "0xE8a338f95acF0015A01C3B0fC484C6333477d956",
-   "pool": "0x3093Ab396C617Af17C7ce56Fa19bf75e473315ee",
-   "weight": 2153637.46144,
-   "feesUsdPerDay": 259.8982037430902,
+   "gauge": "0x89cdCc334A9A8D453551e1c7d8bB0fC62e1cfC6B",
+   "pool": "0xB305829bBB29f21f760c8EE23c021E603A2Db416",
+   "weight": 25790.662067,
+   "feesUsdPerDay": 2.6782606948943646,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 1.2067871607751814,
-   "partial": true
-  },
-  {
-   "gauge": "0x5b14d6D194E49330647eB4717010aDe1B1B3f8B5",
-   "pool": "0xbB5507DaaE822ba89C4dA61BbfDf4b49a1666BAc",
-   "weight": 17292891.696476,
-   "feesUsdPerDay": 2023.8370234768056,
-   "incentivesUsdPerDay": 4.484765077152039e-7,
-   "usdPerDayPer10k": 1.1703288608102913,
-   "partial": true
+   "usdPerDayPer10k": 1.0384613965733618,
+   "partial": false,
+   "fees24hUsdPerDay": 2.6782606948943646,
+   "symbol0": "WETH",
+   "symbol1": "METAc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x0809B456FcB0934c4d5f03BD1D9be340900FEaf0",
    "pool": "0xc9821a94042CCedA9FA74A42aD5F4E3F3D2F5eAC",
-   "weight": 198.920636,
-   "feesUsdPerDay": 0.019667365740782018,
+   "weight": 198.920595,
+   "feesUsdPerDay": 0.018734786143529896,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.9887041441086885,
-   "partial": false
-  },
-  {
-   "gauge": "0x2cD47Ba367766a8a5ab641825fbf4A3a29e92ec9",
-   "pool": "0x4dbdcB087992404Ea9B14fA83cc695b02797F39a",
-   "weight": 1120571.633838,
-   "feesUsdPerDay": 107.18120738833416,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.9564868871539405,
-   "partial": true
+   "usdPerDayPer10k": 0.94182234422313,
+   "partial": false,
+   "fees24hUsdPerDay": 0.018734786143529896,
+   "symbol0": "cbBTC",
+   "symbol1": "cbDOGE",
+   "kind": "CL50"
   },
   {
    "gauge": "0x59ffe7C6D7899A3B38055Cb89e014BBF7330dBCF",
    "pool": "0xeb0c9976604b3a0724F2818ca1f443558fC551Ac",
    "weight": 55634.275451,
-   "feesUsdPerDay": 5.020664992727424,
+   "feesUsdPerDay": 4.721909959959149,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.9024409776204435,
-   "partial": false
-  },
-  {
-   "gauge": "0x512138372510Fd89240fA78d3834f01614204B63",
-   "pool": "0x2e8B5774887B71E4F806b6D4D9e6EB26CC4D17DA",
-   "weight": 5266015.386284,
-   "feesUsdPerDay": 473.5985327295651,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.8993489346102242,
-   "partial": true
-  },
-  {
-   "gauge": "0x2e45BbAeeBd8e00bbB838bC885E5332cd8829D4f",
-   "pool": "0x532e0F46d1e528507FC9454d5847C231f23bDDf6",
-   "weight": 1313150.89083,
-   "feesUsdPerDay": 101.6617600955546,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.7741818613950888,
-   "partial": true
+   "usdPerDayPer10k": 0.8487411621117478,
+   "partial": false,
+   "fees24hUsdPerDay": 4.721909959959149,
+   "symbol0": "WETH",
+   "symbol1": "SPCXc",
+   "kind": "CL50"
   },
   {
    "gauge": "0x99d604dBE683169DbAd100F61F74230759947E54",
    "pool": "0xCFb3E708B485082Ac2f5798E5cd9C4180C162e26",
    "weight": 16918.43967,
-   "feesUsdPerDay": 1.283861094286572,
+   "feesUsdPerDay": 1.2225497076636545,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.7588531326197776,
-   "partial": false
-  },
-  {
-   "gauge": "0x2f68E89Ad5176d1fcA1b4CAc7265536A539807e7",
-   "pool": "0x2DBe0E264C7C246e05c6614794899937f264cf7b",
-   "weight": 1499845.484028,
-   "feesUsdPerDay": 108.00659997538168,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.7201181796760059,
-   "partial": true
+   "usdPerDayPer10k": 0.722613746590312,
+   "partial": false,
+   "fees24hUsdPerDay": 1.2225497076636545,
+   "symbol0": "WETH",
+   "symbol1": "LCAP",
+   "kind": "CL200"
   },
   {
    "gauge": "0xf79BC641Fa325eCE8499D962B3C412295e711eeC",
    "pool": "0x9f11C9E86Ef74dD8Bc6b3eEfA9Ff20a96B7f3ffE",
-   "weight": 157368.152038,
-   "feesUsdPerDay": 10.873341531371238,
+   "weight": 225865.888647,
+   "feesUsdPerDay": 10.338340487676975,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.6909493052136579,
-   "partial": false
-  },
-  {
-   "gauge": "0xf174d6dE66b1b5d5343b95a46B206A043b131283",
-   "pool": "0x2740C0faAb738F6e346e545fDE02aEF9B1A01ee7",
-   "weight": 1365285.72021,
-   "feesUsdPerDay": 75.59119176946197,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.5536657320184438,
-   "partial": true
-  },
-  {
-   "gauge": "0xd424BA8ca9d4E278753DE76651a0095451e65cD1",
-   "pool": "0xF634058dC94e6BF8e828E27621320C423bC8B18E",
-   "weight": 17203699.712161,
-   "feesUsdPerDay": 748.5717521286634,
-   "incentivesUsdPerDay": 170.1828593525743,
-   "usdPerDayPer10k": 0.5340447850480508,
-   "partial": true
-  },
-  {
-   "gauge": "0x82a22544534ad422F6588Fb44d38F86a0C9Bf20D",
-   "pool": "0xC3CBFbaab532a04E36b6F901D725EaA5113FD781",
-   "weight": 2815570.693015,
-   "feesUsdPerDay": 147.45776683686842,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.5237224808549016,
-   "partial": true
+   "usdPerDayPer10k": 0.4577203113577382,
+   "partial": false,
+   "fees24hUsdPerDay": 10.338340487676975,
+   "symbol0": "WETH",
+   "symbol1": "VVV",
+   "kind": "CL200"
   },
   {
    "gauge": "0xa72E6401Db1312E406e73fB6084A14C6005FC349",
    "pool": "0x0Ae5f0a9D1B7824d340c56070Dc3a329E4A75a75",
    "weight": 9225.282414,
-   "feesUsdPerDay": 0.2707575433639933,
+   "feesUsdPerDay": 0.25615869684641035,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.2934951269660722,
-   "partial": false
-  },
-  {
-   "gauge": "0xFde616C287A8BB1E9fae41557CCF415AFfCa4140",
-   "pool": "0x5CA1da1ED90a6Cf15974C0A0D2808bfdE76314c1",
-   "weight": 971537.060402,
-   "feesUsdPerDay": 20.74493438607527,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.21352694849824883,
-   "partial": true
-  },
-  {
-   "gauge": "0x694fDC6B6BFdF5186E04516F699D643dc4c5C9b4",
-   "pool": "0x3626a7c07CF4a7EdEF2eC5d5d4B25bc8ab2C03F2",
-   "weight": 3730323.84304,
-   "feesUsdPerDay": 54.8073932495878,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.14692395501222572,
-   "partial": true
+   "usdPerDayPer10k": 0.27767030355025296,
+   "partial": false,
+   "fees24hUsdPerDay": 0.25615869684641035,
+   "symbol0": "WETH",
+   "symbol1": "LINK",
+   "kind": "CL100"
   },
   {
    "gauge": "0x0762fD72EB02AC8277f7093947f2682188aC6664",
    "pool": "0x047f55c69886b387Cc622Ed68aF58d53413F0342",
-   "weight": 998.81576,
-   "feesUsdPerDay": 0.0038063280095209286,
+   "weight": 1023.092058,
+   "feesUsdPerDay": 0.0036191066355742998,
    "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.03810840956198597,
-   "partial": false
+   "usdPerDayPer10k": 0.035374203191760024,
+   "partial": false,
+   "fees24hUsdPerDay": 0.0036191066355742998,
+   "symbol0": "VIRTUAL",
+   "symbol1": "WETH",
+   "kind": "CL200"
   },
   {
-   "gauge": "0xfCb69Fa140Fb835169bC6C74eE9363F752EDCb7a",
-   "pool": "0xb9eE0db4a1C1c8072972e1b75d16d4e5C1065C03",
-   "weight": 238112.903191,
-   "feesUsdPerDay": 0.4576960481628235,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0.01922180789150616,
-   "partial": true
+   "gauge": "0xBd18BdD2C99cE1C8FaB955451b035CAa03184d75",
+   "pool": "0xA5e16dC9A5cae37563116D9407D8C73927675674",
+   "weight": 1880995.008106,
+   "feesUsdPerDay": 0,
+   "incentivesUsdPerDay": 4.07315171298852,
+   "usdPerDayPer10k": 0.021654239885983292,
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "alUSDb",
+   "kind": "sAMM"
   },
   {
    "gauge": "0xE028083043416393435bC7620B6662795e3B789d",
@@ -1435,7 +2171,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "VVV",
+   "symbol1": "DIEM",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x2416952B8b2CaCaB88B75d0212200E43ea900383",
@@ -1444,7 +2184,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "VIRTUAL",
+   "symbol1": "WETH",
+   "kind": "vAMM"
   },
   {
    "gauge": "0xAE78494b813A9AA4d03891690E6644Ad4c34ba54",
@@ -1453,7 +2197,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "KTA",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x86301937589Ae1A0C66460f5ad1BA3142d653C5F",
@@ -1462,7 +2210,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "FAI",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x6aBA9FDbcD54853669D4357b9996CB0081f304F2",
@@ -1471,16 +2223,24 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "fBOMB",
+   "symbol1": "USDbC",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x895a7C4FEf7047144Cecf0111C6543D3c52be453",
    "pool": "0x9d20Ec0725E781Aa04A20AB76EE37c2A2Af5E04f",
-   "weight": 115.971307,
+   "weight": 115.970764,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "weETH",
+   "symbol1": "WETH",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x2B7CbFA48390791B668826D7ECb8fC81dec5599a",
@@ -1489,7 +2249,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "YFI",
+   "symbol1": "wstETH",
+   "kind": "vAMM"
   },
   {
    "gauge": "0xa66B448100Dc494a26daFb3a0Bf694FCAfD79AC0",
@@ -1498,7 +2262,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "EDEL",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x1b9a4CBe66635ceF9288Bc2218734C2FB5E0a1E7",
@@ -1507,16 +2275,24 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "WELL",
+   "kind": "vAMM"
   },
   {
    "gauge": "0xC82782ee66D82C4D19Db0429652091A085083526",
    "pool": "0x770fE8Fc9248c6382950A86E39a9391B41D59e0A",
-   "weight": 5.431598,
+   "weight": 5.404345,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "NOCK",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x5589587d6512688634929465610D975aBD71DcF7",
@@ -1525,7 +2301,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "cbBTC",
+   "kind": "vAMM"
   },
   {
    "gauge": "0xE9Dbd280d812e2969035CD7F2EF8ed1981A947e4",
@@ -1534,25 +2314,24 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "bsdETH",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x490F32121dEd5FbB5Ba9f9cD9651D8ee40a4A801",
    "pool": "0xfc071b43E8F3819BE0D55bcB715eFe293BE02a13",
-   "weight": 7631.799402,
+   "weight": 13113.465648,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
-  },
-  {
-   "gauge": "0xf443C8450D4C995e8b031a78f6e811DFae9D26CA",
-   "pool": "0x002Ae5AE3653A1E46387542c0f68c2dC2A687036",
-   "weight": 298542.845501,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "wstETH",
+   "kind": "vAMM"
   },
   {
    "gauge": "0xB4447f9FaE668769B8c57aBE2Ae8581dce5bCa1E",
@@ -1561,34 +2340,50 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "VIRTUAL",
+   "symbol1": "DEUS",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x628388cC8Cc8445743f37664ecF2C167265CAd8C",
    "pool": "0x80e7e5CA1CDe467ce275236724Dbc8fE04177754",
-   "weight": 6037.821367,
+   "weight": 6037.821269,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "cbBTC",
+   "symbol1": "EDGE",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x01d64514dBB04Be291119bD7ac7c71DBFE1837B2",
    "pool": "0x2429f6e9B7FB96a42C8b4c73C7126E3748C9866b",
-   "weight": 8.335669,
+   "weight": 32.614178,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "VIRTUAL",
+   "symbol1": "cbBTC",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x03c6B8fEBBd4E96245161246eE23092EcDCF06A0",
    "pool": "0xD046DC976E007cB08dDaAd2fe378d33e9919dfCa",
-   "weight": 23749.044016,
+   "weight": 23748.903258,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "fBOMB",
+   "kind": "vAMM"
   },
   {
    "gauge": "0x6b1083Fc84E94623a20471D9A4F15F4109755910",
@@ -1597,7 +2392,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "FLOCK",
+   "kind": "vAMM"
   },
   {
    "gauge": "0xe932a09566A17d0d3EAbeE0C47544c6488Ea7fBe",
@@ -1606,16 +2405,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
-  },
-  {
-   "gauge": "0xBd18BdD2C99cE1C8FaB955451b035CAa03184d75",
-   "pool": "0xA5e16dC9A5cae37563116D9407D8C73927675674",
-   "weight": 1880995.008106,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "msETH",
+   "kind": "sAMM"
   },
   {
    "gauge": "0xeb009555fd7aF2C5B841f7Ad9b737f5c4703Cd6A",
@@ -1624,7 +2418,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "msUSD",
+   "symbol1": "USDC",
+   "kind": "sAMM"
   },
   {
    "gauge": "0x376a61151fc7eFc11eAD91F8659564c526c9bb5d",
@@ -1633,7 +2431,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "eUSD",
+   "kind": "sAMM"
   },
   {
    "gauge": "0xd51fEc8807915C55b9c2141B0C231c5D5c0881bE",
@@ -1642,70 +2444,37 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "DOLA",
+   "symbol1": "USDC",
+   "kind": "sAMM"
   },
   {
    "gauge": "0xfc3E0bB01B4c395Eb9B4ab3Aa9D068938b31C8e4",
    "pool": "0x11Cc6f32930c20e3CFB01FC35Bd37Ed20D3ed82F",
-   "weight": 9.682341,
+   "weight": 60.875423,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
-  },
-  {
-   "gauge": "0xb41eAc5BECD6c09ec40294185BCdE208fB3C6B7B",
-   "pool": "0x03bf20662F76312aEc31EF28d4a024E1ECa108Af",
-   "weight": 104246.312998,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
-  },
-  {
-   "gauge": "0xdeF20C7f935b5BAab283302EB248D023575c1862",
-   "pool": "0x2836e062a3fe75943a7F4A552E2365b98E414E75",
-   "weight": 2046182.352671,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
-  },
-  {
-   "gauge": "0x8b5670678192519C9847D235011c82A34aee495d",
-   "pool": "0x41e21950362B1014bC629252ecFFF8fcA5F1646C",
-   "weight": 1787013.118156,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
-  },
-  {
-   "gauge": "0x81C1C1c657BeBcA536C4858661Bb0A55De80D768",
-   "pool": "0xA0473ceD0cd1bfB857e3E04B5FA4b6aF18C5e44d",
-   "weight": 1262073.219782,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
-  },
-  {
-   "gauge": "0xCBa7452690663D6789C0115fe889C9da85Bf8c56",
-   "pool": "0xE7030bE388b8E247aBe0C9fa876673e83fBcBD3C",
-   "weight": 3107946.033263,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "BD",
+   "symbol1": "USDC",
+   "kind": "sAMM"
   },
   {
    "gauge": "0x7D5D8E2C3072ea92A5E650dB5F2454822B450a6f",
    "pool": "0x656485a0ce4C7C8275c751f6AAfbF60F658C552c",
-   "weight": 0.512155,
+   "weight": 11534.07928,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "AERO",
+   "symbol1": "wstETH",
+   "kind": "CL200"
   },
   {
    "gauge": "0xF132E0cEe70D9AE65cfE5F44E9AE1130C1Eb95af",
@@ -1714,25 +2483,24 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "deJAAA",
+   "kind": "CL1"
   },
   {
    "gauge": "0xAA3B00f22dE3C2a4a2485a9bdCFE56C185B49b88",
    "pool": "0x7779415171077FA77568d9E1FB5C66E3ee03d9c2",
-   "weight": 30516.882823,
+   "weight": 41346.81044,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
-  },
-  {
-   "gauge": "0xd74c14699BFCAD53D01c2A5DB3c2c4743a3484F7",
-   "pool": "0x4d37A3470a837dfb8BEF2386F09dbD51BEA6cFD3",
-   "weight": 28275.91102,
-   "feesUsdPerDay": 0,
-   "incentivesUsdPerDay": 0,
-   "usdPerDayPer10k": 0,
-   "partial": true
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "CHIP",
+   "symbol1": "USDC",
+   "kind": "CL200"
   },
   {
    "gauge": "0xf9cB760ad2230a53E34D85D265BABA8035eFc100",
@@ -1741,7 +2509,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "IDRX",
+   "symbol1": "frxUSD",
+   "kind": "CL50"
   },
   {
    "gauge": "0x9d36291389B75DfB9648eEBB919B4C6b39E8a112",
@@ -1750,7 +2522,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "NIOc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x9FB55eE6D0B094D51000897856F38538C2404c11",
@@ -1759,7 +2535,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "LIc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7b9Db37f6a01006f3490bE611a22aaCa5fa2126C",
@@ -1768,16 +2548,24 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "BIDUc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x02256E78b5116F24fE16aeEA83B827C1c79b5596",
    "pool": "0xEBC746A47ebb274de1dbDC9a465E6C5C2301C5DA",
-   "weight": 9113.391757,
+   "weight": 9113.238025,
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "SKHYc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x25D8D4EdCE9Cd62FB96442d16539233b5Cba83fE",
@@ -1786,7 +2574,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "SAPc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x6A9A73BcE73b0bcA503751337044bE5f0Ad6A7C7",
@@ -1795,7 +2587,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "WRDc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x50fEBb5EB45EDE8e59B81A24D0bf07e0c4Ca7870",
@@ -1804,7 +2600,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "BILIc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x3751526229C50288B9e64F28A533d318532D4b24",
@@ -1813,7 +2613,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "SEc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xDb8FAd813e46E10E67351E46Dc5d2A09EE62b248",
@@ -1822,7 +2626,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "ULc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x8d34AC7775a4b91f87066571fE6d9c018F685805",
@@ -1831,7 +2639,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "HSAIc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xc0FF393ae9E56581CD8E026a0f85b8729C334E8e",
@@ -1840,7 +2652,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "SANc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x3B2F4C7E129a3EF0Ac2Fa04c96Ab4618Cf49fA14",
@@ -1849,7 +2665,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "LFI",
+   "symbol1": "USDC",
+   "kind": "CL100"
   },
   {
    "gauge": "0x181aE9049C484a573Af42eEaC92d70Ad6cc76690",
@@ -1858,7 +2678,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "DEUS",
+   "kind": "CL50"
   },
   {
    "gauge": "0xDe7Fb61387001c483c76Dd9e4bd4CDff0CF6D6dA",
@@ -1867,7 +2691,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "KTA",
+   "kind": "CL200"
   },
   {
    "gauge": "0x84C029F26652d37bc153c39DEb8767ec54037334",
@@ -1876,7 +2704,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "mooBIFI",
+   "kind": "CL100"
   },
   {
    "gauge": "0x570043842915426233C5c05a48890b624A428Fe7",
@@ -1885,7 +2717,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDai",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x32caa515866324fe975064271AF0F1ba5481D0D4",
@@ -1894,7 +2730,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "tGBP",
+   "symbol1": "frxUSD",
+   "kind": "CL1"
   },
   {
    "gauge": "0x6A92e65B50C0E1A6e8A88Bb1C95B92d795Ebfb37",
@@ -1903,7 +2743,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "RDDTc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x0EeeF484f6c0E9500B3F9c82f3C17a6cD7a0c448",
@@ -1912,7 +2756,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "ZORA",
+   "symbol1": "WETH",
+   "kind": "CL100"
   },
   {
    "gauge": "0xB651Aea4984Ec85974070Cd796762E9Cc7E80DBa",
@@ -1921,7 +2769,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "rETH",
+   "symbol1": "wstETH",
+   "kind": "CL1"
   },
   {
    "gauge": "0x6A5aA92F7Db7a7F010fE73A747d121Db8498E857",
@@ -1930,7 +2782,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "cbBTC",
+   "symbol1": "EDGE",
+   "kind": "CL200"
   },
   {
    "gauge": "0x902B248ECb77d015359dAc08bA783E24Aa75C035",
@@ -1939,7 +2795,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "PROS",
+   "kind": "CL200"
   },
   {
    "gauge": "0x2261C02594b970a7f806899EF45813dA564E6415",
@@ -1948,7 +2808,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "deSPXA",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7530fb69ADab63a9f142C2B9DE389C1AA5be033E",
@@ -1957,7 +2821,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WBTC",
+   "symbol1": "cbBTC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x7dc8960a110F8aa6C40d767442D554B5e374f273",
@@ -1966,7 +2834,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "USDbC",
+   "kind": "CL100"
   },
   {
    "gauge": "0xD6f97344f6F681d045D5195800EB62b4a7c4530b",
@@ -1975,7 +2847,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "ELSA",
+   "symbol1": "USDC",
+   "kind": "CL100"
   },
   {
    "gauge": "0x4296880f67A8e01984726DfF72Bd120247979a05",
@@ -1984,7 +2860,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "JitoSOL",
+   "symbol1": "cbBTC",
+   "kind": "CL50"
   },
   {
    "gauge": "0x770624e54718508F0245358CFF97C20c3Db513d2",
@@ -1993,7 +2873,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "STONKEX",
+   "kind": "CL200"
   },
   {
    "gauge": "0x3bf70C880aDc8370917994aB0dF68E763b7A60fD",
@@ -2002,7 +2886,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "NOCK",
+   "kind": "CL200"
   },
   {
    "gauge": "0x1DCb55Ce884C1B2Ef5806B287663Ea5c65f69266",
@@ -2011,7 +2899,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "PYPLc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x4e640EB7a8914cAeaf30dAC92e0679f00Ed6DBDa",
@@ -2020,7 +2912,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "RBLXc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xD358f81289038FA377c479279E9f05b1F3bFfD84",
@@ -2029,7 +2925,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "LLYc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x1b3bFf5f1dA1Fdcf770D4b205F7aA883f59c3eA8",
@@ -2038,7 +2938,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "ORCLc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x9EF261bC660B1C4355F024E6fa99911386622A0B",
@@ -2047,7 +2951,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "GMEc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x3E022237c1a642EBfeBbef17b7ec2640a1f1C327",
@@ -2056,7 +2964,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "TTWOc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xD712Aae577b93846b38B0DB0B6EA12285d5103D9",
@@ -2065,7 +2977,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "DJTc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x1bd7E55A9eD27bA17De5F4d1A9c77b24CCb0C0eA",
@@ -2074,7 +2990,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "PFEc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x8AE70f1449e8640720e745b5c36aE5efA6A161f6",
@@ -2083,7 +3003,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "MRVLc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x0670aF5D474f0Ea5C972CA8f704D6a4fc11fcE70",
@@ -2092,7 +3016,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "HTZc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xa5d02CB7F968e899e9749778Ed7D527685616204",
@@ -2101,7 +3029,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "SOUNc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xFb0440AfBFFc8E5249C7DcaeeB1c2796b210C5ec",
@@ -2110,7 +3042,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "PTONc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xA0c74c208624F01ED5956De816ccB1FF3D9E2866",
@@ -2119,7 +3055,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "CAKEc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x2179dBe606E5080027d9762D8e35C07D4b4aE0bC",
@@ -2128,7 +3068,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "NVAXc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7E48343a258708e230c7dCae876640Fd4A8eb6E2",
@@ -2137,7 +3081,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "PMc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x1ab70605BE36cbf4ffE1872FE46CAeEF00C178A0",
@@ -2146,7 +3094,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "NVDAc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0x96e60219B1d4C5D0C0E604C367Df3B73dC647605",
@@ -2155,7 +3107,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "GOOGLc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0xA607a0F7D08F9B1509db6a3b5E7D38979BC9DAdD",
@@ -2164,7 +3120,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "METAc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0x74BB4A09e6182F82b2f9546A0a093908f9c31b0c",
@@ -2173,7 +3133,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "MSFTc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0xE27c92C2737Ede88737Ef0c2FD63Bea1B7174197",
@@ -2182,7 +3146,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "AMZNc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0xEA2cA5CF4981d6466e15D3f0c9AD804Db5cD92C6",
@@ -2191,7 +3159,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "AAPLc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0xe46E2e22A83a590b0268653Ac7D188C95EaCef10",
@@ -2200,7 +3172,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "MSTRc",
+   "symbol1": "frxUSD",
+   "kind": "CL10"
   },
   {
    "gauge": "0x0D9367cd0570Cfb2406B2f458849738a07e978Dd",
@@ -2209,7 +3185,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "TSLAc",
+   "symbol1": "rETH",
+   "kind": "CL50"
   },
   {
    "gauge": "0x0c82a394Aa5dFB560331aF8dB20d6aa17D00E1d2",
@@ -2218,7 +3198,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "cbMEGA",
+   "kind": "CL50"
   },
   {
    "gauge": "0xe593e5feEaE5f1A83418425Bab012e4F2701023b",
@@ -2227,7 +3211,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "VELVET",
+   "kind": "CL50"
   },
   {
    "gauge": "0xa130A85A22ba74d11c2485A406Bf9d7bE2dd7C01",
@@ -2236,7 +3224,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "FAI",
+   "kind": "CL50"
   },
   {
    "gauge": "0x2f98387071BF068550BF5a7ed8BDADCc44e3F9eA",
@@ -2245,7 +3237,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "wstETH",
+   "symbol1": "POD",
+   "kind": "CL200"
   },
   {
    "gauge": "0x209b896B7794be40382D7440Eb3fe745F9863Bd7",
@@ -2254,7 +3250,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "DAI",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x3264e02B864794e7c0826B442D260d8E13063c95",
@@ -2263,7 +3263,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "WETH",
+   "symbol1": "USDS",
+   "kind": "CL10"
   },
   {
    "gauge": "0xc8e1e328dDCEa36Bd292C2936B079aE8c59BF729",
@@ -2272,7 +3276,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "EURAU",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x7a2a3060CB379e7D1cC6a7C4Bb38c391061786Df",
@@ -2281,7 +3289,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "GHO",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x8d2D65983a5785E6d3BB4d050403E5CE7dB89681",
@@ -2290,7 +3302,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDe",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x8e6c84f9cB2a0bD0c5CB589D7f134e4A61c4ecf2",
@@ -2299,7 +3315,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "coinage",
+   "kind": "CL50"
   },
   {
    "gauge": "0xeA49fB9A477f04798f751f535aC9ccCB7A39E3DA",
@@ -2308,7 +3328,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "syrupUSDC",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0xB8b25daE9C61E7edf6C3AA0A714D5745f98B26a0",
@@ -2317,7 +3341,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "LUSD",
+   "symbol1": "USDC",
+   "kind": "CL1"
   },
   {
    "gauge": "0x56Ad0B32c40e501Edee310DdE631DAA10Db5605F",
@@ -2326,7 +3354,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "WMTc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x9Da5EFa4009640612E8d71262c0ce7f08de42cc1",
@@ -2335,7 +3367,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "MCDc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xD547a23Dc96e07796F3AA49fFA29e6b711500f97",
@@ -2344,7 +3380,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "NOWc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xa02d8bf9841433e9E2687b92B369F420a6aD98f2",
@@ -2353,7 +3393,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "INTCc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x61e3a08734BC9438E1ebD5F58DA667E3dD0E8c1d",
@@ -2362,7 +3406,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "RKLBc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x60CEfD923FDC3274328DBeb959e271D7ef5fB279",
@@ -2371,7 +3419,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "CRWVc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x45d1Fd3790A4bCC11413b3B2e4eF849748aceA6D",
@@ -2380,7 +3432,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "WDCc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x0295025aa9Eb9a310F3E9fc9D27C5623a18eB6aE",
@@ -2389,7 +3445,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "CBRSc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x6921fF45e27B4a082825261be0e131005f788431",
@@ -2398,7 +3458,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "BRK.Bc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x336A87Fd4Babe3D38d4e2c23bE2aFBE16b854574",
@@ -2407,7 +3471,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "UBERc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x7211E1C83B629a37546e418C40dFbB845EAD73f9",
@@ -2416,7 +3484,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "APPc",
+   "kind": "CL10"
   },
   {
    "gauge": "0x44D9Dd689DaC62c572D62A3F0179c17Ae0BdE29E",
@@ -2425,7 +3497,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "DISc",
+   "kind": "CL10"
   },
   {
    "gauge": "0xa1e56a1EBb649dD00De01B47f6dff24e4666E76C",
@@ -2434,7 +3510,11 @@
    "feesUsdPerDay": 0,
    "incentivesUsdPerDay": 0,
    "usdPerDayPer10k": 0,
-   "partial": false
+   "partial": false,
+   "fees24hUsdPerDay": 0,
+   "symbol0": "USDC",
+   "symbol1": "DKNGc",
+   "kind": "CL10"
   }
  ]
 }
