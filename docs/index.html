@@ -254,6 +254,11 @@
   .ar-chip { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
   .ar-split { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
   .ar-split a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 14px; text-decoration: none; }
+  .ar-guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 14px; counter-reset: step; }
+  .ar-guide > div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--dim); }
+  .ar-guide > div::before { counter-increment: step; content: counter(step); display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; background: rgba(53, 208, 127, 0.15); color: var(--good); font-weight: 660; font-size: 12px; }
+  .ar-guide b { color: var(--text); }
+  @media (max-width: 640px) { .ar-guide { grid-template-columns: 1fr; } }
   .ar-hold { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
   .ar-hold .n { font-size: 20px; font-weight: 660; }
   .ar-bar { height: 8px; border-radius: 4px; background: var(--aero); }
@@ -283,6 +288,11 @@
      scan). Hidden until the scan reports the Base contracts live. -->
 <section id="aeroRadar" hidden>
   <p class="meta" id="arMeta"></p>
+  <div class="ar-guide" id="guide">
+    <div><b>Type how much sAERO you have.</b> Add your wallet if you like: it shows when your 47 h timer runs out.</div>
+    <div><b>Look at "Per day for you".</b> The radar splits your amount across up to 3 pools, so your own stake doesn't dilute your income.</div>
+    <div><b>Press "Allocate on Aero"</b> and set the same percentages there. You sign in your own wallet. Come back when your 47 h are up.</div>
+  </div>
   <div class="panel">
     <div class="ar-controls">
       <div class="field">
@@ -2908,6 +2918,8 @@ fetch("data/v3.json", { cache: "no-cache" })
     if (data.windowHours < 48) arEl("arEarly").textContent = "Aero launched " + hours + " h ago and fees arrive in lumps, so these figures are rough for the first days.";
     arEl("aeroRadar").hidden = false;
     arRender();
+    // The section is hidden until the scan loads, so the browser can't jump to #guide on its own.
+    if (location.hash === "#guide") arEl("guide").scrollIntoView();
   })
   .catch(() => {});
 </script>
