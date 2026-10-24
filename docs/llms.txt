@@ -2,21 +2,21 @@
 
 > Where sAERO earns the most on Aero (formerly Aerodrome), across its networks. Enter how much sAERO you hold and see what every pool pays you per day after your own stake dilutes it, plus the 47 h timer of your stakes on each network. Free, open source (MIT), read-only: no wallet connection, no signatures.
 
-Scanned from Aero's contracts on 7 networks: 2026-10-24T18:47:17.852Z. The scan re-runs every hour.
-Fees are what each pool swept to its allocators over the last 67 h; incentives are what projects stream right now. 903,568,243 sAERO is allocated across 474 pools.
+Scanned from Aero's contracts on 7 networks: 2026-10-24T19:47:21.867Z. The scan re-runs every hour.
+Fees are what each pool swept to its allocators over the last 68 h; incentives are what projects stream right now. 904,046,291 sAERO is allocated across 474 pools.
 
 ## Best pools for 10,000 sAERO right now
 
-- UP/cbBTC (CL, Base): about $3.31 a day for 10,000 sAERO — fees $47.29/day, incentives $62.63/day, 321,890 sAERO in the pool
-- FLOCK/USDC (CL, Base): about $3.16 a day for 10,000 sAERO — fees $11.17/day, incentives $62.63/day, 223,316 sAERO in the pool
-- USDC/alUSD (sAMM, OP Mainnet): about $3.14 a day for 10,000 sAERO — fees $3.83/day, incentives $113.86/day, 364,248 sAERO in the pool
-- WETH/METAc (CL, Base): about $3.12 a day for 10,000 sAERO — fees $68.31/day, incentives $0.00/day, 209,034 sAERO in the pool
-- cbADA/cbBTC (CL, Base): about $3.07 a day for 10,000 sAERO — fees $30.70/day, incentives $62.63/day, 293,993 sAERO in the pool
-- msETH/WETH (sAMM, OP Mainnet): about $3.05 a day for 10,000 sAERO — fees $3.87/day, incentives $99.96/day, 330,910 sAERO in the pool
-- USDC/BIDUc (CL, Base): about $3.03 a day for 10,000 sAERO — fees $2.17/day, incentives $185.06/day, 608,114 sAERO in the pool
-- USDC/INFYc (CL, Base): about $2.99 a day for 10,000 sAERO — fees $4.26/day, incentives $185.05/day, 623,482 sAERO in the pool
-- USDC/NIOc (CL, Base): about $2.97 a day for 10,000 sAERO — fees $5.59/day, incentives $185.06/day, 630,940 sAERO in the pool
-- USDC/SAPc (CL, Base): about $2.95 a day for 10,000 sAERO — fees $3.79/day, incentives $185.06/day, 629,579 sAERO in the pool
+- USDC/alUSD (sAMM, OP Mainnet): about $3.16 a day for 10,000 sAERO — fees $3.77/day, incentives $114.48/day, 364,248 sAERO in the pool
+- FLOCK/USDC (CL, Base): about $3.15 a day for 10,000 sAERO — fees $10.95/day, incentives $62.58/day, 223,316 sAERO in the pool
+- WETH/METAc (CL, Base): about $3.10 a day for 10,000 sAERO — fees $67.37/day, incentives $0.00/day, 207,524 sAERO in the pool
+- cbADA/cbBTC (CL, Base): about $3.07 a day for 10,000 sAERO — fees $30.81/day, incentives $62.58/day, 293,992 sAERO in the pool
+- msETH/WETH (sAMM, OP Mainnet): about $3.05 a day for 10,000 sAERO — fees $3.95/day, incentives $99.96/day, 330,910 sAERO in the pool
+- cbBTC/ZEN (CL, Base): about $2.93 a day for 10,000 sAERO — fees $6.20/day, incentives $62.58/day, 224,928 sAERO in the pool
+- USDC/PAXG (CL, Base): about $2.88 a day for 10,000 sAERO — fees $27.95/day, incentives $116.62/day, 492,499 sAERO in the pool
+- USDC/Basecat (CL, Base): about $2.83 a day for 10,000 sAERO — fees $7.04/day, incentives $62.58/day, 235,855 sAERO in the pool
+- WETH/USDC (CL, Arc): about $2.83 a day for 10,000 sAERO — fees $622.27/day, incentives $0.00/day, 2,188,008 sAERO in the pool
+- USDC/LIc (CL, Base): about $2.81 a day for 10,000 sAERO — fees $2.82/day, incentives $184.91/day, 659,040 sAERO in the pool
 
 Pools with at least 100,000 sAERO. A larger amount dilutes each pool more and is better split across a few; the page splits any amount.
 
