@@ -331,6 +331,14 @@
     <span class="hint" style="margin:0">Opens Aero's Allocate page; you sign in your own wallet. This page never holds funds.</span>
   </div>
 
+  <h2>Steadiest pools</h2>
+  <p class="h2note">For a steady payout rather than the top spot: pools that paid at least half their own average in 75% of the hours or more. Average and lowest hour are for 10,000 sAERO; "per day for you" is for your amount now.</p>
+  <p class="hint" id="arSteadyWait">Needs a day of hourly scans; the table fills in on its own.</p>
+  <div class="scroll" id="arSteadyWrap" hidden><table>
+    <thead><tr><th>Pool</th><th class="num">Per day for you</th><th class="num">Average / day (10K)</th><th class="num">Lowest hour (10K)</th><th class="num">Held up</th></tr></thead>
+    <tbody id="arSteadyBody"></tbody>
+  </table></div>
+
   <h2>How long to hold a pool</h2>
   <p class="h2note">How much more you earn by moving to the best pool more often, compared with moving once a week. Backtest on 3 weeks of Aerodrome pool fees before Aero (Sep 27 – Oct 20), fees only.</p>
   <div class="panel">
@@ -2790,6 +2798,45 @@ function arCell(row, text, cls) {
   row.append(td);
 }
 
+function arNameCell(g) {
+  const name = document.createElement("td");
+  const badge = document.createElement("span");
+  badge.className = "badge " + (g.kind && g.kind.startsWith("CL") ? "c" : g.kind === "sAMM" ? "s" : "v");
+  badge.textContent = g.kind ? g.kind.replace(/^CL\d+$/, "CL") : "?";
+  const chip = document.createElement("span");
+  chip.className = "ar-chip";
+  chip.textContent = AR_CHAIN_NAMES[arChainOf(g)] || arChainOf(g);
+  name.append(badge, document.createTextNode(arName(g)), chip);
+  return name;
+}
+
+// Pools that kept paying hour after hour (src/v3History.ts): at least 75% of the
+// hourly samples at half the pool's own average or more. Ranked by what they pay
+// now on the same basis as the samples (last 24 h of fees plus incentives).
+const AR_STEADY_SHARE = 0.75;
+const AR_STEADY_ROWS = 5;
+const arSteadyNow = (g, amount) => dilutedPerDay(g.fees24hUsdPerDay + g.incentivesUsdPerDay, g.weight, amount);
+function arRenderSteady(amount) {
+  const steady = arData.gauges
+    .filter((g) => g.steady && g.weight >= AR_MIN_WEIGHT && g.steady.avgPer10k > 0 && g.steady.held >= AR_STEADY_SHARE * g.steady.of)
+    .filter((g) => arChain === "all" || arChainOf(g) === arChain)
+    .sort((a, b) => arSteadyNow(b, amount) - arSteadyNow(a, amount))
+    .slice(0, AR_STEADY_ROWS);
+  const body = arEl("arSteadyBody");
+  body.innerHTML = "";
+  arEl("arSteadyWrap").hidden = steady.length === 0;
+  arEl("arSteadyWait").hidden = steady.length > 0;
+  for (const g of steady) {
+    const tr = document.createElement("tr");
+    tr.append(arNameCell(g));
+    arCell(tr, usd(arSteadyNow(g, amount)), "ar-mine");
+    arCell(tr, usd(g.steady.avgPer10k));
+    arCell(tr, usd(g.steady.minPer10k));
+    arCell(tr, g.steady.held + " of " + g.steady.of + " h");
+    body.append(tr);
+  }
+}
+
 function arRender() {
   if (!arData) return;
   const amount = Math.max(0, parseFloat(arEl("arAmount").value) || 0);
@@ -2804,15 +2851,7 @@ function arRender() {
   body.innerHTML = "";
   for (const g of rows) {
     const tr = document.createElement("tr");
-    const name = document.createElement("td");
-    const badge = document.createElement("span");
-    badge.className = "badge " + (g.kind && g.kind.startsWith("CL") ? "c" : g.kind === "sAMM" ? "s" : "v");
-    badge.textContent = g.kind ? g.kind.replace(/^CL\d+$/, "CL") : "?";
-    const chip = document.createElement("span");
-    chip.className = "ar-chip";
-    chip.textContent = AR_CHAIN_NAMES[arChainOf(g)] || arChainOf(g);
-    name.append(badge, document.createTextNode(arName(g)), chip);
-    tr.append(name);
+    tr.append(arNameCell(g));
     const s = shares.get(g);
     arCell(tr, s ? Math.round(s.share * 100) + "%" : "—", s ? "pct" : "");
     arCell(tr, usd(s ? s.perDay : dilutedPerDay(arPerDay(g), g.weight, amount)), s ? "ar-mine" : "");
@@ -2823,6 +2862,7 @@ function arRender() {
     arCell(tr, trend, cls);
     body.append(tr);
   }
+  arRenderSteady(amount);
 
   const timer = arEl("arTimer"), timerLabel = arEl("arTimerLabel"), current = arEl("arCurrent"), callout = arEl("arCallout"), timers = arEl("arTimers");
   callout.hidden = true;
