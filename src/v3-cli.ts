@@ -8,6 +8,7 @@ import { getTokenPrices } from "./prices.js";
 import { formatError } from "./util.js";
 import { registryFromDeployment, scanV3, type V3ScanFile, type V3ScanGauge, type V3Client } from "./v3.js";
 import { appendV3Sample, poolKey, steadiness, type V3HistoryFile } from "./v3History.js";
+import { renderV3LlmsTxt } from "./v3Llms.js";
 
 /**
  * Entrypoint for the scheduled Aero (v3) scan across Aero's seven networks,
@@ -132,6 +133,12 @@ async function main() {
   };
   writeFileSync(outPath, JSON.stringify(out, null, 1) + "\n");
   console.error(`v3: ${out.status}, ${gauges.length} gauges -> ${outPath}`);
+  // The same scan as plain text for AI assistants, next to the page (docs/llms.txt).
+  if (/data[\\/]v3\.json$/.test(outPath) && out.status === "live") {
+    const llmsPath = outPath.replace(/data[\\/]v3\.json$/, "llms.txt");
+    writeFileSync(llmsPath, renderV3LlmsTxt(out));
+    console.error(`v3: llms.txt -> ${llmsPath}`);
+  }
 }
 
 main().catch((err) => {
