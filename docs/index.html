@@ -311,9 +311,10 @@
     <div class="totals ar-totals">
       <div class="stat hi"><div class="n num c-good" id="arBest">&mdash;</div><div class="l">Best pool for your sAERO, per day</div></div>
       <div class="stat"><div class="n num" id="arTimer">47 h</div><div class="l" id="arTimerLabel">Between moves of one stake (enter a wallet for yours)</div></div>
-      <div class="stat"><div class="n num" id="arCurrent">&mdash;</div><div class="l">What your current split on Base pays per day</div></div>
+      <div class="stat"><div class="n num" id="arCurrent">&mdash;</div><div class="l">What your current split pays per day</div></div>
       <div class="stat"><div class="n num">1.7&times;</div><div class="l">Switching every 47 h vs weekly (backtest)</div></div>
     </div>
+    <p class="hint" id="arTimers" style="margin:12px 0 0" hidden></p>
     <div class="ar-callout" id="arCallout" hidden></div>
   </div>
 
@@ -2693,6 +2694,8 @@ fetch("data/snapshot.json", { cache: "no-cache" })
 // contracts (app.aero.xyz/docs/security): stakes from the VotingEscrow, the
 // 47 h timer and current split from the LeafVoter (tokenStates.lastAllocated +
 // allocationCooldown − accumulatedCooldownReduction, as ILeafVoter documents).
+// Every network has its own LeafVoter at the same address, keyed by the Base
+// stake id, so each stake has a timer and a split per network.
 const AR_VE = "0xbf7977e1521e9a3032bf7243ee4712f311f13915";
 const AR_LEAF_VOTER = "0x382409fad8503fbcdbb27a4211551fa03e884078";
 const AR_SEL_TOKEN_OF_OWNER = "0x2f745c59";   // tokenOfOwnerByIndex(address,uint256)
@@ -2708,6 +2711,16 @@ const AR_STEPS = 20;
 const AR_MAX_STAKES = 20;
 
 const AR_CHAIN_NAMES = { base: "Base", ethereum: "Ethereum", optimism: "OP Mainnet", arbitrum: "Arbitrum", ink: "Ink", robinhood: "Robinhood Chain", arc: "Arc" };
+// Endpoints that answer eth_call from a browser (CORS), measured 2026-10-24.
+// Base goes through ethCall and its RPCS list.
+const AR_CHAIN_RPCS = {
+  ethereum: ["https://ethereum-rpc.publicnode.com"],
+  optimism: ["https://optimism-rpc.publicnode.com", "https://mainnet.optimism.io"],
+  arbitrum: ["https://arbitrum-one-rpc.publicnode.com", "https://arb1.arbitrum.io/rpc"],
+  ink: ["https://rpc-gel.inkonchain.com", "https://rpc-qnd.inkonchain.com", "https://ink-rpc.publicnode.com"],
+  robinhood: ["https://rpc.mainnet.chain.robinhood.com"],
+  arc: ["https://rpc.mainnet.arc.io"],
+};
 
 let arData = null;
 let arWallet = null;
@@ -2811,8 +2824,9 @@ function arRender() {
     body.append(tr);
   }
 
-  const timer = arEl("arTimer"), timerLabel = arEl("arTimerLabel"), current = arEl("arCurrent"), callout = arEl("arCallout");
+  const timer = arEl("arTimer"), timerLabel = arEl("arTimerLabel"), current = arEl("arCurrent"), callout = arEl("arCallout"), timers = arEl("arTimers");
   callout.hidden = true;
+  timers.hidden = true;
   current.textContent = "—";
   if (!arWallet) {
     timer.textContent = "47 h";
@@ -2825,17 +2839,36 @@ function arRender() {
     return;
   }
   const nowSec = Date.now() / 1000;
-  const next = Math.min(...arWallet.stakes.map((s) => s.readyAt));
-  timer.textContent = next <= nowSec ? "now" : "in " + Math.ceil((next - nowSec) / 3600) + " h";
-  timerLabel.textContent = arWallet.stakes.length > 1 ? "Your first stake can move again" : "You can move your sAERO again";
-  // The wallet is read on Base, so only its Base allocations are matched.
-  const byGauge = new Map(arData.gauges.filter((g) => arChainOf(g) === "base").map((g) => [g.gauge.toLowerCase(), g]));
+  const until = (t) => (t <= nowSec ? "now" : "in " + Math.ceil((t - nowSec) / 3600) + " h");
+  // Only networks a stake has allocated on have a running timer; a stake with
+  // none anywhere can make its first allocation right away.
+  const placedOn = arWallet.stakes.flatMap((s) => Object.entries(s.chains).filter(([, c]) => c.last).map(([chain, c]) => ({ chain, readyAt: c.readyAt })));
+  const next = placedOn.length ? Math.min(...placedOn.map((p) => p.readyAt)) : 0;
+  if (placedOn.length) {
+    const first = placedOn.reduce((a, b) => (b.readyAt < a.readyAt ? b : a));
+    timer.textContent = until(first.readyAt);
+    timerLabel.textContent = (placedOn.length > 1 ? "Your first stake can move again on " : "You can move your sAERO again on ") + AR_CHAIN_NAMES[first.chain];
+    const soonest = {};
+    for (const p of placedOn) soonest[p.chain] = Math.min(soonest[p.chain] ?? Infinity, p.readyAt);
+    timers.textContent = "Your timers: " + Object.keys(AR_CHAIN_NAMES).filter((k) => k in soonest).map((k) => AR_CHAIN_NAMES[k] + " " + until(soonest[k])).join(" · ") +
+      (arWallet.failed.length ? " · not read: " + arWallet.failed.map((k) => AR_CHAIN_NAMES[k]).join(", ") : "");
+    timers.hidden = false;
+  } else if (arWallet.failed.length) {
+    timer.textContent = "—";
+    timerLabel.textContent = "Could not read " + arWallet.failed.map((k) => AR_CHAIN_NAMES[k]).join(", ") + ". Try again in a moment.";
+  } else {
+    timer.textContent = "now";
+    timerLabel.textContent = "Not allocated yet: the first allocation has no wait";
+  }
+  const byGauge = new Map(arData.gauges.map((g) => [arChainOf(g) + ":" + g.gauge.toLowerCase(), g]));
   let pays = 0, placed = 0;
   for (const st of arWallet.stakes) {
-    for (const a of st.allocs) {
-      const g = byGauge.get(a.gauge);
-      placed += a.amount;
-      if (g && g.weight > 0) pays += arPerDay(g) * Math.min(1, a.amount / g.weight);
+    for (const [chain, c] of Object.entries(st.chains)) {
+      for (const a of c.allocs) {
+        const g = byGauge.get(chain + ":" + a.gauge);
+        placed += a.amount;
+        if (g && g.weight > 0) pays += arPerDay(g) * Math.min(1, a.amount / g.weight);
+      }
     }
   }
   if (placed > 0) {
@@ -2850,29 +2883,67 @@ function arRender() {
   }
 }
 
+// eth_call on the LeafVoter of `chain`, trying its endpoints in order.
+async function arLeafCall(chain, data) {
+  if (chain === "base") return ethCall(data, AR_LEAF_VOTER);
+  let lastErr;
+  for (const url of AR_CHAIN_RPCS[chain]) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: AR_LEAF_VOTER, data }, "latest"] }),
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const json = await res.json();
+      if (json.error) throw new Error(json.error.message || "rpc error");
+      return json.result;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+// One stake's timer and split on one network.
+async function arReadStakeOn(chain, id, cooldown) {
+  const big = (hex) => BigInt(hex === "0x" ? 0 : hex);
+  const state = (await arLeafCall(chain, AR_SEL_TOKEN_STATES + hexOf(id))).slice(2);
+  const last = Number(BigInt("0x" + (state.slice(64, 128) || "0")));
+  const reduction = Number(big(await arLeafCall(chain, AR_SEL_REDUCTION + hexOf(id))));
+  const list = (await arLeafCall(chain, AR_SEL_GAUGES + hexOf(id))).slice(2);
+  const n = list.length >= 128 ? Number(BigInt("0x" + list.slice(64, 128))) : 0;
+  const allocs = [];
+  for (let k = 0; k < n; k++) {
+    const gauge = "0x" + list.slice(128 + k * 64 + 24, 128 + (k + 1) * 64);
+    const raw = big(await arLeafCall(chain, AR_SEL_ALLOCATION + hexOf(id) + word(gauge)));
+    allocs.push({ gauge, amount: Number(raw) / 1e18 });
+  }
+  return { last, readyAt: last ? last + Math.max(0, cooldown - reduction) : 0, allocs };
+}
+
 async function arReadWallet(addr) {
   const big = (hex) => BigInt(hex === "0x" ? 0 : hex);
   const count = Number(big(await ethCall(SEL_BALANCE_OF + word(addr), AR_VE)));
-  const cooldown = Number(big(await ethCall(AR_SEL_COOLDOWN, AR_LEAF_VOTER)));
   const stakes = [];
   for (let i = 0; i < Math.min(count, AR_MAX_STAKES); i++) {
     const id = big(await ethCall(AR_SEL_TOKEN_OF_OWNER + word(addr) + hexOf(i), AR_VE));
     const power = Number(big(await ethCall(SEL_POWER_OF + hexOf(id), AR_VE))) / 1e18;
-    const state = (await ethCall(AR_SEL_TOKEN_STATES + hexOf(id), AR_LEAF_VOTER)).slice(2);
-    const last = Number(BigInt("0x" + state.slice(64, 128)));
-    const reduction = Number(big(await ethCall(AR_SEL_REDUCTION + hexOf(id), AR_LEAF_VOTER)));
-    const list = (await ethCall(AR_SEL_GAUGES + hexOf(id), AR_LEAF_VOTER)).slice(2);
-    const n = Number(BigInt("0x" + list.slice(64, 128)));
-    const allocs = [];
-    for (let k = 0; k < n; k++) {
-      const gauge = "0x" + list.slice(128 + k * 64 + 24, 128 + (k + 1) * 64);
-      const raw = big(await ethCall(AR_SEL_ALLOCATION + hexOf(id) + word(gauge), AR_LEAF_VOTER));
-      allocs.push({ gauge, amount: Number(raw) / 1e18 });
-    }
-    // A stake that never allocated has no wait: its first allocation skips the cooldown.
-    stakes.push({ id, power, readyAt: last ? last + Math.max(0, cooldown - reduction) : 0, allocs });
+    stakes.push({ id, power, chains: {} });
   }
-  return { stakes, total: stakes.reduce((a, s) => a + s.power, 0), count };
+  // Networks are read in parallel; one that doesn't answer is reported, not fatal.
+  const failed = [];
+  await Promise.all(Object.keys(AR_CHAIN_NAMES).map(async (chain) => {
+    try {
+      const cooldown = Number(big(await arLeafCall(chain, AR_SEL_COOLDOWN)));
+      for (const st of stakes) st.chains[chain] = await arReadStakeOn(chain, st.id, cooldown);
+    } catch {
+      for (const st of stakes) delete st.chains[chain];
+      failed.push(chain);
+    }
+  }));
+  return { stakes, failed, total: stakes.reduce((a, s) => a + s.power, 0), count };
 }
 
 arEl("arLookup").addEventListener("click", async () => {
