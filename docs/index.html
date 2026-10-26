@@ -141,6 +141,9 @@
      plot box is identical row to row. */
   td.ar-where { text-align: left; white-space: normal; color: var(--muted); font-size: 13px; min-width: 260px; }
   td.ar-where b { color: var(--text); font-weight: 600; }
+  .ar-answer { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 16px; padding: 14px 16px; border: 1px solid rgba(53, 208, 127, 0.45); background: rgba(53, 208, 127, 0.07); border-radius: 10px; font-size: 15px; }
+  .ar-answer b { color: var(--good); }
+  .ar-answer a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 14px; text-decoration: none; white-space: nowrap; }
   .ar-moved { display: none; color: var(--dim); font-size: 12px; margin-top: 3px; }
   /* On a phone the split is what matters; size and dollars earned give way to it. */
   @media (max-width: 600px) {
@@ -318,6 +321,10 @@
         </div>
         <div class="lookup-msg" id="arMsg"></div>
       </div>
+    </div>
+    <div class="ar-answer" id="arAnswer" hidden>
+      <div id="arAnswerText"></div>
+      <a class="primary" href="https://app.aero.xyz/markets/allocate" target="_blank" rel="noreferrer">Allocate on Aero</a>
     </div>
     <div class="totals ar-totals">
       <div class="stat hi"><div class="n num c-good" id="arBest">&mdash;</div><div class="l">Best pool for your sAERO, per day</div></div>
@@ -684,6 +691,18 @@ function arRender() {
   const split = arSplit(pools.map((x) => x.g), amount);
   const splitPays = split.reduce((a, s) => a + s.perDay, 0);
   arEl("arBest").textContent = pools.length && amount > 0 ? usd(pools[0].mine) : "—";
+  // The answer in one sentence, so a first visit doesn't have to read the table for it.
+  arEl("arAnswer").hidden = split.length === 0;
+  const answer = arEl("arAnswerText");
+  answer.innerHTML = "";
+  if (split.length) {
+    const b = (t) => { const e = document.createElement("b"); e.textContent = t; return e; };
+    answer.append("For ", b(num(amount) + " sAERO"), ": ");
+    split.forEach((s, i) => {
+      answer.append(i ? (i === split.length - 1 ? " and " : ", ") : "", b(Math.round(s.share * 100) + "%"), " " + arName(s.g) + " (" + (AR_CHAIN_NAMES[arChainOf(s.g)] || arChainOf(s.g)) + ")");
+    });
+    answer.append(" → about ", b(usd(splitPays) + " a day"), " at today's rates.");
+  }
 
   const shares = new Map(split.map((s) => [s.g, s]));
   const rows = [...split.map((s) => s.g), ...pools.map((x) => x.g).filter((g) => !shares.has(g))].slice(0, 12);
