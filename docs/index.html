@@ -150,6 +150,10 @@
   .ar-hero-pay small { font-size: 14px; color: var(--muted); font-weight: 500; }
   .ar-hero a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 11px 18px; text-decoration: none; }
   @media (max-width: 600px) { .ar-hero { padding: 16px; } .ar-hero-a { font-size: 19px; } .ar-hero-pay { font-size: 26px; } .ar-hero a.primary { align-self: stretch; text-align: center; } }
+  .ar-record { margin: 0 0 18px; }
+  .ar-record h3 { font-size: 15px; margin: 0 0 8px; }
+  .ar-record td:nth-child(2), .ar-record th:nth-child(2) { text-align: left; }
+  .ar-record .hint { margin: 8px 0 0; }
   .ar-answer { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 16px; padding: 14px 16px; border: 1px solid rgba(53, 208, 127, 0.45); background: rgba(53, 208, 127, 0.07); border-radius: 10px; font-size: 15px; }
   .ar-answer b { color: var(--good); }
   .ar-answer a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 14px; text-decoration: none; white-space: nowrap; }
@@ -316,6 +320,14 @@
     <label class="ar-hero-q" for="arAmount">If you hold <input id="arAmount" type="number" min="0" step="any" value="10000" inputmode="decimal"> sAERO</label>
     <div class="ar-hero-a" id="arAnswerText"></div>
     <a class="primary" href="https://app.aero.xyz/markets/allocate" target="_blank" rel="noreferrer">Allocate on Aero</a>
+  </div>
+  <div class="ar-record" id="arRecord" hidden>
+    <h3>Track record: what the radar said, and what it paid</h3>
+    <div class="scroll cards"><table>
+      <thead><tr><th>When</th><th>Radar said</th><th class="num">It showed</th><th class="num">It paid</th><th class="num">A typical pool paid</th></tr></thead>
+      <tbody id="arRecordBody"></tbody>
+    </table></div>
+    <p class="hint" id="arRecordNote"></p>
   </div>
   <div class="ar-guide" id="guide">
     <div><b>Type how much sAERO you have.</b> Add your wallet if you like: it shows when your 47 h timer runs out.</div>
@@ -695,6 +707,63 @@ function arRenderTop(amount) {
 }
 
 const AR_HEADS = [...document.querySelectorAll("#arTable thead th")].map((th) => th.textContent);
+// Open track record: every 47 h back from the last scan, the pool the radar put
+// first for 10,000 sAERO, the daily figure it showed then (times 47/24), and what
+// that pool actually paid over those 47 h. History samples are fees over the
+// trailing 24 h plus incentives, per day for 10,000 sAERO after dilution, so the
+// sample 24 h after the pick covers the first day and the one 47 h after covers
+// the last 23 h. "A typical pool" is the median of the same figure over every
+// pool in the history at the time of the pick. Picks before they were recorded
+// (28.10) are rebuilt from the history the way the radar ranks: the average of
+// the samples 0, 24, 48 and 72 h before, standing in for its 96 h of fees.
+function arRenderRecord(h) {
+  const at = h.at.map((t) => Date.parse(t)), H = 3600000;
+  const near = (t) => {
+    let best = -1;
+    at.forEach((x, i) => { if (Math.abs(x - t) <= 2 * H && (best < 0 || Math.abs(x - t) < Math.abs(at[best] - t))) best = i; });
+    return best < 0 ? null : best;
+  };
+  const paid = (k, a, b) => { const p = h.pools[k]; return p && p[a] != null && p[b] != null ? p[a] + p[b] * 23 / 24 : null; };
+  const names = new Map(arData.gauges.map((g) => [arChainOf(g) + ":" + g.gauge.toLowerCase(), arName(g) + (arChainOf(g) === "base" ? "" : " (" + (AR_CHAIN_NAMES[arChainOf(g)] || arChainOf(g)) + ")")]));
+  const body = arEl("arRecordBody");
+  body.innerHTML = "";
+  const heads = [...document.querySelectorAll("#arRecord thead th")].map((th) => th.textContent);
+  let rebuilt = false, rows = 0;
+  for (let n = 1; n <= 3; n++) {
+    const t0 = at[at.length - 1] - 47 * n * H;
+    const i0 = near(t0), i24 = near(t0 + 24 * H), i47 = near(t0 + 47 * H);
+    if (i0 === null || i24 === null || i47 === null) continue;
+    let pick = h.picks && h.picks[i0];
+    if (!pick) {
+      const back = [0, 1, 2, 3].map((d) => near(t0 - 24 * d * H)).filter((i) => i !== null);
+      for (const [k, col] of Object.entries(h.pools)) {
+        if (col[i0] == null || back.some((i) => col[i] == null)) continue;
+        const avg = back.reduce((a, i) => a + col[i], 0) / back.length;
+        if (!pick || avg > pick.per10k) pick = { pool: k, per10k: avg, rebuilt: true };
+      }
+      rebuilt = rebuilt || !!pick;
+    }
+    const got = pick && paid(pick.pool, i24, i47);
+    if (got == null) continue;
+    const all = Object.keys(h.pools).filter((k) => h.pools[k][i0] != null).map((k) => paid(k, i24, i47)).filter((x) => x != null).sort((a, b) => a - b);
+    const typical = all[Math.floor(all.length / 2)];
+    const tr = document.createElement("tr");
+    const when = new Date(at[i0]).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC" + (pick.rebuilt ? " *" : "");
+    const cell = (text, cls) => { const td = document.createElement("td"); td.className = cls || ""; td.textContent = text; tr.append(td); };
+    cell(when);
+    cell(names.get(pick.pool) || pick.pool.split(":")[1].slice(0, 8) + "…");
+    cell(usd(pick.per10k * 47 / 24), "num");
+    cell(usd(got), "num " + (got > typical ? "c-good" : "c-bad"));
+    cell(usd(typical), "num");
+    tr.querySelectorAll("td").forEach((td, i) => { td.dataset.label = heads[i]; });
+    body.append(tr);
+    rows++;
+  }
+  arEl("arRecord").hidden = rows === 0;
+  arEl("arRecordNote").textContent = "On 10,000 sAERO, over the 47 h a stake stays put. \"It showed\" is the radar's figure at that moment: pools cool once others pile in, so read it as a ceiling, not a promise." +
+    (rebuilt ? " * Rebuilt from the hourly history; newer rows use the pick the radar saved at the time." : "");
+}
+
 function arRender() {
   if (!arData) return;
   const amount = Math.max(0, parseFloat(arEl("arAmount").value) || 0);
@@ -919,6 +988,10 @@ fetch("data/v3.json", { cache: "no-cache" })
     arRender();
     // The section is hidden until the scan loads, so the browser can't jump to #guide on its own.
     if (location.hash === "#guide") arEl("guide").scrollIntoView();
+    fetch("data/v3-history.json", { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((h) => { if (h) arRenderRecord(h); })
+      .catch(() => {});
     return fetch("data/top-allocators.json", { cache: "no-cache" })
       .then((r) => (r.ok ? r.json() : null))
       .then((top) => { arTop = top; arRender(); })
