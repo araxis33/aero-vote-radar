@@ -141,6 +141,15 @@
      plot box is identical row to row. */
   td.ar-where { text-align: left; white-space: normal; color: var(--muted); font-size: 13px; min-width: 260px; }
   td.ar-where b { color: var(--text); font-weight: 600; }
+  .ar-hero { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; margin: 10px 0 18px; padding: 20px 22px; border: 1px solid rgba(53, 208, 127, 0.45); background: rgba(53, 208, 127, 0.07); border-radius: var(--radius); }
+  .ar-hero-q { font-size: 15px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ar-hero-q input { width: 130px; font-size: 17px; font-weight: 650; }
+  .ar-hero-a { font-size: 22px; font-weight: 650; line-height: 1.35; }
+  .ar-hero-a b { color: var(--good); }
+  .ar-hero-pay { font-size: 30px; margin-top: 2px; }
+  .ar-hero-pay small { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .ar-hero a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 11px 18px; text-decoration: none; }
+  @media (max-width: 600px) { .ar-hero { padding: 16px; } .ar-hero-a { font-size: 19px; } .ar-hero-pay { font-size: 26px; } .ar-hero a.primary { align-self: stretch; text-align: center; } }
   .ar-answer { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 16px; padding: 14px 16px; border: 1px solid rgba(53, 208, 127, 0.45); background: rgba(53, 208, 127, 0.07); border-radius: 10px; font-size: 15px; }
   .ar-answer b { color: var(--good); }
   .ar-answer a.primary { background: var(--aero); border: 1px solid var(--aero); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 14px; text-decoration: none; white-space: nowrap; }
@@ -244,6 +253,7 @@
     }
     .scroll.cards td:first-child::before { content: none; }
     #beforeAero .scroll.cards td { justify-content: flex-start; text-align: left; }
+    #arTable td:first-child { justify-content: flex-start; }
   }
   .you { background: linear-gradient(90deg, rgba(4, 51, 255, 0.18), rgba(4, 51, 255, 0.05)); border: 1px solid rgba(77, 141, 255, 0.45);
     border-radius: var(--radius); padding: 14px 16px; margin: 0 0 14px; }
@@ -256,7 +266,7 @@
   .chains span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 7px 11px; font-size: 13.5px; }
   /* Aero (sAERO) radar, the block at the top */
   #aeroRadar h2:first-child { margin-top: 22px; }
-  .ar-controls { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: 14px; }
+  .ar-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .ar-totals { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 16px; }
   .stat.hi { border-color: rgba(53, 208, 127, 0.45); }
   .ar-callout { margin-top: 16px; padding: 12px 14px; border: 1px solid rgba(53, 208, 127, 0.4); background: rgba(53, 208, 127, 0.07); border-radius: 10px; font-size: 14px; }
@@ -302,17 +312,18 @@
      scan). Hidden until the scan reports the Base contracts live. -->
 <section id="aeroRadar" hidden>
   <p class="meta" id="arMeta"></p>
+  <div class="ar-hero">
+    <label class="ar-hero-q" for="arAmount">If you hold <input id="arAmount" type="number" min="0" step="any" value="10000" inputmode="decimal"> sAERO</label>
+    <div class="ar-hero-a" id="arAnswerText"></div>
+    <a class="primary" href="https://app.aero.xyz/markets/allocate" target="_blank" rel="noreferrer">Allocate on Aero</a>
+  </div>
   <div class="ar-guide" id="guide">
     <div><b>Type how much sAERO you have.</b> Add your wallet if you like: it shows when your 47 h timer runs out.</div>
-    <div><b>Look at "Per day for you".</b> The radar splits your amount across up to 3 pools, so your own stake doesn't dilute your income.</div>
+    <div><b>Look at "You'd earn / day".</b> The radar splits your amount across up to 3 pools, so your own stake doesn't dilute your income.</div>
     <div><b>Press "Allocate on Aero"</b> and set the same percentages there. You sign in your own wallet. Come back when your 47 h are up.</div>
   </div>
   <div class="panel">
     <div class="ar-controls">
-      <div class="field">
-        <label for="arAmount">Your sAERO</label>
-        <input id="arAmount" type="number" min="0" step="any" value="10000" inputmode="decimal">
-      </div>
       <div class="field">
         <label for="arAddr">Wallet (optional, shows your 47 h timer)</label>
         <div class="addr-row">
@@ -321,10 +332,6 @@
         </div>
         <div class="lookup-msg" id="arMsg"></div>
       </div>
-    </div>
-    <div class="ar-answer" id="arAnswer" hidden>
-      <div id="arAnswerText"></div>
-      <a class="primary" href="https://app.aero.xyz/markets/allocate" target="_blank" rel="noreferrer">Allocate on Aero</a>
     </div>
     <div class="totals ar-totals">
       <div class="stat hi"><div class="n num c-good" id="arBest">&mdash;</div><div class="l">Best pool for your sAERO, per day</div></div>
@@ -337,10 +344,10 @@
   </div>
 
   <h2>Where to point your sAERO now</h2>
-  <p class="h2note">Ranked by what <b>your</b> amount earns per day, pools with at least 100,000 sAERO. Fees are what the pool actually swept to allocators; incentives are what projects are streaming right now. Aero's own APR counts fees over the last 48 h, the radar over 96 h, so the two can differ; both are right. <span id="arEarly"></span></p>
+  <p class="h2note">Best first for <b>your</b> amount. "You'd earn" already counts that your sAERO makes the pool more crowded. Trading fees and the project bonus are what the whole pool pays a day, shared by everyone in it. Only pools with 100,000+ sAERO. Aero's own APR counts fees over the last 48 h, the radar over 96 h, so the two can differ; both are right. <span id="arEarly"></span></p>
   <div class="ar-nets" id="arChains"></div>
-  <div class="scroll"><table>
-    <thead><tr><th>Pool</th><th class="num">Your split</th><th class="num">Per day for you</th><th class="num">Fees / day</th><th class="num">Incentives / day</th><th class="num">sAERO in pool</th><th class="num">Last 24 h</th></tr></thead>
+  <div class="scroll cards"><table id="arTable">
+    <thead><tr><th>Pool</th><th class="num">Put here</th><th class="num">You'd earn / day</th><th class="num">Trading fees / day</th><th class="num">Project bonus / day</th><th class="num">Already in pool</th><th class="num">Trend</th></tr></thead>
     <tbody id="arBody"></tbody>
   </table></div>
   <div class="ar-split">
@@ -687,6 +694,7 @@ function arRenderTop(amount) {
   }
 }
 
+const AR_HEADS = [...document.querySelectorAll("#arTable thead th")].map((th) => th.textContent);
 function arRender() {
   if (!arData) return;
   const amount = Math.max(0, parseFloat(arEl("arAmount").value) || 0);
@@ -694,17 +702,27 @@ function arRender() {
   const split = arSplit(pools.map((x) => x.g), amount);
   const splitPays = split.reduce((a, s) => a + s.perDay, 0);
   arEl("arBest").textContent = pools.length && amount > 0 ? usd(pools[0].mine) : "—";
-  // The answer in one sentence, so a first visit doesn't have to read the table for it.
-  arEl("arAnswer").hidden = split.length === 0;
+  // The answer in one sentence at the top, so a first visit doesn't have to read the table for it.
   const answer = arEl("arAnswerText");
   answer.innerHTML = "";
   if (split.length) {
     const b = (t) => { const e = document.createElement("b"); e.textContent = t; return e; };
-    answer.append("For ", b(num(amount) + " sAERO"), ": ");
+    const where = document.createElement("div");
+    where.append("Put ");
     split.forEach((s, i) => {
-      answer.append(i ? (i === split.length - 1 ? " and " : ", ") : "", b(Math.round(s.share * 100) + "%"), " " + arName(s.g) + " (" + (AR_CHAIN_NAMES[arChainOf(s.g)] || arChainOf(s.g)) + ")");
+      where.append(i ? (i === split.length - 1 ? " and " : ", ") : "", b(Math.round(s.share * 100) + "%"), " in " + arName(s.g));
     });
-    answer.append(" → about ", b(usd(splitPays) + " a day"), " at today's rates.");
+    const nets = [...new Set(split.map((s) => AR_CHAIN_NAMES[arChainOf(s.g)] || arChainOf(s.g)))];
+    where.append(" on " + nets.join(" and "));
+    const pays = document.createElement("div");
+    pays.className = "ar-hero-pay";
+    pays.append("about ", b(usd(splitPays) + " a day"));
+    const note = document.createElement("small");
+    note.textContent = " at today's rates";
+    pays.append(note);
+    answer.append(where, pays);
+  } else {
+    answer.textContent = amount > 0 ? "No pool is paying right now." : "Type how much sAERO you have.";
   }
 
   const shares = new Map(split.map((s) => [s.g, s]));
@@ -722,6 +740,8 @@ function arRender() {
     arCell(tr, num(g.weight));
     const [trend, cls] = arTrend(g);
     arCell(tr, trend, cls);
+    // Column names on each cell: on a phone the rows turn into cards (.scroll.cards).
+    tr.querySelectorAll("td").forEach((td, i) => { td.dataset.label = AR_HEADS[i] || ""; });
     body.append(tr);
   }
   arRenderSteady(amount);
