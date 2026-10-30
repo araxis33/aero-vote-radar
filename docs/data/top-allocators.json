@@ -1,5 +1,5 @@
 {
- "checkedAt": "2026-10-30T03:47:15.083Z",
+ "checkedAt": "2026-10-30T04:47:17.045Z",
  "source": "dromos.kitchen",
  "boardAsOf": "2026-10-29T23:42:20.578914Z",
  "positions": [
@@ -177,8 +177,14 @@
    "earned7d": 249.04,
    "apr7d": 0.4551,
    "moves7d": 2,
-   "lastMoved": 1793331277,
-   "split": []
+   "lastMoved": 1793333327,
+   "split": [
+    {
+     "chain": "ethereum",
+     "gauge": "0xeebdc9a01bfd04bfbc8cddeba91071f93b96b9df",
+     "share": 1
+    }
+   ]
   },
   {
    "rank": 7,
@@ -287,127 +293,127 @@
   {
    "chain": "ethereum",
    "gauge": "0xeebdc9a01bfd04bfbc8cddeba91071f93b96b9df",
-   "share": 0.4344444444444444
+   "share": 0.491
   },
   {
    "chain": "base",
    "gauge": "0x8971783f2b9ece611663b7e33e5b2ea96d73b9f3",
-   "share": 0.1111111111111111
+   "share": 0.1
   },
   {
    "chain": "base",
    "gauge": "0x02256e78b5116f24fe16aeea83b827c1c79b5596",
-   "share": 0.1111111111111111
+   "share": 0.1
   },
   {
    "chain": "base",
    "gauge": "0x7c9ed6df00a0732f62b9f388bb68ab5bfbcd7cd6",
-   "share": 0.05555555555555555
+   "share": 0.05
   },
   {
    "chain": "base",
    "gauge": "0xc0ff393ae9e56581cd8e026a0f85b8729c334e8e",
-   "share": 0.049999999999999996
+   "share": 0.045
   },
   {
    "chain": "base",
    "gauge": "0x46e7903b9dfc4f194bdfb393cb0d55e1ce703061",
-   "share": 0.033333333333333326
+   "share": 0.029999999999999992
   },
   {
    "chain": "base",
    "gauge": "0x80f5b40bc0c3a97e86bb81473a7aa64a91678b40",
-   "share": 0.027777777777777776
+   "share": 0.025
   },
   {
    "chain": "base",
    "gauge": "0x423f8d49763c2e12b7b88029c06c367ef2beeb23",
-   "share": 0.02222222222222222
+   "share": 0.019999999999999997
   },
   {
    "chain": "base",
    "gauge": "0xdb8fad813e46e10e67351e46dc5d2a09ee62b248",
-   "share": 0.02222222222222222
+   "share": 0.019999999999999997
   },
   {
    "chain": "base",
    "gauge": "0xf6c03fe364e637db636627046da1759944138f04",
-   "share": 0.02222222222222222
+   "share": 0.019999999999999997
   },
   {
    "chain": "base",
    "gauge": "0x65cecbabdfeacab9ec65f1d40bc49d880d5d91ac",
-   "share": 0.011111111111111106
+   "share": 0.009999999999999997
   },
   {
    "chain": "base",
    "gauge": "0x5c7974887d29ad70aef991dc4d5ed51a60d108a9",
-   "share": 0.011111111111111106
+   "share": 0.009999999999999997
   },
   {
    "chain": "base",
    "gauge": "0x1e417f2af612d2e9a951ede32ca4b05a287b50de",
-   "share": 0.011111111111111106
+   "share": 0.009999999999999997
   },
   {
    "chain": "base",
    "gauge": "0x14018f5afaeca44bb49d5036267d836723b57c91",
-   "share": 0.011111111111111106
+   "share": 0.009999999999999997
   },
   {
    "chain": "base",
    "gauge": "0xdef20c7f935b5baab283302eb248d023575c1862",
-   "share": 0.01
+   "share": 0.009
   },
   {
    "chain": "base",
    "gauge": "0x3751526229c50288b9e64f28a533d318532d4b24",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0xd8c0e093327b5dfb3e654ec520ff2100c3c20f76",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0xabb3fb6659e05847631896cb87a6d1b8bc0c6d8c",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0xc9fba11efd440c8e99b8cf9f24b99559e12bd178",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0x7841946e69390a8449d3634739380f7e1a9edee9",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0x7b9db37f6a01006f3490be611a22aaca5fa2126c",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0x74a30b3357121a822adb91a539f4b11b5fb7cb3f",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0x9376bbef9bcb2558c4d9fc2eadaa3cf7356a6941",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0x2f68e89ad5176d1fca1b4cac7265536a539807e7",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   },
   {
    "chain": "base",
    "gauge": "0x12a984598a52f7c7890e1fab8e360ee2b432e918",
-   "share": 0.005555555555555553
+   "share": 0.004999999999999998
   }
  ]
 }
