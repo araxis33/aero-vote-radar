@@ -2,21 +2,21 @@
 
 > Where sAERO earns the most on Aero (formerly Aerodrome), across its networks. Enter how much sAERO you hold and see what every pool pays you per day after your own stake dilutes it, plus the 47 h timer of your stakes on each network. Free, open source (MIT), read-only: no wallet connection, no signatures.
 
-Scanned from Aero's contracts on 7 networks: 2026-11-01T22:47:16.644Z. The scan re-runs every hour.
-Fees are what each pool swept to its allocators over the last 96 h; incentives are what projects stream right now. 986,799,654 sAERO is allocated across 506 pools.
+Scanned from Aero's contracts on 7 networks: 2026-11-01T23:47:19.377Z. The scan re-runs every hour.
+Fees are what each pool swept to its allocators over the last 96 h; incentives are what projects stream right now. 986,232,671 sAERO is allocated across 506 pools.
 
 ## Best pools for 10,000 sAERO right now
 
-- cbXRP/cbBTC (CL, Base): about $7.05 a day for 10,000 sAERO — fees $323.60/day, incentives $0.00/day, 448,887 sAERO in the pool
-- AERO/fBOMB (vAMM, Base): about $6.29 a day for 10,000 sAERO — fees $380.30/day, incentives $0.00/day, 594,616 sAERO in the pool
-- cbLTC/cbBTC (CL, Base): about $5.49 a day for 10,000 sAERO — fees $174.39/day, incentives $0.00/day, 307,920 sAERO in the pool
-- WETH/GOOGLc (CL, Base): about $4.59 a day for 10,000 sAERO — fees $258.57/day, incentives $0.00/day, 552,937 sAERO in the pool
-- WETH/cirBTC (CL, Arc): about $4.55 a day for 10,000 sAERO — fees $387.06/day, incentives $0.00/day, 840,924 sAERO in the pool
-- EURC/USDC (CL, Base): about $4.48 a day for 10,000 sAERO — fees $62.36/day, incentives $0.00/day, 129,247 sAERO in the pool
-- WETH/NVDAc (CL, Base): about $4.40 a day for 10,000 sAERO — fees $260.67/day, incentives $0.00/day, 582,820 sAERO in the pool
-- WBTC/WETH (CL, Ethereum): about $4.37 a day for 10,000 sAERO — fees $2,386/day, incentives $0.00/day, 5,447,431 sAERO in the pool
-- USDC/SKHYc (CL, Base): about $4.35 a day for 10,000 sAERO — fees $317.56/day, incentives $0.00/day, 720,217 sAERO in the pool
-- WETH/STONKEX (CL, Base): about $4.26 a day for 10,000 sAERO — fees $190.43/day, incentives $0.00/day, 436,830 sAERO in the pool
+- cbXRP/cbBTC (CL, Base): about $7.24 a day for 10,000 sAERO — fees $325.41/day, incentives $0.00/day, 439,233 sAERO in the pool
+- AERO/fBOMB (vAMM, Base): about $6.33 a day for 10,000 sAERO — fees $382.56/day, incentives $0.00/day, 594,615 sAERO in the pool
+- cbLTC/cbBTC (CL, Base): about $5.54 a day for 10,000 sAERO — fees $176.28/day, incentives $0.00/day, 307,919 sAERO in the pool
+- WETH/GOOGLc (CL, Base): about $4.73 a day for 10,000 sAERO — fees $259.59/day, incentives $0.00/day, 538,347 sAERO in the pool
+- WETH/NVDAc (CL, Base): about $4.66 a day for 10,000 sAERO — fees $261.85/day, incentives $0.00/day, 551,501 sAERO in the pool
+- WETH/cirBTC (CL, Arc): about $4.60 a day for 10,000 sAERO — fees $388.02/day, incentives $0.00/day, 834,018 sAERO in the pool
+- EURC/USDC (CL, Base): about $4.48 a day for 10,000 sAERO — fees $78.20/day, incentives $0.00/day, 164,679 sAERO in the pool
+- WBTC/WETH (CL, Ethereum): about $4.46 a day for 10,000 sAERO — fees $2,402/day, incentives $0.00/day, 5,370,791 sAERO in the pool
+- EURC/cbBTC (CL, Base): about $4.35 a day for 10,000 sAERO — fees $105.00/day, incentives $0.00/day, 231,308 sAERO in the pool
+- WETH/STONKEX (CL, Base): about $4.29 a day for 10,000 sAERO — fees $191.90/day, incentives $0.00/day, 436,830 sAERO in the pool
 
 Pools with at least 100,000 sAERO. A larger amount dilutes each pool more and is better split across a few; the page splits any amount.
 
@@ -24,11 +24,11 @@ Pools with at least 100,000 sAERO. A larger amount dilutes each pool more and is
 
 Pools that paid at least half their own average in 75% of the hourly scans or more, best current pay first (last 24 h of fees plus incentives, for 10,000 sAERO):
 
-- BIO/WETH (CL, Base): $6.28 a day now, average $6.21, lowest hour $3.16, held up 41 of 41 hours
-- USDG/ORBIO (CL, Robinhood Chain): $6.12 a day now, average $3.86, lowest hour $1.38, held up 115 of 123 hours
-- USDC/TAO (CL, Base): $5.01 a day now, average $2.64, lowest hour $0.04, held up 142 of 169 hours
-- FLOCK/USDC (CL, Base): $4.80 a day now, average $3.95, lowest hour $2.37, held up 111 of 111 hours
-- PONS/USDG (CL, Robinhood Chain): $4.37 a day now, average $3.36, lowest hour $1.51, held up 166 of 169 hours
+- BIO/WETH (CL, Base): $6.60 a day now, average $6.22, lowest hour $3.16, held up 42 of 42 hours
+- USDG/ORBIO (CL, Robinhood Chain): $6.12 a day now, average $3.88, lowest hour $1.38, held up 116 of 124 hours
+- FLOCK/USDC (CL, Base): $4.96 a day now, average $3.98, lowest hour $2.37, held up 110 of 110 hours
+- USDC/TAO (CL, Base): $4.78 a day now, average $2.65, lowest hour $0.04, held up 141 of 168 hours
+- EURC/USDC (CL, Base): $4.51 a day now, average $3.60, lowest hour $0.45, held up 103 of 135 hours
 
 ## How allocation works on Aero
 
