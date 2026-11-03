@@ -1,5 +1,5 @@
 {
- "checkedAt": "2026-11-03T05:47:20.035Z",
+ "checkedAt": "2026-11-03T09:47:21.033Z",
  "source": "dromos.kitchen",
  "boardAsOf": "2026-11-03T05:35:52.877564Z",
  "positions": [
@@ -138,11 +138,11 @@
    "earned7d": 396.83,
    "apr7d": 0.4673,
    "moves7d": 3,
-   "lastMoved": 1793507223,
+   "lastMoved": 1793695409,
    "split": [
     {
      "chain": "base",
-     "gauge": "0xb41eac5becd6c09ec40294185bcde208fb3c6b7b",
+     "gauge": "0x74a30b3357121a822adb91a539f4b11b5fb7cb3f",
      "share": 1
     }
    ]
@@ -222,7 +222,7 @@
   },
   {
    "chain": "base",
-   "gauge": "0xb41eac5becd6c09ec40294185bcde208fb3c6b7b",
+   "gauge": "0x74a30b3357121a822adb91a539f4b11b5fb7cb3f",
    "share": 0.1
   },
   {
