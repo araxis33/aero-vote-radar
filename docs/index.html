@@ -1100,10 +1100,11 @@ async function arPushSync(fromClick) {
   }
   if (Notification.permission !== "granted") {
     if (!fromClick) return;
-    if ((await Notification.requestPermission()) !== "granted") {
+    const answer = await Notification.requestPermission();
+    if (answer !== "granted") {
       arPushPrefs = { autopilot: false, wallet: false };
       arPushSave();
-      arPushUi("Alerts are blocked for this site in your browser's settings.");
+      arPushUi(answer === "denied" ? "Alerts are blocked for this site in your browser's settings." : "Allow alerts when your browser asks, then tick again.");
       return;
     }
   }
