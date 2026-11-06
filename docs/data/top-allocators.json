@@ -1,5 +1,5 @@
 {
- "checkedAt": "2026-11-06T01:47:16.232Z",
+ "checkedAt": "2026-11-06T02:47:21.258Z",
  "source": "dromos.kitchen",
  "boardAsOf": "2026-11-05T23:40:39.81527Z",
  "positions": [
@@ -150,6 +150,11 @@
      "share": 0.25
     },
     {
+     "chain": "ethereum",
+     "gauge": "0x9ce6331e5d7a42db5876a9e5b1205e07502fce06",
+     "share": 0.25
+    },
+    {
      "chain": "base",
      "gauge": "0x8097ebcc6cb9f6e61134896717cab0f6c2640a26",
      "share": 0.25
@@ -157,11 +162,6 @@
     {
      "chain": "base",
      "gauge": "0x77bf070d246c5b2823c9c8059d0e26b88b614c91",
-     "share": 0.25
-    },
-    {
-     "chain": "ethereum",
-     "gauge": "0x9ce6331e5d7a42db5876a9e5b1205e07502fce06",
      "share": 0.25
     }
    ]
@@ -306,13 +306,13 @@
    "share": 0.025
   },
   {
-   "chain": "base",
-   "gauge": "0x8097ebcc6cb9f6e61134896717cab0f6c2640a26",
+   "chain": "ethereum",
+   "gauge": "0x9ce6331e5d7a42db5876a9e5b1205e07502fce06",
    "share": 0.025
   },
   {
-   "chain": "ethereum",
-   "gauge": "0x9ce6331e5d7a42db5876a9e5b1205e07502fce06",
+   "chain": "base",
+   "gauge": "0x8097ebcc6cb9f6e61134896717cab0f6c2640a26",
    "share": 0.025
   },
   {
