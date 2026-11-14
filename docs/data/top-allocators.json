@@ -1,5 +1,5 @@
 {
- "checkedAt": "2026-11-14T22:47:20.588Z",
+ "checkedAt": "2026-11-14T23:47:21.379Z",
  "source": "dromos.kitchen",
  "boardAsOf": "2026-11-14T17:42:23.98389Z",
  "positions": [
@@ -153,13 +153,13 @@
    "lastMoved": 1794654313,
    "split": [
     {
-     "chain": "arc",
-     "gauge": "0x22d897efd03852e938863f69ff3771662453e34c",
+     "chain": "base",
+     "gauge": "0x9376bbef9bcb2558c4d9fc2eadaa3cf7356a6941",
      "share": 0.5
     },
     {
-     "chain": "base",
-     "gauge": "0x9376bbef9bcb2558c4d9fc2eadaa3cf7356a6941",
+     "chain": "arc",
+     "gauge": "0x22d897efd03852e938863f69ff3771662453e34c",
      "share": 0.5
     }
    ]
@@ -200,13 +200,13 @@
    "share": 0.1111111111111111
   },
   {
-   "chain": "arc",
-   "gauge": "0x22d897efd03852e938863f69ff3771662453e34c",
+   "chain": "base",
+   "gauge": "0x9376bbef9bcb2558c4d9fc2eadaa3cf7356a6941",
    "share": 0.05555555555555555
   },
   {
-   "chain": "base",
-   "gauge": "0x9376bbef9bcb2558c4d9fc2eadaa3cf7356a6941",
+   "chain": "arc",
+   "gauge": "0x22d897efd03852e938863f69ff3771662453e34c",
    "share": 0.05555555555555555
   }
  ]
