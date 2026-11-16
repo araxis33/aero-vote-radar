@@ -395,10 +395,10 @@
   </div>
 
   <h2>Where to point your sAERO now</h2>
-  <p class="h2note">Best first for <b>your</b> amount. "You'd earn" already counts that your sAERO makes the pool more crowded. Trading fees and the project bonus are what the whole pool pays a day, shared by everyone in it. Only pools with 100,000+ sAERO. Aero's own APR counts fees over the last 48 h, the radar over 96 h, so the two can differ; both are right. <span id="arEarly"></span></p>
+  <p class="h2note">Best first for <b>your</b> amount. "You'd earn" already counts that your sAERO makes the pool more crowded. Trading fees and the project bonus are what the whole pool pays a day, shared by everyone in it. Only pools with 100,000+ sAERO. Aero's own APR counts fees over the last 48 h, the radar over 96 h, so the two can differ; both are right. "Cost to move in" is the median fee people paid in the last 24 h to send sAERO from Base to that network, and how long your earnings there take to cover it; pools on Base cost only gas. <span id="arEarly"></span></p>
   <div class="ar-nets" id="arChains"></div>
   <div class="scroll cards"><table id="arTable">
-    <thead><tr><th>Pool</th><th class="num">Put here</th><th class="num">You'd earn / day</th><th class="num">Trading fees / day</th><th class="num">Project bonus / day</th><th class="num">Already in pool</th><th class="num">Trend</th></tr></thead>
+    <thead><tr><th>Pool</th><th class="num">Put here</th><th class="num">You'd earn / day</th><th class="num">Cost to move in</th><th class="num">Trading fees / day</th><th class="num">Project bonus / day</th><th class="num">Already in pool</th><th class="num">Trend</th></tr></thead>
     <tbody id="arBody"></tbody>
   </table></div>
   <div class="ar-split">
@@ -519,6 +519,15 @@ const usd = (n) =>
   : n >= 1 ? "$" + n.toFixed(2)
   : "$" + n.toFixed(4);
 const num = (n, d) => n.toLocaleString("en-US", { maximumFractionDigits: d === undefined ? 0 : d });
+// Fee to move sAERO from Base into a pool on this network (data/v3.json moveCostUsd,
+// src/moveCost.ts): 0 on Base (gas only), null when the scan had no figure.
+const arMoveCost = (chain) => chain === "base" ? 0 : (arData.moveCostUsd && arData.moveCostUsd[chain] ? arData.moveCostUsd[chain].usd : null);
+// How long `perDay` takes to earn back `cost`.
+const arPayback = (cost, perDay) => {
+  if (!(perDay > 0)) return "";
+  const h = cost / perDay * 24;
+  return h < 1 ? "under 1 h" : h < 48 ? Math.round(h) + " h" : (h / 24).toFixed(1) + " days";
+};
 const pctChange = (n) => (n >= 0 ? "+" : "") + Math.round(n * 100).toLocaleString("en-US") + "%";
 function dilutedPerDay(usdPerDay, votes, amount) {
   return amount > 0 ? usdPerDay * amount / (votes + amount) : 0;
@@ -884,7 +893,11 @@ function arRender() {
     pays.append("about ", paysB);
     arCountTo(paysB, splitPays);
     const note = document.createElement("small");
-    note.textContent = " at today's rates";
+    // One fee per network the split reaches outside Base, paid once when moving in.
+    const fees = [...new Set(split.map((s) => arChainOf(s.g)))].map(arMoveCost);
+    const moveIn = fees.every((f) => f !== null) ? fees.reduce((a, f) => a + f, 0) : null;
+    note.textContent = " at today's rates" +
+      (moveIn > 0 && splitPays > 0 ? " · moving in costs about $" + moveIn.toFixed(2) + " once, " + arPayback(moveIn, splitPays) + " of this" : "");
     pays.append(note);
     answer.append(where, pays);
     if (steadySplit) {
@@ -907,7 +920,11 @@ function arRender() {
     tr.append(arNameCell(g));
     const s = shares.get(g);
     arCell(tr, s ? Math.round(s.share * 100) + "%" : "—", s ? "pct" : "");
-    arCell(tr, usd(s ? s.perDay : dilutedPerDay(arPerDay(g), arW(g), amount)), s ? "ar-mine" : "");
+    const mine = s ? s.perDay : dilutedPerDay(arPerDay(g), arW(g), amount);
+    arCell(tr, usd(mine), s ? "ar-mine" : "");
+    const cost = arMoveCost(arChainOf(g));
+    const back = cost ? arPayback(cost, mine) : "";
+    arCell(tr, cost === null ? "—" : cost === 0 ? "gas only" : "$" + cost.toFixed(2) + (back ? " · " + back : ""));
     arCell(tr, g.feesUsdPerDay > 0 ? usd(g.feesUsdPerDay) : "$0");
     arCell(tr, g.incentivesUsdPerDay > 0 ? usd(g.incentivesUsdPerDay) : "$0");
     arCell(tr, num(g.weight));

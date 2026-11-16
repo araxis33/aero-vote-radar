@@ -10,6 +10,7 @@ import { registryFromDeployment, scanV3, type V3ScanFile, type V3ScanGauge, type
 import { appendV3Sample, poolKey, steadiness, windowStart, type V3HistoryFile } from "./v3History.js";
 import { renderV3LlmsTxt } from "./v3Llms.js";
 import { scanTopAllocators } from "./topAllocators.js";
+import { readMoveCosts, type MoveCostClient } from "./moveCost.js";
 
 /**
  * Entrypoint for the scheduled Aero (v3) scan across Aero's seven networks,
@@ -138,6 +139,18 @@ async function main() {
       ]),
     ),
   };
+  // What a move to each other network costs right now. Optional: without it the page shows "—".
+  if (out.status === "live") {
+    try {
+      const weth = "0x4200000000000000000000000000000000000006";
+      const eth = (await getTokenPrices([weth], "base")).get(weth)?.price ?? 0;
+      if (!(eth > 0)) throw new Error("no ETH price");
+      out.moveCostUsd = await readMoveCosts(client as unknown as MoveCostClient, eth, now);
+      console.error(`v3: move costs ${Object.entries(out.moveCostUsd).map(([k, v]) => `${k} $${v.usd.toFixed(2)} (${v.samples})`).join(", ")}`);
+    } catch (err) {
+      console.error(`v3: move costs skipped: ${formatError(err)}`);
+    }
+  }
   writeFileSync(outPath, JSON.stringify(out, null, 1) + "\n");
   console.error(`v3: ${out.status}, ${gauges.length} gauges -> ${outPath}`);
   // The same scan as plain text for AI assistants, next to the page (docs/llms.txt).
