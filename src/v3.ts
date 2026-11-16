@@ -291,6 +291,8 @@ export interface V3ScanFile {
   gauges: V3ScanGauge[];
   /** Per network, when several are scanned into one file; `error` is why a network has no rows this time. */
   chains?: Record<string, { status: V3ScanFile["status"] | "error"; windowHours: number; gauges: number; error?: string }>;
+  /** Median fee in USD to move sAERO from Base into a pool on each other network (src/moveCost.ts); absent when it couldn't be read. */
+  moveCostUsd?: Record<string, { usd: number; samples: number }>;
 }
 
 const ZERO = /^0x0*$/;
