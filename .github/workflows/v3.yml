@@ -2,10 +2,11 @@ name: Aero scan
 
 on:
   schedule:
-    # Hourly, at :47 rather than on the hour (see snapshot.yml). An sAERO stake can
-    # move every 47 h and pools fill up within hours, so the 4-hourly snapshot
-    # left the ranking stale. GitHub starts scheduled runs hours late (3–5 h apart
-    # in practice), so each run also queues the next one itself (last step); this
+    # Hourly, at :47 rather than on the hour (off the top-of-hour cron pileup, and
+    # this repo previously ran a coarser 4-hourly snapshot that left the ranking
+    # stale against the 47 h move timer and pools filling up within hours — this
+    # job replaced it). GitHub starts scheduled runs hours late (3–5 h apart in
+    # practice), so each run also queues the next one itself (last step); this
     # cron only restarts that chain if it breaks.
     - cron: "47 * * * *"
   workflow_dispatch:
@@ -46,7 +47,8 @@ jobs:
             exit 0
           fi
           git commit -m "Refresh the Aero scan"
-          # The snapshot workflow and the daily routine push to the same branch.
+          # Other automated commits (e.g. the daily improvement routine) can land
+          # on main around the same time, so rebase before pushing rather than fail.
           git pull --rebase
           git push
 

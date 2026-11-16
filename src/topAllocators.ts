@@ -1,5 +1,6 @@
 import { CHAIN_NAMES } from "./radar.js";
-import { readCooldown, readStakeOn, type StakeOnChain } from "./stakes.js";
+import { readCooldown, readStakeOn, STAKE_READ_CONCURRENCY, type StakeOnChain } from "./stakes.js";
+import { mapWithConcurrency } from "./util.js";
 
 /**
  * Where the best sAERO allocators are pointed right now (asked for in a DM on
@@ -126,7 +127,16 @@ export function buildTopAllocators(
   return { checkedAt: now.toISOString(), source: "dromos.kitchen", boardAsOf: board.asOf, positions, together: together(positions) };
 }
 
-/** Reads the leaderboard and the top positions' splits on every network. Throws if any network fails, so a partial split never ships. */
+/**
+ * Reads the leaderboard and the top positions' splits on every network. Throws if any network fails, so a partial split never ships.
+ *
+ * Each position's split costs readStakeOn several serial RPC round trips (tokenStates,
+ * accumulatedCooldownReduction, allocatedGauges, then one call per allocated gauge) —
+ * the same shape readWalletStakes reads for a single wallet's stakes, which is why that
+ * function already bounds them with STAKE_READ_CONCURRENCY/mapWithConcurrency instead of
+ * awaiting them one at a time. Reading the top positions' splits one after another per
+ * network had the same cost without the same guard.
+ */
 export async function scanTopAllocators(now: Date, n = TOP_ALLOCATORS): Promise<TopAllocatorsFile> {
   const res = await fetch(DROMOS_BOARD_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`dromos.kitchen HTTP ${res.status}`);
@@ -137,7 +147,9 @@ export async function scanTopAllocators(now: Date, n = TOP_ALLOCATORS): Promise<
   await Promise.all(
     Object.keys(CHAIN_NAMES).map(async (chain) => {
       const cooldown = await readCooldown(chain);
-      for (const p of top) reads.get(p.id)![chain] = await readStakeOn(chain, BigInt(p.id), cooldown);
+      await mapWithConcurrency(top, STAKE_READ_CONCURRENCY, async (p) => {
+        reads.get(p.id)![chain] = await readStakeOn(chain, BigInt(p.id), cooldown);
+      });
     }),
   );
   return buildTopAllocators(board, reads, now, n);
