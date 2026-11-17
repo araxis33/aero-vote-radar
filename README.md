@@ -48,6 +48,10 @@ No API keys, no wallet connection, no signatures: it reads, you allocate.
   ([dromos.kitchen](https://dromos.kitchen)'s ranking), with each one's current
   split read live from the LeafVoters — on the web page, under "What the top
   allocators hold now".
+- **Shows the cost to move in.** Allocating from Base to another network pays
+  one cross-chain message fee; the web page shows each network's median paid
+  fee from the last 24 hours next to how fast a pool's own payout earns it
+  back.
 
 ## How the figures are made
 
@@ -164,6 +168,7 @@ src/
   v3History.ts    hourly samples and the steady-pool rule
   v3Llms.ts       docs/llms.txt for AI assistants
   topAllocators.ts  dromos.kitchen's top sAERO positions and their live splits
+  moveCost.ts     median fee paid to move a stake from Base onto each other network
   prices.ts       DefiLlama prices
 docs/             the web page, its data and llms.txt (GitHub Pages)
 ```
