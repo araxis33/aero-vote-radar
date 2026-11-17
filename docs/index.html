@@ -586,15 +586,53 @@ const arPools = (amount) =>
 // The suggested split since 3.11.2026: steady pools only, the ones whose weakest hour
 // of the week paid most (src/v3History.ts steadyPick), split evenly. The hot top pick paid less
 // than a typical pool in 2 of 3 windows before; hot pools stay in the table below.
+// Since 17.11.2026 the move-in fee counts too: a stake stays put 47 h, so a pool on a new
+// network outside Base only joins if its share earns that network's fee (arMoveCost) back
+// within those 47 h. Small stakes stay on Base instead of paying more to move than the pool
+// pays back; big stakes get the same steady pick as before. Unknown fee = left out.
+const AR_HOLD_DAYS = 47 / 24;
+const arEvenPct = (n) => Array.from({ length: n }, (_, i) => Math.floor(100 / n) + (i < 100 % n ? 1 : 0));
+const arEvenSplit = (pools, amount) => {
+  const pct = arEvenPct(pools.length);
+  return pools.map((g, i) => ({ g, share: pct[i] / 100, perDay: dilutedPerDay(arPerDay(g), arW(g), amount * pct[i] / 100) }));
+};
+const arMoveInCost = (split) => [...new Set(split.map((s) => arChainOf(s.g)))].reduce((a, c) => a + arMoveCost(c), 0);
+// What the split leaves over one 47 h hold after the move-in fees.
+const arNetHold = (split) => split.reduce((a, s) => a + s.perDay, 0) * AR_HOLD_DAYS - arMoveInCost(split);
 const arSteadySplit = (amount) => {
   const steady = arPools(amount).map((x) => x.g)
-    .filter((g) => g.steady && g.steady.avgPer10k > 0 && g.steady.held >= AR_STEADY_SHARE * g.steady.of)
-    .sort((a, b) => b.steady.minPer10k - a.steady.minPer10k)
-    .slice(0, AR_MAX_POOLS);
-  if (!steady.length || !(amount > 0)) return { split: arSplit(arPools(amount).map((x) => x.g), amount), steady: false };
+    .filter((g) => g.steady && g.steady.avgPer10k > 0 && g.steady.held >= AR_STEADY_SHARE * g.steady.of && arMoveCost(arChainOf(g)) !== null)
+    .sort((a, b) => b.steady.minPer10k - a.steady.minPer10k);
+  const picked = [];
+  if (amount > 0) {
+    // In steadiness order; a pool on a network not yet in the split must pay its fee back.
+    // The smallest share an even split gives (33% of three), so the check never overstates.
+    const share = amount * Math.min(...arEvenPct(AR_MAX_POOLS)) / 100;
+    for (const g of steady) {
+      if (picked.length === AR_MAX_POOLS) break;
+      const c = arChainOf(g);
+      const fee = picked.some((p) => arChainOf(p) === c) ? 0 : arMoveCost(c);
+      if (dilutedPerDay(arPerDay(g), arW(g), share) * AR_HOLD_DAYS > fee) picked.push(g);
+    }
+  }
+  if (!picked.length) {
+    // No steady pool pays back its fee: the plain best split, over pools that do on their own.
+    let pools = arPools(amount).filter((x) => { const c = arMoveCost(arChainOf(x.g)); return c !== null && x.mine * AR_HOLD_DAYS > c; }).map((x) => x.g);
+    let split = arSplit(pools, amount);
+    // Checked again on the shares the split actually gives: drop a network whose pools
+    // together don't pay its fee back, and split again without it.
+    for (;;) {
+      const earned = {};
+      for (const s of split) earned[arChainOf(s.g)] = (earned[arChainOf(s.g)] || 0) + s.perDay * AR_HOLD_DAYS;
+      const losing = Object.keys(earned).filter((c) => !(earned[c] > arMoveCost(c)));
+      if (!losing.length) break;
+      pools = pools.filter((g) => !losing.includes(arChainOf(g)));
+      split = arSplit(pools, amount);
+    }
+    return { split, steady: false };
+  }
   // Spread evenly (34/33/33): in the backtest the three together beat the single best.
-  const pct = steady.map((_, i) => Math.floor(100 / steady.length) + (i < 100 % steady.length ? 1 : 0));
-  return { split: steady.map((g, i) => ({ g, share: pct[i] / 100, perDay: dilutedPerDay(arPerDay(g), arW(g), amount * pct[i] / 100) })), steady: true };
+  return { split: arEvenSplit(picked, amount), steady: true };
 };
 
 // One button per network that has rankable pools, plus "All networks".
@@ -897,7 +935,8 @@ function arRender() {
     const fees = [...new Set(split.map((s) => arChainOf(s.g)))].map(arMoveCost);
     const moveIn = fees.every((f) => f !== null) ? fees.reduce((a, f) => a + f, 0) : null;
     note.textContent = " at today's rates" +
-      (moveIn > 0 && splitPays > 0 ? " · moving in costs about $" + moveIn.toFixed(2) + " once, " + arPayback(moveIn, splitPays) + " of this" : "");
+      (moveIn > 0 && splitPays > 0 ? " · moving in costs about $" + moveIn.toFixed(2) + " once, " + arPayback(moveIn, splitPays) + " of this, so about " +
+        usd(splitPays * AR_HOLD_DAYS - moveIn) + " is left over the 47 h" : "");
     pays.append(note);
     answer.append(where, pays);
     if (steadySplit) {
