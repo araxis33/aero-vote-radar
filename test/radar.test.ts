@@ -1,6 +1,20 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { dilutedPerDay, fetchScan, poolName, poolToJson, rankPools, scanAgeHours, splitAllocation, splitToText, steadyPools, trendOf, MAX_POOLS } from "../src/radar.js";
+import {
+  dilutedPerDay,
+  fetchScan,
+  moveInCost,
+  paybackText,
+  poolName,
+  poolToJson,
+  rankPools,
+  scanAgeHours,
+  splitAllocation,
+  splitToText,
+  steadyPools,
+  trendOf,
+  MAX_POOLS,
+} from "../src/radar.js";
 import type { V3ScanFile, V3ScanGauge } from "../src/v3.js";
 
 const originalFetch = global.fetch;
@@ -146,4 +160,31 @@ test("poolToJson: a missing kind is null rather than undefined; a pool without a
   const json = poolToJson(bare, 66, 10_000);
   assert.equal(json.kind, null);
   assert.equal(json.steady, null);
+});
+
+test("moveInCost: free on Base, one fee per network outside it however many of its pools are in the split", () => {
+  const onBase = [{ gauge: g("A", 200_000, 10) }];
+  assert.deepEqual(moveInCost(onBase, { moveCostUsd: {} }), { usd: 0, chains: [] });
+
+  const twoOnOptimism = [{ gauge: g("A", 200_000, 10, { chain: "optimism" }) }, { gauge: g("B", 200_000, 10, { chain: "optimism" }) }];
+  assert.deepEqual(moveInCost(twoOnOptimism, { moveCostUsd: { optimism: { usd: 0.7, samples: 10 } } }), { usd: 0.7, chains: ["optimism"] });
+
+  const twoNetworks = [{ gauge: g("A", 200_000, 10, { chain: "optimism" }) }, { gauge: g("B", 200_000, 10, { chain: "arbitrum" }) }];
+  assert.deepEqual(
+    moveInCost(twoNetworks, { moveCostUsd: { optimism: { usd: 0.7, samples: 10 }, arbitrum: { usd: 0.55, samples: 10 } } }),
+    { usd: 1.25, chains: ["optimism", "arbitrum"] },
+  );
+});
+
+test("moveInCost: null when the scan has no fee yet for a network the split reaches", () => {
+  const onArbitrum = [{ gauge: g("A", 200_000, 10, { chain: "arbitrum" }) }];
+  assert.equal(moveInCost(onArbitrum, { moveCostUsd: {} }), null);
+  assert.equal(moveInCost(onArbitrum, {}), null);
+});
+
+test("paybackText: under an hour, whole hours under two days, otherwise days; empty when nothing is earned", () => {
+  assert.equal(paybackText(1, 30), "under 1 h");
+  assert.equal(paybackText(10, 30), "8 h");
+  assert.equal(paybackText(100, 30), "3.3 days");
+  assert.equal(paybackText(10, 0), "");
 });

@@ -3,11 +3,14 @@ import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import {
   ALLOCATE_URL,
+  ALLOCATION_HOLD_HOURS,
   CHAIN_NAMES,
   STALE_HOURS,
   chainName,
   chainOf,
   fetchScan,
+  moveInCost,
+  paybackText,
   poolName,
   poolToJson,
   rankPools,
@@ -157,6 +160,7 @@ async function cmdRecommend(args: string[]) {
   const split = splitAllocation(rankPools(others, amount, chain).map((r) => r.gauge), amount);
   const pays = split.reduce((a, s) => a + s.perDay, 0);
   const current = wallet ? currentSplitPays(wallet, scan) : undefined;
+  const moveIn = moveInCost(split, scan);
 
   if (hasFlag(args, "json")) {
     const rows = split.map((s) => ({ ...poolToJson(s.gauge, scan.windowHours, s.amount), percent: Math.round(s.share * 100), sAero: s.amount }));
@@ -170,6 +174,7 @@ async function cmdRecommend(args: string[]) {
           current: current ?? null,
           timers: wallet ? timersByChain(wallet) : null,
           notRead: wallet ? wallet.failed : null,
+          moveInUsd: moveIn,
           allocateUrl: ALLOCATE_URL,
         },
         null,
@@ -189,6 +194,12 @@ async function cmdRecommend(args: string[]) {
     console.log(poolRow(`${Math.round(s.share * 100)}`, poolName(s.gauge), s.gauge.kind ?? "?", chainName(chainOf(s.gauge)), [fmtNum(s.amount), fmtUsd(s.perDay)]));
   }
   console.log(`\nAbout ${fmtUsd(pays)} a day in total, at today's rates.`);
+  if (moveIn && moveIn.usd > 0 && pays > 0) {
+    const left = pays * (ALLOCATION_HOLD_HOURS / 24) - moveIn.usd;
+    console.log(
+      `Moving into ${moveIn.chains.map(chainName).join(", ")} costs about ${fmtUsd(moveIn.usd)} once, ${paybackText(moveIn.usd, pays)} of this; about ${fmtUsd(left)} left over the ${ALLOCATION_HOLD_HOURS} h hold.`,
+    );
+  }
   if (wallet && current) {
     if (current.placedSAero > 0) console.log(`Your current split pays about ${fmtUsd(current.usdPerDay)} a day.`);
     printTimers(wallet);

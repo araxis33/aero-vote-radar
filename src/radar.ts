@@ -155,3 +155,40 @@ export function splitToText(split: readonly SplitRow[]): string {
 }
 
 export const ALLOCATE_URL = "https://app.aero.xyz/markets/allocate";
+
+/** Hours a stake must hold a network before it can move again (Aero's per-network allocation cooldown). */
+export const ALLOCATION_HOLD_HOURS = 47;
+
+export interface MoveInCost {
+  /** Total one-time fee, in USD, to reach every network outside Base the split uses. */
+  usd: number;
+  /** Networks outside Base the split pays a fee to reach. */
+  chains: string[];
+}
+
+/**
+ * The one-time fee (src/moveCost.ts) to move a stake from Base into every network
+ * outside Base a split reaches — one fee per network, however many of its pools
+ * are in the split. `null` when the scan has no fee for one of those networks yet,
+ * same as a pool's own price can be missing: the cost isn't zero, it's unknown, and
+ * the two shouldn't be shown the same way.
+ */
+export function moveInCost(split: readonly Pick<SplitRow, "gauge">[], scan: Pick<V3ScanFile, "moveCostUsd">): MoveInCost | null {
+  const chains = [...new Set(split.map((s) => chainOf(s.gauge)))].filter((c) => c !== "base");
+  let usd = 0;
+  for (const c of chains) {
+    const fee = scan.moveCostUsd?.[c]?.usd;
+    if (fee === undefined) return null;
+    usd += fee;
+  }
+  return { usd, chains };
+}
+
+/** How long it takes `perDay` to earn back `cost`, as text; "" when `perDay` isn't positive. */
+export function paybackText(cost: number, perDay: number): string {
+  if (!(perDay > 0)) return "";
+  const hours = (cost / perDay) * 24;
+  if (hours < 1) return "under 1 h";
+  if (hours < 48) return `${Math.round(hours)} h`;
+  return `${(hours / 24).toFixed(1)} days`;
+}

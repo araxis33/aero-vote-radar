@@ -5,7 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { createRequire } from "node:module";
-import { ALLOCATE_URL, CHAIN_NAMES, fetchScan, poolToJson, rankPools, scanAgeHours, splitAllocation, splitToText, steadyPools } from "./radar.js";
+import { ALLOCATE_URL, CHAIN_NAMES, fetchScan, moveInCost, poolToJson, rankPools, scanAgeHours, splitAllocation, splitToText, steadyPools } from "./radar.js";
 import { currentSplitPays, readWalletStakes, timersByChain, withoutOwnSAero } from "./stakes.js";
 import { formatError, isValidAddress } from "./util.js";
 
@@ -117,8 +117,9 @@ server.registerTool(
       current: resolved.wallet ? currentSplitPays(resolved.wallet, scan) : null,
       timers: resolved.wallet ? timersByChain(resolved.wallet) : null,
       notRead: resolved.wallet ? resolved.wallet.failed : null,
+      moveInUsd: moveInCost(split, scan),
       allocateUrl: ALLOCATE_URL,
-      note: `${SCAN_NOTE} Timers are Unix seconds when a stake may move again on that network. With an address, the wallet's own sAERO is left out of each pool's allocatedSAero, since the split moves it. Do not describe the allocation as done: the user saves it on ${ALLOCATE_URL}.`,
+      note: `${SCAN_NOTE} Timers are Unix seconds when a stake may move again on that network. With an address, the wallet's own sAERO is left out of each pool's allocatedSAero, since the split moves it. moveInUsd is the one-time cross-chain fee to reach each network outside Base the split uses (null if the scan has no fee for one yet) — a stake holds a network 47 h before it can move again, so weigh this against the split's daily pay before recommending a move off Base for a small amount. Do not describe the allocation as done: the user saves it on ${ALLOCATE_URL}.`,
     });
   }),
 );
