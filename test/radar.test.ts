@@ -122,6 +122,20 @@ test("fetchScan throws a clear error on a non-ok HTTP response", async () => {
   );
 });
 
+test("fetchScan throws a clear error when the response isn't valid JSON", async () => {
+  global.fetch = (async () => ({
+    ok: true,
+    json: async () => {
+      throw new SyntaxError("Unexpected token '<', \"<!doctype \"... is not valid JSON");
+    },
+  })) as unknown as typeof fetch;
+
+  await assert.rejects(
+    () => fetchScan("https://example.test/v3.json"),
+    /The Aero scan at https:\/\/example\.test\/v3\.json did not return valid JSON \(Unexpected token/,
+  );
+});
+
 test("fetchScan throws when the scan isn't live, so a bad publish doesn't rank stale/empty data", async () => {
   const notLive = { ...scan([g("AAA", 200_000, 50)]), status: "stale" };
   global.fetch = (async () => ({ ok: true, json: async () => notLive })) as unknown as typeof fetch;

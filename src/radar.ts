@@ -46,7 +46,16 @@ export function dilutedPerDay(usdPerDay: number, weight: number, amount: number)
 export async function fetchScan(url: string = DEFAULT_DATA_URL): Promise<V3ScanFile> {
   const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`Could not load the Aero scan from ${url} (HTTP ${res.status}).`);
-  const scan = (await res.json()) as V3ScanFile;
+  let scan: V3ScanFile;
+  try {
+    scan = (await res.json()) as V3ScanFile;
+  } catch (err) {
+    // A 200 with a body that isn't JSON (a CDN/host error page, a truncated
+    // response from a dropped connection) would otherwise surface as a bare
+    // SyntaxError — "Unexpected token '<'…" — with no hint of which URL or
+    // request it came from, unlike every other failure path here.
+    throw new Error(`The Aero scan at ${url} did not return valid JSON (${err instanceof Error ? err.message : String(err)}).`);
+  }
   if (scan.status !== "live" || !Array.isArray(scan.gauges) || scan.gauges.length === 0) {
     throw new Error(`The Aero scan at ${url} has no live pools (status: ${scan.status}).`);
   }
