@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { createPublicClient, http, type Chain } from "viem";
 import { arbitrum, base, mainnet, optimism } from "viem/chains";
 import { client } from "./chain.js";
@@ -45,6 +46,28 @@ const VIEM_CHAINS: Record<string, Chain> = { base, ethereum: mainnet, optimism, 
 // since the two tokens are free to trade apart once that happens.
 const NEW_AERO = "0x3f5bf3edac59d650d8fdf9657a71f2f904a3a4ee";
 const OLD_AERO = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
+
+/**
+ * Reads the history file, or starts fresh if it's missing, unreadable or not
+ * valid JSON. Every other external read this scan depends on (DefiLlama,
+ * dromos.kitchen, each chain's RPC) already falls back rather than taking the
+ * whole run down — this file is the one exception, and the scan writes it
+ * itself with a plain `writeFileSync` (no atomic rename), so a run killed
+ * mid-write (a cancelled dispatch, an OOM, a runner timeout) can leave it
+ * truncated. Losing history on the next run is a one-hour gap in the steady-pool
+ * rule; crashing `main()` over it would also lose that run's pool rankings,
+ * which is the part everything else here (chains, llms.txt, top allocators)
+ * depends on.
+ */
+export function readHistory(path: string): V3HistoryFile | null {
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as V3HistoryFile;
+  } catch (err) {
+    console.error(`v3: history at ${path} unreadable, starting fresh: ${formatError(err)}`);
+    return null;
+  }
+}
 
 async function registryAddress(chain: string): Promise<string> {
   try {
@@ -117,7 +140,7 @@ async function main() {
   gauges.sort((a, b) => (b.usdPerDayPer10k ?? -1) - (a.usdPerDayPer10k ?? -1));
   // Hourly history next to the scan; each gauge gets its steadiness from it.
   const historyPath = outPath.replace(/v3\.json$/, "v3-history.json");
-  const history = appendV3Sample(existsSync(historyPath) ? (JSON.parse(readFileSync(historyPath, "utf8")) as V3HistoryFile) : null, gauges, now);
+  const history = appendV3Sample(readHistory(historyPath), gauges, now);
   writeFileSync(historyPath, JSON.stringify(history) + "\n");
   const week = windowStart(history, now);
   for (const g of gauges) {
@@ -173,7 +196,14 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(`Error: ${formatError(err)}`);
-  process.exitCode = 1;
-});
+// Only run the scan when this file is executed directly, not when it's
+// imported (e.g. by tests importing `readHistory`), the same guard src/cli.ts
+// and src/mcp-server.ts use. realpath, because npx/tsx can run this through a
+// symlink while import.meta.url is the real file.
+const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+if (isMainModule) {
+  main().catch((err) => {
+    console.error(`Error: ${formatError(err)}`);
+    process.exitCode = 1;
+  });
+}
