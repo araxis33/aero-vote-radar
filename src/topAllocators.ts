@@ -140,7 +140,16 @@ export function buildTopAllocators(
 export async function scanTopAllocators(now: Date, n = TOP_ALLOCATORS): Promise<TopAllocatorsFile> {
   const res = await fetch(DROMOS_BOARD_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`dromos.kitchen HTTP ${res.status}`);
-  const board = (await res.json()) as DromosBoard;
+  let board: DromosBoard;
+  try {
+    board = (await res.json()) as DromosBoard;
+  } catch (err) {
+    // Same gap src/radar.ts's fetchScan already closed: a 200 with a body that
+    // isn't JSON (a CDN/host error page, a connection dropped mid-transfer)
+    // would otherwise surface as a bare SyntaxError with no hint of which
+    // request failed, unlike every other failure path here.
+    throw new Error(`dromos.kitchen did not return valid JSON (${err instanceof Error ? err.message : String(err)})`);
+  }
   if (!Array.isArray(board.positions)) throw new Error("dromos.kitchen: no positions in the leaderboard");
   const top = pickTop(board, n);
   const reads = new Map<string, Record<string, StakeOnChain>>(top.map((p) => [p.id, {}]));

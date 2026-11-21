@@ -98,6 +98,17 @@ test("scanTopAllocators throws a clear error on a non-ok HTTP response from the 
   await assert.rejects(() => scanTopAllocators(new Date()), /dromos\.kitchen HTTP 503/);
 });
 
+test("scanTopAllocators throws a clear error when the leaderboard response isn't valid JSON", async () => {
+  global.fetch = (async () => ({
+    ok: true,
+    json: async () => {
+      throw new SyntaxError("Unexpected token '<', \"<!doctype \"... is not valid JSON");
+    },
+  })) as unknown as typeof fetch;
+
+  await assert.rejects(() => scanTopAllocators(new Date()), /dromos\.kitchen did not return valid JSON \(Unexpected token/);
+});
+
 test("scanTopAllocators throws when the leaderboard has no positions array", async () => {
   global.fetch = (async () => ({ ok: true, json: async () => ({ asOf: "", minSize: 10_000 }) })) as unknown as typeof fetch;
 
