@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { appendV3Sample, isSteady, per10kNow, poolKey, steadiness, V3_STEADY_MIN_SAMPLES, windowStart } from "../src/v3History.js";
+import { appendV3Sample, isSteady, per10kNow, poolKey, steadiness, steadyPick, topPick, V3_STEADY_MIN_SAMPLES, windowStart } from "../src/v3History.js";
 import type { V3ScanGauge } from "../src/v3.js";
 
 const gauge = (gauge: string, weight: number, fees24h: number, incentives = 0): V3ScanGauge =>
@@ -17,6 +17,33 @@ const gauge = (gauge: string, weight: number, fees24h: number, incentives = 0): 
 
 test("per10kNow: 24 h fees plus incentives, diluted by the 10,000 sAERO itself", () => {
   assert.equal(per10kNow(gauge("0xA", 90_000, 80, 20)), 10);
+});
+
+test("topPick: null when no pool meets the weight floor", () => {
+  assert.equal(topPick([gauge("0xA", 50_000, 1000)]), null);
+});
+
+test("topPick: the highest per10k among eligible pools, ignoring one under the weight floor", () => {
+  // 0xA pays the most in absolute terms but is under the 100,000 sAERO floor;
+  // 0xC's smaller absolute pay is worth more per 10,000 sAERO once diluted.
+  const picked = topPick([gauge("0xA", 50_000, 1000), gauge("0xB", 490_000, 10), gauge("0xC", 100_000, 100)]);
+  assert.deepEqual(picked, { pool: "base:0xc", per10k: 9.0909 });
+});
+
+test("steadyPick: null when no pool has a steady week yet", () => {
+  assert.equal(steadyPick([gauge("0xA", 490_000, 100)], {}, 0), null);
+});
+
+test("steadyPick: among several steady pools, the one whose weakest hour paid most — not the one paying most right now", () => {
+  const n = V3_STEADY_MIN_SAMPLES;
+  const pools = {
+    "base:0xx": Array(n).fill(5), // steady at 5 all week: weakest hour paid 5.
+    "base:0xy": Array(n).fill(2), // steady at 2 all week: weakest hour paid only 2.
+  };
+  // Right now 0xY pays far more (fees 500) than 0xX (fees 150), but steadyPick
+  // judges by the week's weakest hour, not today's rate.
+  const picked = steadyPick([gauge("0xX", 490_000, 150), gauge("0xY", 490_000, 500)], pools, 0);
+  assert.deepEqual(picked, { pool: "base:0xx", per10k: 3, steady: true });
 });
 
 test("appendV3Sample: one column per pool, small pools left out, missing scans are null", () => {
