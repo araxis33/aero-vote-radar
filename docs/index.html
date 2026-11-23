@@ -596,9 +596,6 @@ const arEvenSplit = (pools, amount) => {
   const pct = arEvenPct(pools.length);
   return pools.map((g, i) => ({ g, share: pct[i] / 100, perDay: dilutedPerDay(arPerDay(g), arW(g), amount * pct[i] / 100) }));
 };
-const arMoveInCost = (split) => [...new Set(split.map((s) => arChainOf(s.g)))].reduce((a, c) => a + arMoveCost(c), 0);
-// What the split leaves over one 47 h hold after the move-in fees.
-const arNetHold = (split) => split.reduce((a, s) => a + s.perDay, 0) * AR_HOLD_DAYS - arMoveInCost(split);
 const arSteadySplit = (amount) => {
   const steady = arPools(amount).map((x) => x.g)
     .filter((g) => g.steady && g.steady.avgPer10k > 0 && g.steady.held >= AR_STEADY_SHARE * g.steady.of && arMoveCost(arChainOf(g)) !== null)
