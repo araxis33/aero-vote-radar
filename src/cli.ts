@@ -26,11 +26,22 @@ import { formatError, isValidAddress, padCol } from "./util.js";
 export const DEFAULT_AMOUNT = 10_000;
 export const DEFAULT_TOP = 15;
 
+/**
+ * Negative here is real, not a bad input: `left` in cmdRecommend goes
+ * negative whenever a split's one-time move-in fee outweighs what it earns
+ * over the 47 h hold, which a small stake moving into a pricier network can
+ * easily hit. Un-signed, `n >= 1000`/`n >= 1` are both false for a negative
+ * `n`, so it fell through to the 4-decimal branch and printed the sign
+ * *inside* the figure (`$-1234.5000` instead of `-$1,235`) - formatting a
+ * four-figure loss with the same precision as a fraction of a cent.
+ */
 export function fmtUsd(n: number): string {
   if (n === 0) return "$0";
-  if (n >= 1000) return `$${Math.round(n).toLocaleString("en-US")}`;
-  if (n >= 1) return `$${n.toFixed(2)}`;
-  return `$${n.toFixed(4)}`;
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `${sign}$${Math.round(abs).toLocaleString("en-US")}`;
+  if (abs >= 1) return `${sign}$${abs.toFixed(2)}`;
+  return `${sign}$${abs.toFixed(4)}`;
 }
 
 const fmtNum = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });

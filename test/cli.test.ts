@@ -34,6 +34,15 @@ test("fmtUsd keeps cents under $1,000 and four places under $1", () => {
   assert.equal(fmtUsd(0), "$0");
 });
 
+// cmdRecommend's "left over the 47 h hold" figure goes negative whenever a
+// split's move-in fee outweighs what it earns over the hold, so fmtUsd must
+// put the sign before the $ rather than fall through to the 4-decimal branch.
+test("fmtUsd puts the sign before the $ for a negative amount, at the same precision a positive one would get", () => {
+  assert.equal(fmtUsd(-1234.6), "-$1,235");
+  assert.equal(fmtUsd(-3.456), "-$3.46");
+  assert.equal(fmtUsd(-0.01234), "-$0.0123");
+});
+
 test("scanLine flags a scan older than 3 h", () => {
   const scan = { checkedAt: "2026-10-25T10:00:00.000Z", windowHours: 66.4, gauges: [{ chain: "base" }, { chain: "arc" }] } as unknown as V3ScanFile;
   assert.match(scanLine(scan, Date.parse("2026-10-25T10:30:00.000Z")), /on 2 networks under an hour ago; fees from the last 66 h/);

@@ -514,10 +514,16 @@ async function ethCall(data, to) {
   throw lastErr || new Error("all RPC endpoints failed");
 }
 
-const usd = (n) =>
-  n >= 1000 ? "$" + Math.round(n).toLocaleString("en-US")
-  : n >= 1 ? "$" + n.toFixed(2)
-  : "$" + n.toFixed(4);
+// `n` goes negative when a split's move-in fee outweighs what it earns over
+// the 47 h hold (small stake, pricier network) — the sign must come before
+// the $, not fall through into the 4-decimal branch as "$-1234.5000".
+const usd = (n) => {
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  return sign + (abs >= 1000 ? "$" + Math.round(abs).toLocaleString("en-US")
+    : abs >= 1 ? "$" + abs.toFixed(2)
+    : "$" + abs.toFixed(4));
+};
 const num = (n, d) => n.toLocaleString("en-US", { maximumFractionDigits: d === undefined ? 0 : d });
 // Fee to move sAERO from Base into a pool on this network (data/v3.json moveCostUsd,
 // src/moveCost.ts): 0 on Base (gas only), null when the scan had no figure.
