@@ -10,6 +10,7 @@ import {
   rankPools,
   scanAgeHours,
   splitAllocation,
+  splitAllocationWithMoveCost,
   splitToText,
   steadyPools,
   trendOf,
@@ -77,6 +78,35 @@ test("splitAllocation spreads a large stake, in 5% steps over at most 3 pools, t
 test("splitAllocation returns nothing for no amount or no pools", () => {
   assert.deepEqual(splitAllocation([g("A", 200_000, 10)], 0), []);
   assert.deepEqual(splitAllocation([], 10_000), []);
+});
+
+test("splitAllocationWithMoveCost drops a network whose share wouldn't earn back its move-in fee, falling back to Base", () => {
+  const base = g("BASE", 190_000, 50);
+  const opt = g("OPT", 190_000, 60, { chain: "optimism" });
+  const pools = rankPools(scan([base, opt]), 1_000).map((r) => r.gauge);
+  const split = splitAllocationWithMoveCost(pools, 1_000, { optimism: { usd: 1, samples: 10 } });
+  assert.deepEqual(split.map((s) => s.gauge.symbol0), ["BASE"]);
+});
+
+test("splitAllocationWithMoveCost leaves a network out entirely when the scan has no fee for it yet", () => {
+  const base = g("BASE", 190_000, 50);
+  const opt = g("OPT", 190_000, 60, { chain: "optimism" });
+  const pools = rankPools(scan([base, opt]), 1_000).map((r) => r.gauge);
+  assert.deepEqual(splitAllocationWithMoveCost(pools, 1_000, undefined).map((s) => s.gauge.symbol0), ["BASE"]);
+  assert.deepEqual(splitAllocationWithMoveCost(pools, 1_000, {}).map((s) => s.gauge.symbol0), ["BASE"]);
+});
+
+test("splitAllocationWithMoveCost keeps a network whose share does earn back its fee", () => {
+  const base = g("BASE", 100_000, 10);
+  const opt = g("OPT", 100_000, 10, { chain: "optimism" });
+  const pools = rankPools(scan([base, opt]), 200_000).map((r) => r.gauge);
+  const split = splitAllocationWithMoveCost(pools, 200_000, { optimism: { usd: 0.01, samples: 10 } });
+  assert.ok(split.some((s) => s.gauge.symbol0 === "OPT"));
+});
+
+test("splitAllocationWithMoveCost returns nothing once every reachable network is excluded", () => {
+  const opt = g("OPT", 190_000, 60, { chain: "optimism" });
+  assert.deepEqual(splitAllocationWithMoveCost([opt], 1_000, { optimism: { usd: 1000, samples: 10 } }), []);
 });
 
 test("trendOf says new under 36 h of data, then compares the last 24 h with the window", () => {

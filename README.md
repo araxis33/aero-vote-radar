@@ -51,9 +51,10 @@ No API keys, no wallet connection, no signatures: it reads, you allocate.
 - **Shows the cost to move in.** Allocating from Base to another network pays
   one cross-chain message fee; the web page shows each network's median paid
   fee from the last 24 hours next to how fast a pool's own payout earns it
-  back. `recommend`/`recommend_allocation` show the same figure for the
-  suggested split: the one-time fee to reach each network it uses, and what
-  of it is left over the 47 h hold.
+  back, and leaves a network out of the suggested split if a stake wouldn't
+  earn its fee back there within the 47 h hold. `recommend`/`recommend_allocation`
+  do the same, and show the same figure for the suggested split: the one-time
+  fee to reach each network it uses, and what of it is left over the hold.
 
 ## How the figures are made
 

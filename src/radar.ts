@@ -193,6 +193,35 @@ export function moveInCost(split: readonly Pick<SplitRow, "gauge">[], scan: Pick
   return { usd, chains };
 }
 
+/**
+ * `splitAllocation`, but a network outside Base stays in the split only if what
+ * it's given there earns back that network's one-time move-in fee
+ * (src/moveCost.ts) within ALLOCATION_HOLD_HOURS — the same check the web page
+ * already makes before suggesting a split (docs/index.html's arSteadySplit,
+ * since 17.11.2026), which `recommend`/`recommend_allocation` never picked up:
+ * without it, a small stake could be told to move onto a network whose fee
+ * outweighed what the pool paid back before the stake could move again. A
+ * network with no fee figure yet is left out rather than assumed free, same as
+ * `moveInCost` treats it as unknown rather than zero.
+ */
+export function splitAllocationWithMoveCost(
+  pools: readonly V3ScanGauge[],
+  amount: number,
+  moveCostUsd: V3ScanFile["moveCostUsd"],
+): SplitRow[] {
+  const feeOf = (chain: string): number | undefined => (chain === "base" ? 0 : moveCostUsd?.[chain]?.usd);
+  let candidates = pools.filter((g) => feeOf(chainOf(g)) !== undefined);
+  for (;;) {
+    const split = splitAllocation(candidates, amount);
+    if (split.length === 0) return split;
+    const earned = new Map<string, number>();
+    for (const s of split) earned.set(chainOf(s.gauge), (earned.get(chainOf(s.gauge)) ?? 0) + s.perDay * (ALLOCATION_HOLD_HOURS / 24));
+    const losing = [...earned].filter(([c, paid]) => !(paid > feeOf(c)!)).map(([c]) => c);
+    if (losing.length === 0) return split;
+    candidates = candidates.filter((g) => !losing.includes(chainOf(g)));
+  }
+}
+
 /** How long it takes `perDay` to earn back `cost`, as text; "" when `perDay` isn't positive. */
 export function paybackText(cost: number, perDay: number): string {
   if (!(perDay > 0)) return "";

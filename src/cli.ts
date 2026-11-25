@@ -15,7 +15,7 @@ import {
   poolToJson,
   rankPools,
   scanAgeHours,
-  splitAllocation,
+  splitAllocationWithMoveCost,
   steadyPools,
   trendOf,
 } from "./radar.js";
@@ -168,7 +168,7 @@ async function cmdRecommend(args: string[]) {
     return;
   }
   const others = wallet ? withoutOwnSAero(scan, wallet) : scan;
-  const split = splitAllocation(rankPools(others, amount, chain).map((r) => r.gauge), amount);
+  const split = splitAllocationWithMoveCost(rankPools(others, amount, chain).map((r) => r.gauge), amount, scan.moveCostUsd);
   const pays = split.reduce((a, s) => a + s.perDay, 0);
   const current = wallet ? currentSplitPays(wallet, scan) : undefined;
   const moveIn = moveInCost(split, scan);
