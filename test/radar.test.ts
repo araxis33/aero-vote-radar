@@ -232,3 +232,14 @@ test("paybackText: under an hour, whole hours under two days, otherwise days; em
   assert.equal(paybackText(100, 30), "3.3 days");
   assert.equal(paybackText(10, 0), "");
 });
+
+test("steadyPools: same pay and order as rankPools and the page (window fees, not the last 24 h)", () => {
+  const st = { held: 30, of: 30, avgPer10k: 5, minPer10k: 4 };
+  const hot24 = g("HOT", 190_000, 40, { fees24hUsdPerDay: 400, steady: st });
+  const even = g("EVEN", 190_000, 100, { fees24hUsdPerDay: 10, steady: st });
+  const dry = g("DRY", 190_000, 0, { fees24hUsdPerDay: 50, steady: st });
+  const s = steadyPools(scan([hot24, even, dry]), 10_000);
+  assert.deepEqual(s.map((r) => r.gauge.symbol0), ["EVEN", "HOT"]);
+  assert.equal(s[0].mine, dilutedPerDay(100, 190_000, 10_000));
+  assert.deepEqual(s.map((r) => r.mine), rankPools(scan([hot24, even]), 10_000).map((r) => r.mine));
+});

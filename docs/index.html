@@ -714,7 +714,7 @@ const AR_STEADY_ROWS = 5;
 const arSteadyNow = (g, amount) => dilutedPerDay(arPerDay(g), arW(g), amount);
 function arRenderSteady(amount) {
   const steady = arData.gauges
-    .filter((g) => g.steady && g.weight >= AR_MIN_WEIGHT && g.steady.avgPer10k > 0 && g.steady.held >= AR_STEADY_SHARE * g.steady.of)
+    .filter((g) => g.steady && g.weight >= AR_MIN_WEIGHT && arPerDay(g) > 0 && g.steady.avgPer10k > 0 && g.steady.held >= AR_STEADY_SHARE * g.steady.of)
     .filter((g) => arChain === "all" || arChainOf(g) === arChain)
     .sort((a, b) => arSteadyNow(b, amount) - arSteadyNow(a, amount))
     .slice(0, AR_STEADY_ROWS);
