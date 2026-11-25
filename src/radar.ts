@@ -127,13 +127,13 @@ export function trendOf(g: V3ScanGauge, windowHours: number): { label: "new" | "
   return { label: "steady", change };
 }
 
-/** On the same basis as the hourly samples: the last 24 h of fees plus incentives. */
-export const steadyNow = (g: V3ScanGauge, amount: number) => dilutedPerDay(g.fees24hUsdPerDay + g.incentivesUsdPerDay, g.weight, amount);
+/** Same pay as rankPools and the page (fees over the scan window plus incentives), so one pool never shows two prices. */
+export const steadyNow = (g: V3ScanGauge, amount: number) => dilutedPerDay(perDay(g), g.weight, amount);
 
 /** Pools that kept paying hour after hour (src/v3History.ts), ranked by what they pay `amount` now. */
 export function steadyPools(scan: V3ScanFile, amount: number, chain?: string): RankedPool[] {
   return scan.gauges
-    .filter((g) => g.weight >= MIN_WEIGHT && isSteady(g.steady) && (!chain || chainOf(g) === chain))
+    .filter((g) => g.weight >= MIN_WEIGHT && perDay(g) > 0 && isSteady(g.steady) && (!chain || chainOf(g) === chain))
     .map((g) => ({ gauge: g, mine: steadyNow(g, amount) }))
     .sort((a, b) => b.mine - a.mine);
 }

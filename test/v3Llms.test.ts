@@ -31,3 +31,13 @@ test("llms.txt lists steady pools only once there is history, and says so before
   assert.match(txt, /- CALM\/USDC \(CL, Base\): \$5\.00 a day now, average \$5\.20, lowest hour \$4\.10, held up 30 of 30 hours/);
   assert.doesNotMatch(txt.split("## Steadiest pools")[1], /JUMPY/);
 });
+
+test("llms.txt steadiest pools use the same pay as the page: window fees, not the last 24 h", () => {
+  const st = { held: 30, of: 30, avgPer10k: 5, minPer10k: 4 };
+  const hot24 = g("HOT", 190_000, 40, { fees24hUsdPerDay: 400, steady: st });
+  const even = g("EVEN", 190_000, 100, { fees24hUsdPerDay: 10, steady: st });
+  const part = renderV3LlmsTxt(scan([hot24, even])).split("## Steadiest pools")[1];
+  assert.ok(part.indexOf("EVEN/USDC") < part.indexOf("HOT/USDC"));
+  assert.match(part, /- EVEN\/USDC \(CL, Base\): \$5\.00 a day now/);
+  assert.match(part, /- HOT\/USDC \(CL, Base\): \$2\.00 a day now/);
+});

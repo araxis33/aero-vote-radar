@@ -1,5 +1,5 @@
 import type { V3ScanFile, V3ScanGauge } from "./v3.js";
-import { isSteady, per10kNow } from "./v3History.js";
+import { isSteady } from "./v3History.js";
 
 /**
  * Renders `llms.txt` from the hourly Aero scan: the page as plain text for AI
@@ -34,7 +34,7 @@ export function renderV3LlmsTxt(scan: V3ScanFile): string {
   const best = [...pools].sort((a, b) => per10k(b) - per10k(a)).slice(0, TOP);
   const steady = pools
     .filter((g) => isSteady(g.steady))
-    .sort((a, b) => per10kNow(b) - per10kNow(a))
+    .sort((a, b) => per10k(b) - per10k(a))
     .slice(0, STEADY_TOP);
   const networks = Object.values(scan.chains ?? {}).filter((c) => c.status === "live").length || 1;
   const allocated = scan.gauges.reduce((a, g) => a + g.weight, 0);
@@ -65,10 +65,10 @@ export function renderV3LlmsTxt(scan: V3ScanFile): string {
   if (steady.length === 0) {
     lines.push("Not enough hourly history yet (needs a day of scans).");
   } else {
-    lines.push("Pools that paid at least half their own average in 75% of the hourly scans or more, best current pay first (last 24 h of fees plus incentives, for 10,000 sAERO):", "");
+    lines.push("Pools that paid at least half their own average in 75% of the hourly scans or more, best current pay first (the same pay as the list above: fees over the scan window plus incentives now, for 10,000 sAERO):", "");
     for (const g of steady) {
       const s = g.steady!;
-      lines.push(`- ${name(g)}: ${usd(per10kNow(g))} a day now, average ${usd(s.avgPer10k)}, lowest hour ${usd(s.minPer10k)}, held up ${s.held} of ${s.of} hours`);
+      lines.push(`- ${name(g)}: ${usd(per10k(g))} a day now, average ${usd(s.avgPer10k)}, lowest hour ${usd(s.minPer10k)}, held up ${s.held} of ${s.of} hours`);
     }
   }
   lines.push(
