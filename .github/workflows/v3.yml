@@ -65,4 +65,14 @@ jobs:
           [ "$wait" -lt 300 ] && wait=$(( wait + 3600 ))
           echo "next scan in $(( wait / 60 )) min"
           sleep "$wait"
-          gh workflow run v3.yml -R "${{ github.repository }}" --ref "${{ github.ref_name }}"
+          # One failed dispatch used to end the chain until the late hourly cron
+          # restarted it (25.11: HTTP 500 during a GitHub outage, 28 min without scans).
+          # Retry 6 times, 2 min apart (~10 min). A dispatch that errored but still
+          # created a run only adds one extra scan: the v3 group keeps a single waiting run.
+          for try in 1 2 3 4 5 6; do
+            if gh workflow run v3.yml -R "${{ github.repository }}" --ref "${{ github.ref_name }}"; then
+              exit 0
+            fi
+            [ "$try" -lt 6 ] && { echo "dispatch failed (try $try), retrying in 2 min"; sleep 120; }
+          done
+          exit 1
