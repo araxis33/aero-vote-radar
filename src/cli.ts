@@ -44,7 +44,19 @@ export function fmtUsd(n: number): string {
   return `${sign}$${abs.toFixed(4)}`;
 }
 
-const fmtNum = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+/**
+ * Formats a count of sAERO. Pool weights and splits of any realistic stake are
+ * comfortably above 1, so rounding to a whole number there is harmless, but
+ * `--amount`/a wallet's own stake can be a fraction of one sAERO (dust left
+ * over from a stake, or someone trying a small amount) — rounding that to the
+ * nearest whole number the same way turned a real, nonzero amount into "0"
+ * sAERO (0.3) or doubled it to "1" (0.5), the same misrepresentation fmtUsd
+ * already avoids for sub-$1 amounts by keeping decimal places below 1.
+ */
+export function fmtNum(n: number): string {
+  if (n !== 0 && Math.abs(n) < 1) return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
 
 function getFlag(args: string[], name: string): string | undefined {
   const i = args.indexOf(`--${name}`);

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { fmtUsd, parseAmountFlag, parseChainFlag, parsePositiveIntFlag, scanLine, walletToJson } from "../src/cli.js";
+import { fmtNum, fmtUsd, parseAmountFlag, parseChainFlag, parsePositiveIntFlag, scanLine, walletToJson } from "../src/cli.js";
 import type { V3ScanFile } from "../src/v3.js";
 
 test("parsePositiveIntFlag: fallback when absent, undefined for garbage or a dangling flag", () => {
@@ -41,6 +41,19 @@ test("fmtUsd puts the sign before the $ for a negative amount, at the same preci
   assert.equal(fmtUsd(-1234.6), "-$1,235");
   assert.equal(fmtUsd(-3.456), "-$3.46");
   assert.equal(fmtUsd(-0.01234), "-$0.0123");
+});
+
+// --amount and a wallet's own stake can be a fraction of one sAERO, unlike a
+// pool's weight or a split's share; rounding those to a whole number the same
+// way would turn 0.3 into "0" sAERO and 0.5 into "1" — a real amount reported
+// as none, or doubled.
+test("fmtNum keeps whole numbers for 1 and above, and up to 4 decimal places below 1", () => {
+  assert.equal(fmtNum(25_000), "25,000");
+  assert.equal(fmtNum(1), "1");
+  assert.equal(fmtNum(0.5), "0.5");
+  assert.equal(fmtNum(0.3), "0.3");
+  assert.equal(fmtNum(0.01234), "0.0123");
+  assert.equal(fmtNum(0), "0");
 });
 
 test("scanLine flags a scan older than 3 h", () => {
