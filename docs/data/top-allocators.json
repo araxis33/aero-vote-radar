@@ -1,7 +1,7 @@
 {
- "checkedAt": "2026-11-25T19:47:18.853Z",
+ "checkedAt": "2026-11-26T00:47:22.147Z",
  "source": "dromos.kitchen",
- "boardAsOf": "2026-11-25T17:48:57.695927Z",
+ "boardAsOf": "2026-11-25T23:48:06.613585Z",
  "positions": [
   {
    "rank": 1,
@@ -9,8 +9,8 @@
    "owner": "0x16f570e93fdbc3a4865b7740deb052ee94d87e15",
    "contract": false,
    "sAero": 23002,
-   "earned7d": 94.45,
-   "apr7d": 0.5433,
+   "earned7d": 95.76,
+   "apr7d": 0.5317,
    "moves7d": 1,
    "lastMoved": 1795571611,
    "split": [
@@ -32,8 +32,8 @@
    "owner": "0xc27d217116748d94c516415c8db4d10bbbe98ac4",
    "contract": false,
    "sAero": 23668,
-   "earned7d": 84.83,
-   "apr7d": 0.4743,
+   "earned7d": 87.78,
+   "apr7d": 0.4737,
    "moves7d": 2,
    "lastMoved": 1795608920,
    "split": [
@@ -65,8 +65,8 @@
    "owner": "0x81988d3babe6160c1e3afd3e7b97b9f7f29cd8a9",
    "contract": false,
    "sAero": 18589,
-   "earned7d": 61.59,
-   "apr7d": 0.4384,
+   "earned7d": 63.56,
+   "apr7d": 0.4367,
    "moves7d": 0,
    "lastMoved": 1793620283,
    "split": [
@@ -84,12 +84,30 @@
   },
   {
    "rank": 4,
+   "id": "4135",
+   "owner": "0xb6c1e2b4404f082bea6bb440ae1ad8a8113137be",
+   "contract": true,
+   "sAero": 10896,
+   "earned7d": 36.45,
+   "apr7d": 0.4272,
+   "moves7d": 3,
+   "lastMoved": 1795447525,
+   "split": [
+    {
+     "chain": "base",
+     "gauge": "0x93964f48bd4f30605eea383d5a3c53b34354b44e",
+     "share": 1
+    }
+   ]
+  },
+  {
+   "rank": 5,
    "id": "8887",
    "owner": "0x4edf64d443e1f44bead50e2f882095265e72cc7a",
    "contract": true,
    "sAero": 40713,
-   "earned7d": 131.91,
-   "apr7d": 0.4287,
+   "earned7d": 135.25,
+   "apr7d": 0.4243,
    "moves7d": 2,
    "lastMoved": 1795520491,
    "split": [
@@ -106,13 +124,13 @@
    ]
   },
   {
-   "rank": 5,
+   "rank": 6,
    "id": "7980",
    "owner": "0x2fcaf5605dbab3a3ee4fdbd7c85ea6622f041001",
    "contract": true,
    "sAero": 18433,
-   "earned7d": 59.59,
-   "apr7d": 0.4277,
+   "earned7d": 60.92,
+   "apr7d": 0.4221,
    "moves7d": 2,
    "lastMoved": 1795569991,
    "split": [
@@ -124,13 +142,31 @@
    ]
   },
   {
-   "rank": 6,
+   "rank": 7,
+   "id": "2421",
+   "owner": "0xde6faa89285ea7a406185ca257eabc2460c056d0",
+   "contract": false,
+   "sAero": 20468,
+   "earned7d": 66.43,
+   "apr7d": 0.4145,
+   "moves7d": 0,
+   "lastMoved": 1792635307,
+   "split": [
+    {
+     "chain": "robinhood",
+     "gauge": "0x09334d493ddd2be406895b6d8e511413601dcfe6",
+     "share": 1
+    }
+   ]
+  },
+  {
+   "rank": 8,
    "id": "9599",
    "owner": "0x7b436026ed551f98f11fe1c85045ee6bf5259cf1",
    "contract": true,
    "sAero": 10494,
-   "earned7d": 33.31,
-   "apr7d": 0.42,
+   "earned7d": 34.01,
+   "apr7d": 0.4139,
    "moves7d": 1,
    "lastMoved": 1795565474,
    "split": [
@@ -142,13 +178,13 @@
    ]
   },
   {
-   "rank": 7,
+   "rank": 9,
    "id": "1837",
    "owner": "0x70fe2b4bad3251deb0fab47df5d376d7b78da607",
    "contract": false,
    "sAero": 63701,
-   "earned7d": 200.58,
-   "apr7d": 0.4166,
+   "earned7d": 204.64,
+   "apr7d": 0.4103,
    "moves7d": 3,
    "lastMoved": 1795619637,
    "split": [
@@ -160,71 +196,30 @@
    ]
   },
   {
-   "rank": 8,
-   "id": "4135",
-   "owner": "0xb6c1e2b4404f082bea6bb440ae1ad8a8113137be",
-   "contract": true,
-   "sAero": 10896,
-   "earned7d": 34.25,
-   "apr7d": 0.4159,
-   "moves7d": 3,
-   "lastMoved": 1795447525,
-   "split": [
-    {
-     "chain": "base",
-     "gauge": "0x93964f48bd4f30605eea383d5a3c53b34354b44e",
-     "share": 1
-    }
-   ]
-  },
-  {
-   "rank": 9,
-   "id": "18736",
-   "owner": "0x011b0a055e02425461a1ae95b30f483c4ff05be7",
-   "contract": false,
-   "sAero": 60299,
-   "earned7d": 185.96,
-   "apr7d": 0.4081,
-   "moves7d": 1,
-   "lastMoved": 1795508020,
-   "split": [
-    {
-     "chain": "robinhood",
-     "gauge": "0x866df93aa2e554c7452d54a56d16a39356fe5756",
-     "share": 1
-    }
-   ]
-  },
-  {
    "rank": 10,
-   "id": "1864",
-   "owner": "0x70fe2b4bad3251deb0fab47df5d376d7b78da607",
-   "contract": false,
-   "sAero": 30137,
-   "earned7d": 92.59,
-   "apr7d": 0.4065,
-   "moves7d": 3,
-   "lastMoved": 1795612490,
+   "id": "9228",
+   "owner": "0x6aca4ba3b689931c5675994e85be821048a2b73f",
+   "contract": true,
+   "sAero": 18007,
+   "earned7d": 56.83,
+   "apr7d": 0.4031,
+   "moves7d": 2,
+   "lastMoved": 1795520499,
    "split": [
     {
      "chain": "base",
-     "gauge": "0xb1b27a2fa4e67a6d0ee1aa9de97c8b1ddf54fdd4",
-     "share": 0.25
+     "gauge": "0x81189366762ce456db7cf81181785bf22b5baec6",
+     "share": 0.785025155
     },
     {
      "chain": "base",
-     "gauge": "0x46a9dca72d78366571be583aa69c1dc16e6889fb",
-     "share": 0.25
+     "gauge": "0x8808acef598dd44905b5cc34f068804b2fa7660d",
+     "share": 0.16351592900000003
     },
     {
      "chain": "base",
-     "gauge": "0x74a30b3357121a822adb91a539f4b11b5fb7cb3f",
-     "share": 0.25
-    },
-    {
-     "chain": "base",
-     "gauge": "0xabb3fb6659e05847631896cb87a6d1b8bc0c6d8c",
-     "share": 0.25
+     "gauge": "0x0809b456fcb0934c4d5f03bd1d9be340900feaf0",
+     "share": 0.05145891600000001
     }
    ]
   }
@@ -232,18 +227,8 @@
  "together": [
   {
    "chain": "base",
-   "gauge": "0x89d6eef2f1403a4bc045dc9f994e30f518ecbfe4",
-   "share": 0.1
-  },
-  {
-   "chain": "base",
-   "gauge": "0x45eca41693d06c50784b9564457b7741f2914bd3",
-   "share": 0.1
-  },
-  {
-   "chain": "base",
    "gauge": "0x81189366762ce456db7cf81181785bf22b5baec6",
-   "share": 0.1
+   "share": 0.17850251550000001
   },
   {
    "chain": "base",
@@ -251,8 +236,18 @@
    "share": 0.1
   },
   {
+   "chain": "base",
+   "gauge": "0x89d6eef2f1403a4bc045dc9f994e30f518ecbfe4",
+   "share": 0.1
+  },
+  {
    "chain": "robinhood",
-   "gauge": "0x866df93aa2e554c7452d54a56d16a39356fe5756",
+   "gauge": "0x09334d493ddd2be406895b6d8e511413601dcfe6",
+   "share": 0.1
+  },
+  {
+   "chain": "base",
+   "gauge": "0x45eca41693d06c50784b9564457b7741f2914bd3",
    "share": 0.1
   },
   {
@@ -297,23 +292,8 @@
   },
   {
    "chain": "base",
-   "gauge": "0xb1b27a2fa4e67a6d0ee1aa9de97c8b1ddf54fdd4",
-   "share": 0.025
-  },
-  {
-   "chain": "base",
-   "gauge": "0x46a9dca72d78366571be583aa69c1dc16e6889fb",
-   "share": 0.025
-  },
-  {
-   "chain": "base",
-   "gauge": "0x74a30b3357121a822adb91a539f4b11b5fb7cb3f",
-   "share": 0.025
-  },
-  {
-   "chain": "base",
-   "gauge": "0xabb3fb6659e05847631896cb87a6d1b8bc0c6d8c",
-   "share": 0.025
+   "gauge": "0x8808acef598dd44905b5cc34f068804b2fa7660d",
+   "share": 0.016351592900000003
   },
   {
    "chain": "base",
@@ -324,6 +304,11 @@
    "chain": "base",
    "gauge": "0xb7b3cd23b92d004c96de70474a543645b78f73d0",
    "share": 0.006
+  },
+  {
+   "chain": "base",
+   "gauge": "0x0809b456fcb0934c4d5f03bd1d9be340900feaf0",
+   "share": 0.005145891600000001
   }
  ]
 }
