@@ -19,6 +19,10 @@ test("isValidAddress rejects non-hex characters", () => {
   assert.equal(isValidAddress("0xzzzz567890abcdef1234567890abcdef12345678"), false);
 });
 
+test("isValidAddress rejects the all-zero address (well-formed, but VotingEscrow.balanceOf reverts on it)", () => {
+  assert.equal(isValidAddress("0x0000000000000000000000000000000000000000"), false);
+});
+
 test("mapWithConcurrency preserves input order regardless of completion order", async () => {
   // Earlier items resolve slower than later ones, so this only passes if results
   // are written to their original index rather than in completion order.

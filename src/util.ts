@@ -19,9 +19,20 @@ export async function mapWithConcurrency<T, R>(
   return results;
 }
 
-/** Validates that a string looks like an EVM address: `0x` followed by exactly 40 hex characters. */
+/**
+ * Validates that a string looks like an EVM address: `0x` followed by exactly
+ * 40 hex characters, excluding the all-zero address.
+ *
+ * The zero address is well-formed but can never hold a stake: VotingEscrow's
+ * `balanceOf` is a standard ERC-721 `balanceOf`, which OpenZeppelin's
+ * implementation (and every other compliant one) reverts for `address(0)`
+ * rather than returning 0. Accepting it here would mean this one
+ * wallet-shaped bad input to --address/my-stakes silently hits the chain and
+ * surfaces as a raw "execution reverted" instead of the same clear usage
+ * error every other malformed address already gets.
+ */
 export function isValidAddress(address: string): boolean {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
+  return /^0x[a-fA-F0-9]{40}$/.test(address) && !/^0x0{40}$/i.test(address);
 }
 
 /**
